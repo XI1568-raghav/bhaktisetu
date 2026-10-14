@@ -35,7 +35,7 @@
 
 ## QA hardening 2026-10-13/14 (live; detail in `docs/handoff.md` 2026-10-13/14 block)
 
-PR #338 (`708b101`) is merged to `main`; round four is on branch `claude/jolly-babbage-5h6vud` (not yet a PR). **Nothing is deployed.** Prod still runs the pre-#338 build; read `docs/golive-status.md` (newest first) before acting. Local stack: `docs/runbooks/qa-local-stack.md`.
+PR #338 (`708b101`) is merged to `main`; round four is on branch `claude/jolly-babbage-5h6vud` (PR open, see GitHub; not merged). **Nothing is deployed.** Prod still runs the pre-#338 build; read `docs/golive-status.md` (newest first) before acting. Local stack: `docs/runbooks/qa-local-stack.md`.
 
 **Owner actions (none are code):**
 - GitHub Actions billing/budget (github.com/settings/billing): CI, deploys and prod-db-task cannot start without it.
@@ -44,7 +44,8 @@ PR #338 (`708b101`) is merged to `main`; round four is on branch `claude/jolly-b
 - Sleeping web service: add a keep-alive ping or move off the free plan (Render 750 shared hours).
 - Deploy order: web first, then API. Before the API deploy run `scripts/ops/prod-like-smoke.sh`, then `docs/runbooks/prod-deploy-checklist.md`.
 - After the API deploy: grep the API log for `CF-Connecting-IP ignored`. If real traffic shows it, set `RATE_LIMIT_TRUST_CF_HEADER=true` (rollback lever). Optional hardening: set `CF_ORIGIN_SECRET` plus a Cloudflare Transform Rule adding `x-origin-secret` on `api.darshya.online` (docs/env-vars.md).
-- Migrations to apply BY HAND (deploys do not run them): `20261013000000_review_moderation`, `20261014000000_auth_token_revocations`, plus any new folder under `apps/api/prisma/migrations` when round four lands. Authority: `prisma migrate status`; then redeploy the API. Code tolerates both tables being absent.
+- Migrations to apply BY HAND (deploys do not run them): `20261013000000_review_moderation`, `20261013010000_donee_tax_and_email_outbox`, `20261014000000_auth_token_revocations`, plus any other new folder under `apps/api/prisma/migrations`.
+- Set `R2_PRIVATE_BUCKET` in Render (booking proofs fall back to the public media bucket if unset). Authority: `prisma migrate status`; then redeploy the API. Code tolerates both tables being absent.
 - Prod DB changes still waiting: `ops/sql/commission-default-80.sql`, `ops/sql/seed-default-temple-offerings.sql` (dry-run first).
 - Decisions: wellness/consultation refund policy (currently a recorded intent paid by ops); `/csr-match` stays off until 80G registration.
 - Still owner-only: Resend sender domain, Supabase Auth SMTP + redirect `https://darshya.online/auth/reset-password`, real Rs 101 payment, Razorpay International, `BACKUP_S3_*`, 80G number/PAN, legal facts, credential rotation, PostHog key, Stripe webhook endpoint delete.
