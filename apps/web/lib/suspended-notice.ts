@@ -37,7 +37,7 @@ export function suspendedLoginMessage(search: string): string | null {
   const q = new URLSearchParams(search);
   if (q.get(SUSPENDED_FLAG) !== '1') return null;
   const reason = q.get('reason')?.trim().slice(0, 300);
-  return `${SUSPENDED_MESSAGE}${reason ? ` Reason: ${reason}` : ''} Contact support@darshya.online if you think this is a mistake.`;
+  return `${SUSPENDED_MESSAGE}${reason ? ` Reason: ${reason}.` : ''} Contact support@darshya.online if you think this is a mistake.`;
 }
 
 /** Called from fetch wrappers: tell the auth layer, which signs out and redirects. */

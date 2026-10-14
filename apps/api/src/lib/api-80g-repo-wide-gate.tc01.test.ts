@@ -116,8 +116,6 @@ const EIGHTY_G_PROMISE =
  */
 const ALLOWED_UNGATED: Record<string, string> = {
   'src/lib/eighty-g.ts': 'the gate itself — it has to name the thing it gates',
-  'src/lib/pdf-receipt.ts':
-    'is80GEligible() IS the runtime gate — every 80G string on the PDF is already behind it',
   'src/routes/donations.ts':
     'the receipt path: it imports is80GEligible() and passes the result to the PDF and the mail',
   'src/lib/email.ts':

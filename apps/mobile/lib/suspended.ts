@@ -19,7 +19,7 @@ export function isSuspendedError(err: unknown): boolean {
 export function suspendedNoticeText(message: string): string {
   const hit = /account suspended:\s*(.+)$/i.exec(message.trim());
   const reason = hit ? hit[1]!.trim().slice(0, 300) : '';
-  return `${SUSPENDED_MESSAGE}${reason ? ` Reason: ${reason}` : ''} Contact support@darshya.online if you think this is a mistake.`;
+  return `${SUSPENDED_MESSAGE}${reason ? ` Reason: ${reason}.` : ''} Contact support@darshya.online if you think this is a mistake.`;
 }
 
 let notice: string | null = null;
