@@ -592,7 +592,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       if (Array.isArray(o.items)) (o.items as any[]).forEach((it) => it?.productId && ids.add(it.productId));
     });
     const named = ids.size
-      ? await prisma.storeProduct.findMany({ where: { id: { in: Array.from(ids) } }, select: { id: true, name: true } })
+      ? (await prisma.storeProduct.findMany({ where: { id: { in: Array.from(ids) } }, select: { id: true, name: true }, take: ids.size })) ?? []
       : [];
     const nameMap = new Map(named.map((p) => [p.id, p.name]));
     return reply.send({ data: orders.map((o) => serializeOrder(o, nameMap)) });
