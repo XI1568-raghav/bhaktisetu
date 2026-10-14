@@ -451,3 +451,22 @@ export async function deleteProofObject(key: string): Promise<boolean> {
     return false;
   }
 }
+
+/** Delete an object from the private (identity-document) store. Best effort. */
+export async function deletePrivateObject(key: string): Promise<boolean> {
+  if (r2Enabled && r2Client) {
+    try {
+      await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  if (!supabaseEnabled) return false;
+  try {
+    const { error } = await supabaseAdmin.storage.from(supabasePrivateBucket).remove([key]);
+    return !error;
+  } catch {
+    return false;
+  }
+}

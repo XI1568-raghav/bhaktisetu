@@ -1969,6 +1969,7 @@ export class PaymentService {
                 await wellness.finalizeWellnessEnrollmentFromWebhook(
                   paymentEntity.order_id,
                   paymentEntity.amount ?? null,
+                  paymentEntity.id,
                 );
               }
             } catch (err) {

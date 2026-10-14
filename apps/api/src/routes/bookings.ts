@@ -18,6 +18,7 @@ import {
 } from '../services/cancellation.service.js';
 import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
+import { canViewProof, resolveProof } from '../lib/booking-proof.js';
 import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
@@ -1839,35 +1840,49 @@ export async function bookingRoutes(server: FastifyInstance) {
     }
   );
 
-  // GET /:id/video - Get video proof URL
+  // GET /:id/video - short-lived playable URL for the booking's video proof.
+  // Allowed: the booking's devotee, the assigned pandit, the manager of the
+  // booking's temple and admins. Private proofs come back as a signed URL
+  // (expires in `expiresIn` s); legacy http(s) values are returned as stored.
   server.get(
     '/:id/video',
     { preHandler: [authenticateUser, uuidParamGuard('id')] },
     async (request, reply) => {
       try {
         const { id } = paramsWithId.parse(request.params);
-        const userId = request.currentUser!.id;
-
-        const booking = await bookingService.getBookingById(id, userId);
-
-        return {
+        const user = request.currentUser!;
+        const booking = await prisma.pujaBooking.findUnique({
+          where: { id },
+          select: { id: true, bookingNumber: true, userId: true, templeId: true, priestId: true, videoProofUrl: true, videoUploadedAt: true },
+        });
+        if (!booking) return reply.status(404).send({ error: 'Booking not found.' });
+        if (!(await canViewProof({ id: user.id, roles: user.roles ?? [] }, booking))) {
+          return reply.status(403).send({ error: 'You are not authorized to view this booking.' });
+        }
+        const proof = await resolveProof(booking.id, booking.videoProofUrl);
+        reply.header('Cache-Control', 'no-store');
+        const base = {
           bookingId: booking.id,
           bookingNumber: booking.bookingNumber,
-          videoProofUrl: booking.videoProofUrl ?? null,
           videoUploadedAt: booking.videoUploadedAt ?? null,
-          status: booking.videoProofUrl ? 'available' : 'not_available',
+        };
+        if (proof.kind === 'none') {
+          return { ...base, videoProofUrl: null, videoUrl: null, status: 'not_available' };
+        }
+        if (proof.kind === 'unavailable') {
+          return reply.status(503).send({ error: 'The video could not be loaded right now. Please try again in a moment.' });
+        }
+        return {
+          ...base,
+          videoProofUrl: proof.url,
+          videoUrl: proof.url,
+          expiresIn: proof.kind === 'signed' ? proof.expiresIn : null,
+          private: proof.kind === 'signed',
+          status: 'available',
         };
       } catch (error: any) {
-        if (error.message?.includes('not found')) {
-          return reply.status(404).send({ error: error.message });
-        }
-        if (error.message?.includes('not authorized')) {
-          return reply.status(403).send({ error: error.message });
-        }
         server.log.error(error, 'Failed to fetch video proof');
-        return reply.status(500).send({
-          error: 'Failed to fetch video proof',
-        });
+        return reply.status(500).send({ error: 'Failed to fetch video proof' });
       }
     }
   );

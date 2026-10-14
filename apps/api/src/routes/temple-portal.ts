@@ -119,7 +119,7 @@ async function userCanEditTemple(
  * schema.prisma TempleProfile comment). Returns null when the manager has
  * no profile or the profile name doesn't match any Temple row.
  */
-async function resolveManagerTempleId(userId: string): Promise<string | null> {
+export async function resolveManagerTempleId(userId: string): Promise<string | null> {
   return (await resolveManagerTemple(userId)).templeId;
 }
 
