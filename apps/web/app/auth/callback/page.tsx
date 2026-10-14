@@ -98,7 +98,7 @@ export default function AuthCallbackPage() {
 
  if (!session) {
  setStatus('error');
- setErrorMessage('Could not read Google session. Please try again.');
+ setErrorMessage('Could not read your sign-in session. The link may have expired; please sign in again.');
  return;
  }
 
@@ -181,7 +181,7 @@ export default function AuthCallbackPage() {
  <>
  <Loader2 className="w-8 h-8 text-saffron-600 animate-spin mx-auto mb-4" />
  <h1 className={`${H1.portal} mb-1`}>Signing you in</h1>
- <p className="text-sm text-surface-500">Hold on while we finish the Google sign-in.</p>
+ <p className="text-sm text-surface-500">Hold on while we finish signing you in.</p>
  </>
  ) : (
  <>

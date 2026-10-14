@@ -84,12 +84,14 @@ export async function adminDonationsExportRoutes(server: FastifyInstance) {
         ? new Date(`${parsed.data.to}T23:59:59.999Z`)
         : now;
 
-      let rows: ExportRow[] = [];
-      try {
-        rows = await prisma.$queryRawUnsafe<ExportRow[]>(
-          `SELECT d.receipt_number,
-                  u.full_name AS donor_name,
-                  u.email     AS donor_email,
+      // donor_name / donor_email are the donor's own details from the donation form
+      // (additive columns, migration 20261013010000); the account's name / email are
+      // the fallback, and the whole query falls back to the account-only form when the
+      // columns do not exist yet.
+      const buildSql = (withDonorContact: boolean) =>
+        `SELECT d.receipt_number,
+                  ${withDonorContact ? `COALESCE(NULLIF(d.donor_name, ''), u.full_name)` : 'u.full_name'} AS donor_name,
+                  ${withDonorContact ? `COALESCE(NULLIF(d.donor_email, ''), u.email)` : 'u.email'}    AS donor_email,
                   d.donor_pan   AS donor_pan,
                   COALESCE(gp.gaushala_name, t.name) AS donee_name,
                   d.amount_inr::text AS amount_inr,
@@ -103,10 +105,16 @@ export async function adminDonationsExportRoutes(server: FastifyInstance) {
               AND d.paid_at IS NOT NULL
               AND d.paid_at >= $1
               AND d.paid_at <= $2
-            ORDER BY d.paid_at ASC`,
-          fromDate,
-          toDate,
-        );
+            ORDER BY d.paid_at ASC`;
+
+      let rows: ExportRow[] = [];
+      try {
+        try {
+          rows = await prisma.$queryRawUnsafe<ExportRow[]>(buildSql(true), fromDate, toDate);
+        } catch (err) {
+          server.log.warn({ err }, 'donations export: donor contact columns missing, using account details');
+          rows = await prisma.$queryRawUnsafe<ExportRow[]>(buildSql(false), fromDate, toDate);
+        }
       } catch (err) {
         // Migration not run yet → empty CSV with audit note in logs.
         server.log.warn({ err }, 'donations export: query failed (migration pending?)');

@@ -43,6 +43,7 @@ import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { isUniqueViolation } from './wallet.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { deliverOrQueue, type OutboxMail } from '../lib/email-outbox.js';
 import { esc } from '../lib/html-escape.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
 // the booking webhook path never reaches them; these helpers let
@@ -55,39 +56,47 @@ import { handleSubscriptionEvent } from './recurring.service.js';
  * (PDF, email, or DB read) is swallowed and logged so it can never block
  * the payment-confirmation flow this is called from.
  */
+/** The receipt email for a puja booking, rebuilt from the booking id alone (outbox retry too). */
+export async function composePujaBookingInvoiceMail(bookingId: string): Promise<OutboxMail | null> {
+  const booking = await prisma.pujaBooking.findUnique({
+    where: { id: bookingId },
+    select: {
+      bookingNumber: true,
+      priceAmount: true,
+      createdAt: true,
+      user: { select: { fullName: true, email: true } },
+      temple: { select: { name: true, city: true } },
+      pujaType: { select: { name: true } },
+    },
+  });
+  if (!booking || !booking.user.email) return null;
+  const pdf = await generateInvoice({
+    type: 'puja_booking',
+    bookingNumber: booking.bookingNumber,
+    devoteeName: booking.user.fullName,
+    pujaName: booking.pujaType.name,
+    templeName: booking.temple.name,
+    templeCity: booking.temple.city,
+    amountInr: Number(booking.priceAmount),
+    createdAt: booking.createdAt.toISOString().slice(0, 10),
+  });
+  return {
+    to: booking.user.email,
+    subject: `Darshya payment receipt — ${booking.bookingNumber}`,
+    html: `<p>Namaste ${esc(booking.user.fullName)},</p><p>Your payment receipt for booking <strong>${esc(booking.bookingNumber)}</strong> is attached.</p>`,
+    text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
+    attachments: [
+      { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
+    ],
+  };
+}
+
 async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
   try {
-    const booking = await prisma.pujaBooking.findUnique({
-      where: { id: bookingId },
-      select: {
-        bookingNumber: true,
-        priceAmount: true,
-        createdAt: true,
-        user: { select: { fullName: true, email: true } },
-        temple: { select: { name: true, city: true } },
-        pujaType: { select: { name: true } },
-      },
-    });
-    if (!booking || !booking.user.email) return;
-    const pdf = await generateInvoice({
-      type: 'puja_booking',
-      bookingNumber: booking.bookingNumber,
-      devoteeName: booking.user.fullName,
-      pujaName: booking.pujaType.name,
-      templeName: booking.temple.name,
-      templeCity: booking.temple.city,
-      amountInr: Number(booking.priceAmount),
-      createdAt: booking.createdAt.toISOString().slice(0, 10),
-    });
-    await sendEmail({
-      to: booking.user.email,
-      subject: `Darshya payment receipt — ${booking.bookingNumber}`,
-      html: `<p>Namaste ${esc(booking.user.fullName)},</p><p>Your payment receipt for booking <strong>${esc(booking.bookingNumber)}</strong> is attached.</p>`,
-      text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
-      attachments: [
-        { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
-      ],
-    });
+    const mail = await composePujaBookingInvoiceMail(bookingId);
+    if (!mail) return;
+    // Inline attempt, then the email outbox retries a failure (lib/email-outbox.ts).
+    await deliverOrQueue(mail, { kind: 'puja_invoice', refId: bookingId });
   } catch (err) {
     console.warn('[payment.service] sendPujaBookingInvoice failed:', err);
   }
@@ -253,66 +262,72 @@ async function recordStoreOrderCommissionMinted(
  * after Razorpay capture flips the order to CONFIRMED. Any failure is
  * swallowed so payment confirmation never blocks on email/PDF errors.
  */
+export async function composeStoreOrderInvoiceMail(storeOrderId: string): Promise<OutboxMail | null> {
+  const order = await prisma.storeOrder.findUnique({
+    where: { id: storeOrderId },
+    include: { user: { select: { fullName: true, email: true } } },
+  });
+  if (!order || !order.user.email) return null;
+  type Item = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
+  type Addr = {
+    fullName?: string; line1?: string; line2?: string; city?: string;
+    state?: string; pincode?: string; country?: string;
+  };
+  const items: Item[] = Array.isArray(order.items)
+    ? (order.items as unknown as Item[])
+    : [];
+  // QA 2026-10-13: order.items stores {productId, qty, priceAtPurchase} with no
+  // name, so the receipt's description column printed the product's UUID; and
+  // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
+  // not add up to the printed total. Resolve names, and add the fee as its own line.
+  const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
+  let named: Array<{ id: string; name: string }> = [];
+  if (ids.length) {
+    try {
+      named = (await prisma.storeProduct.findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })) ?? [];
+    } catch {
+      named = [];
+    }
+  }
+  const nameById = new Map(named.map((p) => [p.id, p.name]));
+  const lineItems = items.map((it) => ({
+    name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
+    qty: Number(it.qty ?? 1),
+    priceInr: Number(it.priceAtPurchase ?? 0),
+  }));
+  const itemsSubtotal = lineItems.reduce((a, l) => a + l.qty * l.priceInr, 0);
+  const feeInr = Math.round((Number(order.totalAmountInr) - itemsSubtotal) * 100) / 100;
+  if (feeInr > 0) lineItems.push({ name: 'Delivery & handling', qty: 1, priceInr: feeInr });
+  const addr = order.shippingAddress as unknown as Addr;
+  const addrStr = [
+    addr?.fullName, addr?.line1, addr?.line2, addr?.city,
+    addr?.state, addr?.pincode, addr?.country,
+  ].filter(Boolean).join(', ');
+  const pdf = await generateInvoice({
+    type: 'store_order',
+    orderNumber: order.orderNumber,
+    customerName: order.user.fullName,
+    items: lineItems,
+    shippingAddress: addrStr,
+    totalInr: Number(order.totalAmountInr),
+    createdAt: order.createdAt.toISOString().slice(0, 10),
+  });
+  return {
+    to: order.user.email,
+    subject: `Darshya payment receipt — ${order.orderNumber}`,
+    html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
+    text: `Payment receipt for order ${order.orderNumber} attached.`,
+    attachments: [
+      { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
+    ],
+  };
+}
+
 async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
   try {
-    const order = await prisma.storeOrder.findUnique({
-      where: { id: storeOrderId },
-      include: { user: { select: { fullName: true, email: true } } },
-    });
-    if (!order || !order.user.email) return;
-    type Item = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
-    type Addr = {
-      fullName?: string; line1?: string; line2?: string; city?: string;
-      state?: string; pincode?: string; country?: string;
-    };
-    const items: Item[] = Array.isArray(order.items)
-      ? (order.items as unknown as Item[])
-      : [];
-    // QA 2026-10-13: order.items stores {productId, qty, priceAtPurchase} with no
-    // name, so the receipt's description column printed the product's UUID; and
-    // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
-    // not add up to the printed total. Resolve names, and add the fee as its own line.
-    const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
-    let named: Array<{ id: string; name: string }> = [];
-    if (ids.length) {
-      try {
-        named = (await prisma.storeProduct.findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })) ?? [];
-      } catch {
-        named = [];
-      }
-    }
-    const nameById = new Map(named.map((p) => [p.id, p.name]));
-    const lineItems = items.map((it) => ({
-      name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
-      qty: Number(it.qty ?? 1),
-      priceInr: Number(it.priceAtPurchase ?? 0),
-    }));
-    const itemsSubtotal = lineItems.reduce((a, l) => a + l.qty * l.priceInr, 0);
-    const feeInr = Math.round((Number(order.totalAmountInr) - itemsSubtotal) * 100) / 100;
-    if (feeInr > 0) lineItems.push({ name: 'Delivery & handling', qty: 1, priceInr: feeInr });
-    const addr = order.shippingAddress as unknown as Addr;
-    const addrStr = [
-      addr?.fullName, addr?.line1, addr?.line2, addr?.city,
-      addr?.state, addr?.pincode, addr?.country,
-    ].filter(Boolean).join(', ');
-    const pdf = await generateInvoice({
-      type: 'store_order',
-      orderNumber: order.orderNumber,
-      customerName: order.user.fullName,
-      items: lineItems,
-      shippingAddress: addrStr,
-      totalInr: Number(order.totalAmountInr),
-      createdAt: order.createdAt.toISOString().slice(0, 10),
-    });
-    await sendEmail({
-      to: order.user.email,
-      subject: `Darshya payment receipt — ${order.orderNumber}`,
-      html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
-      text: `Payment receipt for order ${order.orderNumber} attached.`,
-      attachments: [
-        { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
-      ],
-    });
+    const mail = await composeStoreOrderInvoiceMail(storeOrderId);
+    if (!mail) return;
+    await deliverOrQueue(mail, { kind: 'store_invoice', refId: storeOrderId });
   } catch (err) {
     console.warn('[payment.service] sendStoreOrderInvoice failed:', err);
   }
