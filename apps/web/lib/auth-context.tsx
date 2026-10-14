@@ -19,7 +19,13 @@ import {
  authHttpErrorMessage,
 } from './api-config';
 import { hasStoredProfile, reviveSessionFromCookieResult } from './session-revive';
-import { SUSPENDED_EVENT, isSuspendedBody, redirectToSuspendedLogin, suspensionReason } from './suspended-notice';
+import {
+  SUSPENDED_EVENT,
+  installSuspendedFetchGuard,
+  isSuspendedBody,
+  redirectToSuspendedLogin,
+  suspensionReason,
+} from './suspended-notice';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -834,6 +840,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      redirectToSuspendedLogin(reason);
    }
  };
+ installSuspendedFetchGuard(API_BASE_URL);
  window.addEventListener(SUSPENDED_EVENT, onSuspended);
  return () => window.removeEventListener(SUSPENDED_EVENT, onSuspended);
  }, [persistSession]);
