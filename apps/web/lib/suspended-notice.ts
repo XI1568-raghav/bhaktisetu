@@ -45,3 +45,20 @@ export function announceSuspended(reason: string | null): void {
   if (typeof window === 'undefined') return;
   window.dispatchEvent(new CustomEvent(SUSPENDED_EVENT, { detail: { reason } }));
 }
+
+let suspendedRedirectPending = false;
+
+/**
+ * Navigate to the suspended notice AND remember that we are doing so. Signing the user out flips
+ * AuthGuard to "unauthenticated", whose own `location.href = /auth/login?redirect=` would otherwise
+ * replace this navigation and drop the notice.
+ */
+export function redirectToSuspendedLogin(reason: string | null): void {
+  if (typeof window === 'undefined') return;
+  suspendedRedirectPending = true;
+  window.location.assign(suspendedLoginHref(reason));
+}
+
+export function isSuspendedRedirectPending(): boolean {
+  return suspendedRedirectPending;
+}

@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../lib/auth-context';
+import { isSuspendedRedirectPending } from '../lib/suspended-notice';
 
 interface AuthGuardProps {
  children: React.ReactNode;
@@ -33,6 +34,7 @@ export default function AuthGuard({ children, fallback, allowedRoles }: AuthGuar
 
  // Not logged in → send to login with return URL
  if (!isAuthenticated) {
+ if (isSuspendedRedirectPending()) return;
  const currentPath = window.location.pathname;
  window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
  return;

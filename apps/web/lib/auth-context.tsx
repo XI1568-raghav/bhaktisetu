@@ -19,7 +19,7 @@ import {
  authHttpErrorMessage,
 } from './api-config';
 import { hasStoredProfile, reviveSessionFromCookieResult } from './session-revive';
-import { SUSPENDED_EVENT, isSuspendedBody, suspendedLoginHref, suspensionReason } from './suspended-notice';
+import { SUSPENDED_EVENT, isSuspendedBody, redirectToSuspendedLogin, suspensionReason } from './suspended-notice';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -628,7 +628,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // The cookie revive was refused because the account is suspended: say so
  // instead of a silent sign-out.
  persistSession(null, null);
- window.location.assign(suspendedLoginHref(suspensionReason(outcome.suspendedBody)));
+ redirectToSuspendedLogin(suspensionReason(outcome.suspendedBody));
  return;
  } else if (outcome.apiAnswered) {
  // The marker outlived the cookie. Clear it: middleware.ts gates every
@@ -718,7 +718,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const failBody = await readJsonBody(refreshRes).catch(() => null);
  persistSession(null, null);
  if (isSuspendedBody(refreshRes.status, failBody)) {
-   window.location.assign(suspendedLoginHref(suspensionReason(failBody)));
+   redirectToSuspendedLogin(suspensionReason(failBody));
  }
  }
  } else {
@@ -808,7 +808,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const failBody = res.status === 403 ? await readJsonBody(res).catch(() => null) : null;
  giveUp();
  if (isSuspendedBody(res.status, failBody)) {
-   window.location.assign(suspendedLoginHref(suspensionReason(failBody)));
+   redirectToSuspendedLogin(suspensionReason(failBody));
  }
  return;
  }
@@ -831,7 +831,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
    setUser(null);
    persistSession(null, null);
    if (!window.location.pathname.startsWith('/auth/')) {
-     window.location.assign(suspendedLoginHref(reason));
+     redirectToSuspendedLogin(reason);
    }
  };
  window.addEventListener(SUSPENDED_EVENT, onSuspended);
