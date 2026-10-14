@@ -2,6 +2,8 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { donorContactMap } from '../lib/donation-contact.js';
+import { doneeTaxSchema, maskTaxId, readDoneeTax, taxInfoView, writeDoneeTax } from '../lib/donee-tax.js';
 import { describeQualityEditFailure, qualityReasonsForEdit } from '../lib/cause-quality.js';
 
 const profileUpdateSchema = z.object({
@@ -39,11 +41,16 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
       take: limit,
       include: { user: { select: { fullName: true, email: true } } },
     });
+    // The donor's own name / email / phone from the donation form, not the paying
+    // account's. PAN is never returned in full: last four characters only.
+    const contacts = await donorContactMap(donations.map((d) => d.id));
     return reply.send({
       donations: donations.map((d) => ({
         id: d.id,
-        donor: d.user?.fullName ?? 'Anonymous',
-        email: d.user?.email ?? null,
+        donor: contacts.get(d.id)?.name ?? d.user?.fullName ?? 'Anonymous',
+        email: contacts.get(d.id)?.email ?? d.user?.email ?? null,
+        phone: contacts.get(d.id)?.phone ?? null,
+        donorPanMasked: maskTaxId(d.donorPan),
         amountInr: Number(d.amountInr),
         status: d.status, // created | paid | failed
         receiptNumber: d.receiptNumber ?? null,
@@ -98,6 +105,8 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
       }),
     ]);
 
+    const recentContacts = await donorContactMap(recent.map((d) => d.id));
+
     return reply.send({
       profile,
       stats: {
@@ -108,7 +117,7 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
       },
       recentDonations: recent.map((d) => ({
         id: d.id,
-        donor: d.user.fullName ?? 'Anonymous',
+        donor: recentContacts.get(d.id)?.name ?? d.user.fullName ?? 'Anonymous',
         amountInr: Number(d.amountInr),
         paidAt: d.paidAt,
       })),
@@ -127,6 +136,36 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
   // Note: GET/POST/PATCH/DELETE /volunteers live in gaushala-volunteers.ts
   // (registered under the same /gaushala-portal prefix). Keep them there to
   // avoid duplicate route registration at boot.
+
+  // PAN + 80G registration printed on this gaushala's donation receipts.
+  server.get('/tax-info', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('GAUSHALA_MANAGER')) {
+      return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
+    }
+    return taxInfoView(await readDoneeTax('gaushala', request.currentUser!.id));
+  });
+
+  server.put('/tax-info', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('GAUSHALA_MANAGER')) {
+      return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
+    }
+    const parsed = doneeTaxSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
+    }
+    if (parsed.data.pan === undefined && parsed.data.regn80g === undefined) {
+      return reply.code(400).send({ error: 'Nothing to update' });
+    }
+    const userId = request.currentUser!.id;
+    const profile = await prisma.gaushalaProfile.findUnique({ where: { userId }, select: { id: true } });
+    if (!profile) {
+      return reply.code(409).send({ code: 'gaushala_profile_required', error: 'Create your gaushala profile first' });
+    }
+    await writeDoneeTax('gaushala', userId, parsed.data);
+    return taxInfoView(await readDoneeTax('gaushala', userId));
+  });
 
   server.patch('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;

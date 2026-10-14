@@ -1349,10 +1349,37 @@ export async function authRoutes(server: FastifyInstance) {
       const supabase = createSupabaseClient();
 
       // Sign up via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // emailRedirectTo: without it the confirmation link lands on the Supabase
+      // Site URL root with the tokens in the fragment and nothing consumes them.
+      // /auth/callback reads the session from the URL and finishes sign-in via
+      // /auth/google/sync (which works for any Supabase session). full_name is
+      // passed so that sync does not overwrite the name with the email prefix.
+      const webBase = (process.env.WEB_URL ?? process.env.WEB_PUBLIC_URL ?? 'https://darshya.online').replace(/\/+$/, '');
+      const signUpResult = await supabase.auth.signUp({
         email: emailLower,
         password,
+        options: { emailRedirectTo: `${webBase}/auth/callback`, data: { full_name: fullName } },
       });
+      let authData = signUpResult.data;
+      let authError = signUpResult.error;
+
+      // Idempotent retry: Supabase created the auth user on an earlier attempt
+      // but our DB write failed, so every retry hit "already registered" (409
+      // forever). Repair only when the caller proves ownership with the right
+      // password AND no DB row exists; otherwise this would double as a
+      // password-checking role-switch on a live account.
+      if (authError && ((authError as { code?: string }).code === 'user_already_exists' || /already registered/i.test(authError.message))) {
+        const proof = await supabase.auth.signInWithPassword({ email: emailLower, password });
+        const provenId = !proof.error ? proof.data?.user?.id : undefined;
+        if (provenId) {
+          const existing = await prisma.user.findUnique({ where: { id: provenId }, select: { id: true } });
+          if (!existing) {
+            request.log.warn({ event: 'signup_repair_missing_row', email: emailLower }, 'repairing missing DB row for existing auth user');
+            authData = proof.data as typeof authData;
+            authError = null;
+          }
+        }
+      }
 
       if (authError && isAuthUpstreamDown(authError)) {
         request.log.error({ err: authError, event: 'signup_auth_unreachable' }, 'signup could not reach auth');

@@ -153,6 +153,8 @@ describe('POST /signup', () => {
       data: { user: null, session: null },
       error: { name: 'AuthApiError', status: 422, code: 'user_already_exists', message: 'User already registered' },
     });
+    // a wrong password: no ownership proof, so no repair (see auth.signup-repair.qa-m.test.ts)
+    sb.signInWithPassword.mockResolvedValue({ data: { user: null, session: null }, error: { message: 'Invalid login credentials' } });
     const app = await makeApp();
     const res = await app.inject({ method: 'POST', url: '/api/v1/auth/signup', payload: body });
     expect(res.statusCode).toBe(409);

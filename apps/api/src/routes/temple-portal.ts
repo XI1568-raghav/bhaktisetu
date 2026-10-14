@@ -4,6 +4,8 @@ import { httpUrl } from '../lib/http-url.js';
 import { BookingStatus, StreamStatus, StreamProvider } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { donorContactMap } from '../lib/donation-contact.js';
+import { doneeTaxSchema, maskTaxId, readDoneeTax, taxInfoView, writeDoneeTax } from '../lib/donee-tax.js';
 import { provedBookingIds, shareRelease } from '../lib/temple-share-release.js';
 import { getLinkedTempleId } from '../services/temple-manager-link.service.js';
 import { cancelInvite, createInvite, listInvitesForTemple } from '../services/temple-priest-invite.service.js';
@@ -447,11 +449,16 @@ export async function templePortalRoutes(server: FastifyInstance) {
       take: limit,
       include: { user: { select: { fullName: true, email: true } } },
     });
+    // The donor's own name / email / phone from the donation form, not the paying
+    // account's. PAN is never returned in full: last four characters only.
+    const contacts = await donorContactMap(donations.map((d) => d.id));
     return reply.send({
       donations: donations.map((d) => ({
         id: d.id,
-        donor: d.user?.fullName ?? 'Anonymous',
-        email: d.user?.email ?? null,
+        donor: contacts.get(d.id)?.name ?? d.user?.fullName ?? 'Anonymous',
+        email: contacts.get(d.id)?.email ?? d.user?.email ?? null,
+        phone: contacts.get(d.id)?.phone ?? null,
+        donorPanMasked: maskTaxId(d.donorPan),
         amountInr: Number(d.amountInr),
         status: d.status, // created | paid | failed
         receiptNumber: d.receiptNumber ?? null,
@@ -460,6 +467,37 @@ export async function templePortalRoutes(server: FastifyInstance) {
       })),
       total: donations.length,
     });
+  });
+
+  // ─── GET/PUT /tax-info — the temple's PAN + 80G registration ───────────────
+  // Entered by the temple manager (or an admin via /admin/temples/:id/tax-info).
+  // Storing them does not by itself make a receipt an 80G receipt: that needs both
+  // numbers AND the platform-level flag (lib/eighty-g.ts).
+  server.get('/tax-info', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!hasTempleManagerRole(request)) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    if (!link.templeId) return notLinked(reply, link.reason);
+    return taxInfoView(await readDoneeTax('temple', link.templeId));
+  });
+
+  server.put('/tax-info', { preHandler: [authenticateUser] }, async (request, reply) => {
+    if (!hasTempleManagerRole(request)) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const parsed = doneeTaxSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
+    }
+    if (parsed.data.pan === undefined && parsed.data.regn80g === undefined) {
+      return reply.code(400).send({ error: 'Nothing to update' });
+    }
+    const link = await resolveManagerTemple(request.currentUser!.id);
+    if (!link.templeId) return notLinked(reply, link.reason);
+    await writeDoneeTax('temple', link.templeId, parsed.data);
+    server.log.info({ templeId: link.templeId, userId: request.currentUser!.id }, 'temple-portal tax info update');
+    return taxInfoView(await readDoneeTax('temple', link.templeId));
   });
 
   // ─── GET /payouts — the temple's share of puja revenue (TemplePayout) ──────

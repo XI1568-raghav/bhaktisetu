@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { addStandardOfferings } from '../services/temple-standard-offerings.service.js';
+import { doneeTaxSchema, readDoneeTax, taxInfoView, writeDoneeTax } from '../lib/donee-tax.js';
 
 /**
  * Admin temple editor: GET /temples/:id, PATCH /temples/:id and
@@ -102,6 +103,32 @@ export function registerAdminTempleEditor(
       request.log.error({ err }, 'admin GET /temples/:id failed');
       return reply.code(500).send({ error: 'Failed to load temple' });
     }
+  });
+
+  // Donee tax identifiers for donation receipts (PAN + 80G registration).
+  server.get('/temples/:id/tax-info', { preHandler }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!UUID_RE.test(id)) return reply.code(404).send({ error: 'Temple not found' });
+    const exists = await prisma.temple.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) return reply.code(404).send({ error: 'Temple not found' });
+    return taxInfoView(await readDoneeTax('temple', id));
+  });
+
+  server.put('/temples/:id/tax-info', { preHandler }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!UUID_RE.test(id)) return reply.code(404).send({ error: 'Temple not found' });
+    const parsed = doneeTaxSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid body', details: parsed.error.flatten() });
+    }
+    if (parsed.data.pan === undefined && parsed.data.regn80g === undefined) {
+      return reply.code(400).send({ error: 'Nothing to update' });
+    }
+    const exists = await prisma.temple.findUnique({ where: { id }, select: { id: true } });
+    if (!exists) return reply.code(404).send({ error: 'Temple not found' });
+    await writeDoneeTax('temple', id, parsed.data);
+    request.log.info({ templeId: id, by: request.currentUser?.id }, 'admin set temple tax info');
+    return taxInfoView(await readDoneeTax('temple', id));
   });
 
   server.patch('/temples/:id', { preHandler }, async (request, reply) => {

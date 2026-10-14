@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
 import { presignR2Upload, publicUrlFor, r2 } from '../lib/r2.js';
 import { randomBytes } from 'node:crypto';
+import { videoMaxMb } from '../lib/upload-limits.js';
 
 /**
  * Media upload endpoints backed by Cloudflare R2.
@@ -30,8 +31,9 @@ const TYPE_POLICY = {
   'audio/mpeg': { ext: 'mp3', maxSizeMb: 25 },
   'audio/wav': { ext: 'wav', maxSizeMb: 25 },
   'audio/webm': { ext: 'weba', maxSizeMb: 25 },
-  'video/mp4': { ext: 'mp4', maxSizeMb: 200 },
-  'video/webm': { ext: 'webm', maxSizeMb: 200 },
+  // maxSizeMb for video comes from lib/upload-limits (one shared constant).
+  'video/mp4': { ext: 'mp4', maxSizeMb: 0 },
+  'video/webm': { ext: 'webm', maxSizeMb: 0 },
   'application/pdf': { ext: 'pdf', maxSizeMb: 10 },
 } as const;
 
@@ -77,6 +79,14 @@ export async function mediaRoutes(server: FastifyInstance) {
     const id = randomBytes(8).toString('hex');
     const key = `${safeKind}/${safeUserId}/${Date.now()}-${id}.${ext}`;
 
+    // Booking video proof is private and bound to a booking: it goes through
+    // POST /priest/bookings/:id/video-proof/signed-url, never this generic route.
+    if (kind === 'puja-proof' && contentType.startsWith('video/')) {
+      return reply.code(400).send({
+        error: 'Video proof is uploaded from the booking page (it is stored privately and tied to the booking).',
+      });
+    }
+
     // Identity documents: images or PDF only, stored privately, no public URL.
     const isPrivate = kind === 'kyc-document';
     if (isPrivate && !contentType.startsWith('image/') && contentType !== 'application/pdf') {
@@ -96,7 +106,7 @@ export async function mediaRoutes(server: FastifyInstance) {
       expiresIn: 600,
       method: 'PUT',
       headers: { 'Content-Type': contentType },
-      maxSizeMb: policy.maxSizeMb,
+      maxSizeMb: contentType.startsWith('video/') ? videoMaxMb() : policy.maxSizeMb,
     });
   });
 }

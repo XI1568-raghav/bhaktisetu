@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { prisma } from './prisma.js';
+import { HAS_80G } from './eighty-g.js';
 
 /**
  * Donee tax identifiers (PAN + Section 80G registration) for donation receipts.
@@ -109,4 +110,16 @@ export async function writeDoneeTax(kind: DoneeKind, key: string, patch: DoneeTa
     ...vals,
   );
   return Number(n) > 0;
+}
+
+/** What a portal / admin screen shows: the stored values and what they will (not) do. */
+export function taxInfoView(t: DoneeTax) {
+  return {
+    pan: t.pan,
+    regn80g: t.regn80g,
+    bothOnFile: !!(t.pan && t.regn80g),
+    // Receipts assert Section 80G only with both numbers AND the platform flag.
+    platformHas80G: HAS_80G,
+    receiptsClaim80G: HAS_80G && !!(t.pan && t.regn80g),
+  };
 }
