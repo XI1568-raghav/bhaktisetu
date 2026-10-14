@@ -158,10 +158,19 @@ describe("notifyDevotee('confirmed') — RV-18 wiring", () => {
 
   it('does NOT email on any other event (the invoice/confirmation pair stays single-send)', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(EMAILED_BOOKING as never);
-    for (const event of ['assigned', 'reassigned', 'cancelled', 'refund'] as const) {
+    for (const event of ['reassigned', 'refund'] as const) {
       await notifyDevotee(event, { bookingId: 'bk-1', devoteeUserId: 'u-1' });
     }
     expect(sendEmailMock).not.toHaveBeenCalled();
+  });
+
+  // Slice L: pandit-assigned and booking-cancelled now carry an email leg (once each).
+  it('emails once on assigned and once on cancelled', async () => {
+    prismaMock.pujaBooking.findUnique.mockResolvedValue(EMAILED_BOOKING as never);
+    for (const event of ['assigned', 'cancelled'] as const) {
+      await notifyDevotee(event, { bookingId: 'bk-1', devoteeUserId: 'u-1' });
+    }
+    expect(sendEmailMock).toHaveBeenCalledTimes(2);
   });
 });
 
