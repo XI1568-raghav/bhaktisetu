@@ -400,6 +400,14 @@ export type ProofInspection =
  * takes any bytes, so the size/type promised at presign time is re-checked on
  * the stored object before the key is accepted as proof.
  */
+/** MP4/MOV/3GP (`ftyp` box), WebM/MKV (EBML magic) or AVI (RIFF....AVI). */
+export function looksLikeVideoContainer(b: Uint8Array): boolean {
+  if (b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) return true;
+  if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return true;
+  const t = (i: number, w: string) => [...w].every((c, k) => b[i + k] === c.charCodeAt(0));
+  return b.length >= 12 && t(0, 'RIFF') && t(8, 'AVI ');
+}
+
 export async function inspectProofObject(key: string): Promise<ProofInspection> {
   const url = await signProofRead(key, 60);
   if (!url) {
@@ -414,6 +422,10 @@ export async function inspectProofObject(key: string): Promise<ProofInspection> 
     if (!Number.isFinite(len) || len < MIN_VIDEO_BYTES) return { ok: false, reason: 'empty' };
     if (len > videoMaxBytes()) return { ok: false, reason: 'too_large' };
     if (!(res.headers.get('content-type') ?? '').toLowerCase().startsWith('video/')) return { ok: false, reason: 'not_video' };
+    // The declared type is client-controlled: read the first bytes and check a real container header.
+    const head = await fetch(url, { headers: { Range: 'bytes=0-15' }, signal: AbortSignal.timeout(5000) });
+    if (!head.ok) return { ok: false, reason: head.status >= 500 ? 'unreachable' : 'missing' };
+    if (!looksLikeVideoContainer(new Uint8Array(await head.arrayBuffer()).subarray(0, 16))) return { ok: false, reason: 'not_video' };
     return { ok: true, bytes: len };
   } catch {
     return { ok: false, reason: 'unreachable' };
