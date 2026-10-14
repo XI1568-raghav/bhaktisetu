@@ -173,6 +173,7 @@ describe('COM-02 — the 80G assertion is derived from the donee data, never ass
       ...BASE,
       gaushala80GNumber: 'AAATS1234QF20214',
       gaushalaPan: 'AAATS1234Q',
+      companyHas80G: true,
     });
     expect(eligible).toContain('80G Income Tax Exemption');
   });
