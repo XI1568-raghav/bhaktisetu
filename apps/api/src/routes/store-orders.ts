@@ -170,8 +170,13 @@ function serializeOrder(order: any, productNameMap?: Map<string, string>) {
     (sum: number, it: any) => sum + Number(it.priceAtPurchase ?? 0) * Number(it.quantity ?? 0),
     0,
   );
+  const { payment: paymentRow, ...orderRest } = order;
+  // Lets the order list say whether money was actually taken (a COD or unpaid
+  // order must not read "Total paid"). null = no payment on file.
+  const paymentStatus: string | null = paymentRow?.status ?? (order.paymentId ? 'unknown' : null);
   return {
-    ...order,
+    ...orderRest,
+    paymentStatus,
     items,
     customerName,
     totalAmount,
@@ -399,7 +404,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       where,
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { user: { select: { fullName: true } } },
+      include: { user: { select: { fullName: true } }, payment: { select: { status: true } } },
     });
     // Build a product-name map for the items in this result set.
     const productIds = new Set<string>();
@@ -577,7 +582,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       refundStatus: result.paid && result.outcome === 'cancelled' ? 'pending_admin_approval' : 'none',
       commissionReversed: result.commissionReversed,
       note: result.paid && result.outcome === 'cancelled'
-        ? 'Order cancelled. Your refund will be processed within 5-7 business days.'
+        ? 'Order cancelled. Your refund request has been sent to our team for approval; it is not refunded instantly.'
         : 'Order cancelled.',
     });
   });
