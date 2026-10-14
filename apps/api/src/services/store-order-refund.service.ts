@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
-import { sendEmail } from '../lib/email.js';
+import { sendEmail, orderCancelledEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
 import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { appendRefundId, callRazorpayRefund } from './refund.service.js';
@@ -183,6 +183,22 @@ export async function customerCancelStoreOrder(opts: {
       metadata: { rail: 'store-cancel', reversed },
     });
   }
+  // Slice L: tell the customer (best effort, html-escaped template, no internal ids).
+  void (async () => {
+    const u = await prisma.user.findUnique({
+      where: { id: order.userId },
+      select: { email: true, fullName: true },
+    });
+    if (!u?.email) return;
+    await sendEmail({
+      to: u.email,
+      ...orderCancelledEmail({
+        customerName: u.fullName ?? 'Devotee',
+        orderNumber: order.orderNumber,
+        refundOwedInr: paid ? total : 0,
+      }),
+    });
+  })().catch(() => undefined);
   return {
     outcome: 'cancelled',
     status: 'CANCELLED',

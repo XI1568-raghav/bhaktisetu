@@ -1,5 +1,7 @@
 'use client';
 
+import { formatTime } from '../../../lib/format-time-slot';
+import ProofLink from '../../../components/provider/ProofLink';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter, usePathname } from 'next/navigation';
@@ -89,12 +91,6 @@ function formatDate(dateStr: string): string {
  });
 }
 
-function formatTime(time: string): string {
- const parts = (time.match(/^\d{1,2}:\d{2}/)?.[0] ?? time).split(':').map(Number); // tolerate ranges like "06:00-08:00"
- const h = parts[0] ?? 0;
- const m = parts[1] ?? 0;
- return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
-}
 
 function getStatusConfig(status: string) {
  const map: Record<string, { label: string; cls: string }> = {
@@ -405,15 +401,10 @@ function PriestBookingsInner() {
  return (
  <div className="flex flex-col items-end gap-1.5">
  {booking.videoProofUrl && (
- <a
- href={booking.videoProofUrl}
- target="_blank"
- rel="noopener noreferrer"
- className="inline-flex items-center gap-1 text-xs font-medium text-saffron-600 hover:text-saffron-700"
- >
+ <ProofLink bookingId={booking.id} stored={booking.videoProofUrl} token={session?.accessToken} className="inline-flex items-center gap-1 text-xs font-medium text-saffron-600 hover:text-saffron-700">
  <Video className="w-3.5 h-3.5" />
  Check proof
- </a>
+ </ProofLink>
  )}
  <button
  onClick={(e) => { e.preventDefault(); handleDeliver(booking.id); }}

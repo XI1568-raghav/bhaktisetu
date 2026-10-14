@@ -37,6 +37,8 @@ export function isPlayableVideoUrl(url: string | null | undefined): boolean {
   if (typeof url !== 'string') return false;
   const trimmed = url.trim();
   if (trimmed.length === 0) return false;
+  // A private proof key: opened through a signed URL the API mints on demand.
+  if (/^booking-proofs\//.test(trimmed)) return true;
   try {
     const parsed = new URL(trimmed);
     return parsed.protocol === 'http:' || parsed.protocol === 'https:';

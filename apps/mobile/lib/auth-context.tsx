@@ -11,6 +11,7 @@ import { setCurrentLanguage } from './language';
 import { api, ApiClientError, type AuthSession, type AuthUser, type UserRole } from '@poojly/api-client';
 import { toApiSignupRole } from './signup-contract';
 import { refreshSessionOnce } from './session-refresh';
+import { setSuspendedNotice } from './suspended';
 import { authFailureMessage } from './auth-errors';
 
 // ─── Demo accounts (mirror of apps/web/lib/auth-context.tsx) ─────────────────
@@ -220,6 +221,19 @@ export function setOnAuthExpired(fn: (() => void) | null): void {
   handleAuthExpired = fn;
 }
 
+let handleSuspendedCall: ((message: string) => Promise<void>) | null = null;
+let suspendedInProgress = false;
+
+/** api-client onSuspended hook: any call refused for a blocked account signs out WITH the reason. */
+export function onSuspendedMobile(message: string): void {
+  const fn = handleSuspendedCall;
+  if (!fn || suspendedInProgress) return;
+  suspendedInProgress = true;
+  void fn(message).finally(() => {
+    suspendedInProgress = false;
+  });
+}
+
 let authExpiredInProgress: Promise<void> | null = null;
 
 /**
@@ -348,6 +362,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(storedUser);
             await persistSession(outcome.session, storedUser);
           } else if (outcome.kind === 'rejected') {
+            if (outcome.suspendedMessage) setSuspendedNotice(outcome.suspendedMessage);
             await persistSession(null, null);
           } else {
             // Offline or the auth provider is down: keep the user signed in;
@@ -553,11 +568,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(outcome.session);
         await storeJson(STORAGE_KEYS.SESSION, outcome.session);
       } else if (outcome.kind === 'rejected') {
+        if (outcome.suspendedMessage) setSuspendedNotice(outcome.suspendedMessage);
         await signOut();
       }
     });
+    handleSuspendedCall = async (message: string) => {
+      setSuspendedNotice(message);
+      await signOut();
+    };
     return () => {
       setOnAuthExpired(null);
+      handleSuspendedCall = null;
     };
   }, [signOut]);
 

@@ -42,7 +42,7 @@ describe('POST /signup — confirmation redirect', () => {
     const app = await makeApp();
     const res = await app.inject({ method: 'POST', url: '/api/v1/auth/signup', payload });
     expect(res.statusCode).toBe(201);
-    expect(sb.signUp.mock.calls[0][0].options).toEqual({
+    expect(sb.signUp.mock.calls[0]![0].options).toEqual({
       emailRedirectTo: 'https://web.example/auth/callback',
       data: { full_name: 'M Repair' },
     });

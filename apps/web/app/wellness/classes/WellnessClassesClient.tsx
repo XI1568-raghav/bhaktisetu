@@ -206,7 +206,7 @@ export default function WellnessClassesClient() {
                       <Clock className="w-3 h-3" /> {c.durationMinutes} min
                     </span>
                     <span className="flex items-center gap-1">
-                      <Users className="w-3 h-3" /> {c.capacity} seats
+                      <Users className="w-3 h-3" /> {c.capacity} {c.capacity === 1 ? "seat" : "seats"}
                     </span>
                   </div>
 

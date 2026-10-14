@@ -76,3 +76,32 @@ describe('POST /onboarding/provider — pandit payload', () => {
     expect(res.statusCode).toBe(200);
   });
 });
+
+describe('POST /onboarding/provider — inspect at attach', () => {
+  it('refuses an empty / mislabelled KYC document and an unreachable store', async () => {
+    vi.clearAllMocks();
+    const inspect = await import('../lib/upload-inspect.js');
+    const spy = vi.spyOn(inspect, 'inspectPrivateDocument');
+    const base = { templeName: null, experience: 1, specialties: [], languages: [], city: 'X', state: null, bio: null, pricePerPuja: 500 };
+    const key = 'kyc-document/user-uuid-1/1-abc.pdf';
+
+    spy.mockResolvedValueOnce({ ok: false, reason: 'empty' });
+    let res = await post({ ...base, aadhaarDocKey: key });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error).toMatch(/empty/);
+
+    spy.mockResolvedValueOnce({ ok: false, reason: 'wrong_type' });
+    res = await post({ ...base, aadhaarDocKey: key });
+    expect(res.statusCode).toBe(400);
+
+    spy.mockResolvedValueOnce({ ok: false, reason: 'unreachable' });
+    res = await post({ ...base, aadhaarDocKey: key });
+    expect(res.statusCode).toBe(503);
+    expect(upsertProviderProfile).not.toHaveBeenCalled();
+
+    spy.mockResolvedValueOnce({ ok: true });
+    res = await post({ ...base, aadhaarDocKey: key });
+    expect(res.statusCode).toBe(200);
+    spy.mockRestore();
+  });
+});

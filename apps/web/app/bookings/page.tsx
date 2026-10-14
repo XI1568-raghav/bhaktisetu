@@ -172,6 +172,12 @@ function isUpcoming(booking: BookingListItem): boolean {
  );
 }
 
+/** Cancellation closes 24h before the slot (the detail page and API enforce the same). */
+function insideCancelWindow(booking: BookingListItem): boolean {
+ const t = new Date(`${booking.scheduledDate}T${booking.scheduledTime}`).getTime();
+ return Number.isFinite(t) && t - Date.now() <= 24 * 60 * 60 * 1000;
+}
+
 /** Rows per page. Mirrors the API's default so page 1 costs one round trip. */
 const PAGE_SIZE = 20;
 
@@ -578,7 +584,13 @@ function BookingsContent() {
  </span>
  )}
 
- {canCancel && (
+ {canCancel && insideCancelWindow(booking) && (
+ <span className="text-xs text-surface-500">
+  Can no longer be cancelled (within 24 hours of the scheduled time).
+ </span>
+ )}
+
+ {canCancel && !insideCancelWindow(booking) && (
  <button
   onClick={() => handleCancel(booking.id)}
   disabled={cancellingId === booking.id}

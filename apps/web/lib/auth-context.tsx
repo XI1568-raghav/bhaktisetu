@@ -19,6 +19,7 @@ import {
  authHttpErrorMessage,
 } from './api-config';
 import { hasStoredProfile, reviveSessionFromCookieResult } from './session-revive';
+import { SUSPENDED_EVENT, isSuspendedBody, suspendedLoginHref, suspensionReason } from './suspended-notice';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 

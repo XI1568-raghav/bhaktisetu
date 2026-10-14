@@ -222,7 +222,7 @@ function MyClassesList() {
                       </Link>
                     )}
                   </div>
-                  {e.session.status !== 'CANCELLED' ? (
+                  {e.session.status !== 'CANCELLED' && e.session.status !== 'COMPLETED' && new Date(e.session.scheduledAt).getTime() > Date.now() ? (
                     <CancelEnrolment
                       token={token}
                       enrollmentId={e.id}

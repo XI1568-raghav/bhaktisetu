@@ -1,4 +1,5 @@
 'use client';
+import { formatTime } from '../../lib/format-time-slot';
 import MyProviderProfileCard from '../../components/MyProviderProfileCard';
 import { H1 } from '../../components/ui/heading-recipe';
 
@@ -111,13 +112,6 @@ function formatDate(dateStr: string): string {
  });
 }
 
-function formatTime(time: string): string {
- const parts = (time.match(/^\d{1,2}:\d{2}/)?.[0] ?? time).split(':').map(Number); // tolerate ranges like "06:00-08:00"
- const h = parts[0] ?? 0;
- const m = parts[1] ?? 0;
- const ampm = h >= 12 ? 'PM' : 'AM';
- return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
-}
 
 function getStatusBadge(status: string) {
  const map: Record<string, { label: string; cls: string }> = {

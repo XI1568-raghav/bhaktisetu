@@ -22,7 +22,9 @@ const storage = vi.hoisted(() => ({
 
 vi.mock('../lib/r2.js', () => ({
   r2: { enabled: true, backend: 'supabase' as const, bucket: 'darshya-media', publicBaseUrl: null },
-  presignR2Upload: storage.presign,
+  presignProofUpload: storage.presign,
+  inspectProofObject: vi.fn(),
+  inspectOwnVideoUrl: vi.fn(async () => ({ ok: true })),
 }));
 
 vi.mock('../lib/supabase.js', () => ({

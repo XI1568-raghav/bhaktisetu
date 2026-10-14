@@ -8,6 +8,7 @@ import {
   AuthProvider,
   getStoredAccessToken,
   onUnauthorisedMobile,
+  onSuspendedMobile,
   useAuth,
 } from '../lib/auth-context';
 import { initSentryMobile } from '../lib/sentry';
@@ -72,6 +73,7 @@ initApiClient({
   // ref in lib/auth-context (single-flight latch) so the provider's signOut is
   // invoked once even under concurrent 401s.
   onUnauthorised: onUnauthorisedMobile,
+  onSuspended: onSuspendedMobile,
 });
 
 export default function RootLayout() {

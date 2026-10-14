@@ -663,3 +663,93 @@ export function payoutSettledEmail(params: {
     text: `Namaste ${providerName}, your payout of ${amount} could not be completed.\n${reasonText}\nYour balance is intact and available to withdraw again.\n\nhttps://darshya.online/payouts`,
   };
 }
+
+/**
+ * Slice L: cancellation / assignment emails to the devotee. Every interpolated value is
+ * html-escaped; bodies carry only user-facing references (booking number, order number,
+ * consultation reference), never row ids or secrets.
+ */
+export function bookingCancelledEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  bookingNumber: string;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, bookingNumber } = params;
+  return {
+    subject: `Booking cancelled: ${pujaName} (${bookingNumber})`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your booking was cancelled</h1>
+      <p><strong>Puja:</strong> ${esc(pujaName)}<br>
+      <strong>Temple:</strong> ${esc(templeName)}<br>
+      <strong>Booking:</strong> ${esc(bookingNumber)}</p>
+      <p>If a payment was taken and a refund applies, you will get a separate email when it is processed (${REFUND_DAYS_LABEL}).</p>
+      <a class="btn" href="https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}">View booking</a>
+    `),
+    text: `Namaste ${devoteeName}, your booking ${bookingNumber} (${pujaName} at ${templeName}) was cancelled.\nIf a refund applies you will get a separate email when it is processed (${REFUND_DAYS_LABEL}).`,
+  };
+}
+
+export function panditAssignedEmail(params: {
+  devoteeName: string;
+  pujaName: string;
+  templeName: string;
+  bookingNumber: string;
+  priestName?: string | null;
+  scheduledDate?: string | null;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, pujaName, templeName, bookingNumber, priestName, scheduledDate } = params;
+  const who = priestName || 'A pandit';
+  return {
+    subject: `${who} will perform your ${pujaName}`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your pandit is confirmed</h1>
+      <p><strong>${esc(who)}</strong> will perform your <strong>${esc(pujaName)}</strong> at ${esc(templeName)}${scheduledDate ? ` on ${esc(scheduledDate)}` : ''}.</p>
+      <p><strong>Booking:</strong> ${esc(bookingNumber)}</p>
+      <p>You will receive the video proof by email and in your booking page once it is ready.</p>
+      <a class="btn" href="https://darshya.online/bookings/${encodeURIComponent(bookingNumber)}">View booking</a>
+    `),
+    text: `Namaste ${devoteeName}, ${who} will perform your ${pujaName} at ${templeName}${scheduledDate ? ` on ${scheduledDate}` : ''}. Booking ${bookingNumber}.`,
+  };
+}
+
+export function orderCancelledEmail(params: {
+  customerName: string;
+  orderNumber: string;
+  refundOwedInr?: number;
+}): { subject: string; html: string; text: string } {
+  const { customerName, orderNumber, refundOwedInr } = params;
+  const line = refundOwedInr && refundOwedInr > 0
+    ? `Your payment of Rs ${refundOwedInr} will be refunded to your original payment method (${REFUND_DAYS_LABEL}) once it is approved.`
+    : 'Nothing was charged for this order.';
+  return {
+    subject: `Order cancelled: ${orderNumber}`,
+    html: shell(`
+      <h1>Namaste ${esc(customerName)}, your order was cancelled</h1>
+      <p><strong>Order:</strong> ${esc(orderNumber)}</p>
+      <p>${esc(line)}</p>
+    `),
+    text: `Namaste ${customerName}, your order ${orderNumber} was cancelled. ${line}`,
+  };
+}
+
+export function consultationCancelledEmail(params: {
+  devoteeName: string;
+  reference: string;
+  astrologerName?: string | null;
+  refundEligible: boolean;
+}): { subject: string; html: string; text: string } {
+  const { devoteeName, reference, astrologerName, refundEligible } = params;
+  const line = refundEligible
+    ? `A full refund is on its way to your original payment method (${REFUND_DAYS_LABEL}).`
+    : 'This cancellation was inside the 24-hour window, so no refund applies.';
+  return {
+    subject: `Consultation cancelled: ${reference}`,
+    html: shell(`
+      <h1>Namaste ${esc(devoteeName)}, your consultation was cancelled</h1>
+      <p><strong>Reference:</strong> ${esc(reference)}${astrologerName ? `<br><strong>Astrologer:</strong> ${esc(astrologerName)}` : ''}</p>
+      <p>${esc(line)}</p>
+    `),
+    text: `Namaste ${devoteeName}, your consultation ${reference} was cancelled. ${line}`,
+  };
+}

@@ -128,6 +128,7 @@ import { errorLocalizationPlugin } from './plugins/error-localization.js';
 import { localizeImages } from './lib/self-hosted-images.js';
 import { wrapRouteGuards } from './lib/stop-when-answered.js';
 import { registerNulByteGuard } from './lib/nul-guard.js';
+import { registerTolerantJsonParser } from './lib/json-body.js';
 
 const server = Fastify({
   logger: {
@@ -344,6 +345,8 @@ async function bootstrap() {
     encoding: 'utf8',
     runFirst: true,
   });
+
+  registerTolerantJsonParser(server);
 
   // Register auth decorators (must be before routes)
   await registerAuthDecorators(server);

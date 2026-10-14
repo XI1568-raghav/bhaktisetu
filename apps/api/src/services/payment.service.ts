@@ -2040,6 +2040,31 @@ export class PaymentService {
               method: paymentEntity.method ?? null,
             },
           });
+        } else {
+          // Slice L: no Payment row owns this order (donation / consultation / wellness rails
+          // write none) - the failure used to leave no trace at all.
+          const subjectId = paymentEntity.order_id ?? paymentEntity.id;
+          if (subjectId) {
+            void recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_FAILED,
+              actorType: 'gateway',
+              subjectType: 'payment',
+              subjectId,
+              amount: paymentEntity.amount != null ? Number(paymentEntity.amount) / 100 : null,
+              currency: paymentEntity.currency ?? 'INR',
+              gateway: 'razorpay',
+              gatewayOrderId: paymentEntity.order_id ?? null,
+              gatewayPaymentId: paymentEntity.id,
+              statusAfter: 'failed',
+              idempotencyKey: paymentEntity.id,
+              note: paymentEntity.error_description ?? `razorpay webhook ${event} (no payment row)`,
+              metadata: {
+                rail: 'webhook-failed-no-payment-row',
+                failureCode: paymentEntity.error_code ?? null,
+                method: paymentEntity.method ?? null,
+              },
+            });
+          }
         }
 
         return { handled: true, event };

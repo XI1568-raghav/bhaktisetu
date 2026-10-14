@@ -40,6 +40,8 @@ import {
   bookingConfirmationEmail,
   videoReadyEmail,
   refundProcessedEmail,
+  bookingCancelledEmail,
+  panditAssignedEmail,
 } from '../lib/email.js';
 import { parseSlotMinutes } from '../lib/slot-time.js';
 import { REFUND_DAYS_LABEL } from '../lib/refund-timing.js';
@@ -374,8 +376,48 @@ async function emailLegFor(
           amount: formatInr(ctx.amountInr),
         }),
       );
+    case 'cancelled':
+    case 'assigned': {
+      // Slice L: neither had an email leg. The callers' selects often omit User.email
+      // (bookings route cancel, dispatch), so re-read it by booking id.
+      const withEmail = ctx.devoteeEmail ? ctx : await ctxWithEmail(ctx);
+      if (event === 'cancelled') {
+        return sendCtxEmail(
+          withEmail,
+          bookingCancelledEmail({
+            devoteeName: withEmail.devoteeName ?? 'Devotee',
+            pujaName: withEmail.pujaName ?? 'Puja',
+            templeName: withEmail.templeName ?? 'Darshya',
+            bookingNumber: withEmail.bookingNumber ?? 'your booking',
+          }),
+        );
+      }
+      return sendCtxEmail(
+        withEmail,
+        panditAssignedEmail({
+          devoteeName: withEmail.devoteeName ?? 'Devotee',
+          pujaName: withEmail.pujaName ?? 'Puja',
+          templeName: withEmail.templeName ?? 'Darshya',
+          bookingNumber: withEmail.bookingNumber ?? 'your booking',
+          priestName: withEmail.priestName,
+          scheduledDate: withEmail.scheduledDate,
+        }),
+      );
+    }
     default:
       return 'no-target';
+  }
+}
+
+async function ctxWithEmail(ctx: BookingCtx): Promise<BookingCtx> {
+  try {
+    const b = await prisma.pujaBooking.findUnique({
+      where: { id: ctx.bookingId },
+      select: { user: { select: { email: true, fullName: true } } },
+    });
+    return { ...ctx, devoteeEmail: b?.user?.email ?? null, devoteeName: ctx.devoteeName ?? b?.user?.fullName ?? null };
+  } catch {
+    return ctx;
   }
 }
 

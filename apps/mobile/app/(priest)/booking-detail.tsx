@@ -582,7 +582,22 @@ export default function PriestBookingDetail() {
                     <TouchableOpacity
                       style={styles.linkBtn}
                       onPress={() => {
-                        void Linking.openURL(booking.videoProofUrl!);
+                        // Private proofs are stored as object keys; ask the API for a
+                        // short-lived signed URL. Legacy http(s) links open as-is.
+                        void (async () => {
+                          const stored = booking.videoProofUrl!;
+                          if (/^https?:\/\//i.test(stored)) return Linking.openURL(stored);
+                          try {
+                            const r = await authedFetch(`${apiBase()}/api/v1/bookings/${booking.id}/video`, {
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            const j = (await r.json()) as { videoUrl?: string | null };
+                            if (r.ok && j.videoUrl) await Linking.openURL(j.videoUrl);
+                            else Alert.alert('Video unavailable', 'The video could not be loaded right now. Please try again.');
+                          } catch {
+                            Alert.alert('Video unavailable', 'The video could not be loaded right now. Please try again.');
+                          }
+                        })();
                       }}
                       accessibilityRole="link"
                     >

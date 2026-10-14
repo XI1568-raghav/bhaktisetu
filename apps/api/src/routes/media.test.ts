@@ -90,10 +90,20 @@ describe('media upload-url — content-type allowlist + kind sanitization (P1-5)
     expect(call?.key.includes('..')).toBe(false);
   });
 
-  it('caps video uploads at 200MB and allows video/mp4 for puja-proof', async () => {
+  it('video proof is not mintable here (private, booking-bound route only)', async () => {
     const res = await inject({ kind: 'puja-proof', contentType: 'video/mp4' });
-    expect(res.statusCode).toBe(200);
-    expect(res.json().maxSizeMb).toBe(200);
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('advertises the shared video limit (50 MB default, VIDEO_MAX_MB override)', async () => {
+    const res = await inject({ kind: 'audio', contentType: 'video/mp4' });
+    expect(res.json().maxSizeMb).toBe(50);
+    process.env.VIDEO_MAX_MB = '120';
+    try {
+      expect((await inject({ kind: 'audio', contentType: 'video/webm' })).json().maxSizeMb).toBe(120);
+    } finally {
+      delete process.env.VIDEO_MAX_MB;
+    }
   });
 
   it('derives a safe extension even when the client sends a malicious ext', async () => {

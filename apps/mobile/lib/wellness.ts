@@ -492,3 +492,81 @@ export function wellnessPaymentUrl(sessionId: string, webOrigin: string): string
   )}?utm_source=mobile-app&utm_medium=wellness-enrolment`;
   return `${webOrigin.replace(/\/+$/, '')}/auth/login?redirect=${encodeURIComponent(target)}`;
 }
+
+// ─── Cancelling an enrolment ────────────────────────────────────────────────
+// The API (POST /wellness/enrollments/:id/cancel) is the authority. This only
+// previews its ladder for the confirm prompt: 48h+ full, 24-48h 75%, inside 24h
+// refused (409 cancellation_window_closed). The real tier and amount are read
+// from the response afterwards.
+
+export type EnrolmentCancelPreview =
+  | { kind: 'release'; message: string }
+  | { kind: 'refund'; amountInr: number; message: string }
+  | { kind: 'blocked'; message: string }
+  | { kind: 'none' };
+
+export function canCancelEnrolment(status: EnrolmentStatus): boolean {
+  return status === 'PAID' || status === 'PENDING_PAYMENT';
+}
+
+export function previewEnrolmentCancel(opts: {
+  status: EnrolmentStatus;
+  priceInr: number | null;
+  scheduledAt: string | undefined;
+  now?: Date;
+}): EnrolmentCancelPreview {
+  if (opts.status === 'PENDING_PAYMENT') {
+    return { kind: 'release', message: 'You have not paid, so nothing is charged. Your seat is released.' };
+  }
+  if (opts.status !== 'PAID') return { kind: 'none' };
+  const price = opts.priceInr ?? 0;
+  if (!(price > 0)) {
+    return { kind: 'release', message: 'This class is free, so there is nothing to refund. Your seat is released.' };
+  }
+  const hours = (new Date(opts.scheduledAt ?? '').getTime() - (opts.now ?? new Date()).getTime()) / 3_600_000;
+  if (!Number.isFinite(hours) || hours < 24) {
+    return {
+      kind: 'blocked',
+      message: 'Paid classes can be cancelled up to 24 hours before they start. This one starts too soon.',
+    };
+  }
+  const fraction = hours >= 48 ? 1 : 0.75;
+  const amountInr = Math.round(price * fraction * 100) / 100;
+  return {
+    kind: 'refund',
+    amountInr,
+    message:
+      fraction === 1
+        ? `You will get a full refund of Rs ${amountInr}.`
+        : `You will get a 75% refund of Rs ${amountInr} (cancelling 24-48 hours before the class).`,
+  };
+}
+
+/** Outcome sentence from the cancel response, using the API's own figures. */
+export function describeCancelOutcome(statusCode: number, body: unknown): { ok: boolean; message: string } {
+  const b = (body && typeof body === 'object' ? body : {}) as {
+    cancelled?: boolean;
+    alreadyCancelled?: boolean;
+    refundOwedInr?: number;
+    tierLabel?: string;
+    code?: string;
+    error?: string;
+  };
+  if (statusCode >= 200 && statusCode < 300) {
+    if (b.alreadyCancelled) return { ok: true, message: 'This enrolment was already cancelled.' };
+    const owed = Number(b.refundOwedInr ?? 0);
+    return {
+      ok: true,
+      message:
+        owed > 0
+          ? `Enrolment cancelled. Refund of Rs ${owed} will be processed in 5-7 business days. Tier: ${b.tierLabel ?? 'per policy'}.`
+          : 'Enrolment cancelled. Nothing was charged, so there is no refund.',
+    };
+  }
+  if (statusCode === 409 && b.code === 'cancellation_window_closed') {
+    return { ok: false, message: 'This class starts in less than 24 hours, so it can no longer be cancelled and no refund is due.' };
+  }
+  if (statusCode === 409 && b.error) return { ok: false, message: b.error };
+  if (statusCode === 403) return { ok: false, message: 'You can only cancel your own enrolment.' };
+  return { ok: false, message: 'We could not cancel this enrolment just now. Please try again.' };
+}
