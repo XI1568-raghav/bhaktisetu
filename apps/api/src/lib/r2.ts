@@ -35,9 +35,13 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
 const R2_BUCKET = process.env.R2_BUCKET ?? 'darshya-media';
 const R2_PUBLIC_BASE = process.env.R2_PUBLIC_BASE;
 
-// Optional second R2 bucket for private objects (booking video proof). Without it
-// proofs share R2_BUCKET and are exactly as private as that bucket is.
-const R2_PRIVATE_BUCKET = process.env.R2_PRIVATE_BUCKET ?? R2_BUCKET;
+// Second R2 bucket for private objects (booking video proof). REQUIRED when R2 is
+// the backend: R2_BUCKET is the public media bucket, so proofs must never be
+// written there. Signing an upload refuses (PROOF_BUCKET_UNCONFIGURED) while this
+// is unset. Reads/deletes of existing keys still fall back to R2_BUCKET so proofs
+// stored before the variable was set stay reachable (signed GET only).
+const R2_PRIVATE_BUCKET_ENV = process.env.R2_PRIVATE_BUCKET?.trim() || undefined;
+const R2_PRIVATE_BUCKET = R2_PRIVATE_BUCKET_ENV ?? R2_BUCKET;
 
 const r2Enabled = Boolean(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY);
 
@@ -124,6 +128,9 @@ function ensureMediaBucketPolicy(): Promise<void> {
   })();
   return mediaBucketPolicy;
 }
+
+export const PROOF_BUCKET_UNCONFIGURED = 'PROOF_BUCKET_UNCONFIGURED';
+let proofBucketWarned = false;
 
 const r2Client = r2Enabled
   ? new S3Client({
@@ -348,10 +355,17 @@ export async function presignProofUpload(params: {
 }): Promise<{ uploadUrl: string; backend: 'r2' | 'supabase' } | null> {
   const expiresIn = params.expiresInSec ?? 300;
   if (r2Enabled && r2Client) {
+    if (!R2_PRIVATE_BUCKET_ENV) {
+      if (!proofBucketWarned) {
+        proofBucketWarned = true;
+        console.error('[storage] R2 is enabled but R2_PRIVATE_BUCKET is unset: refusing booking-proof uploads rather than writing to the public media bucket.');
+      }
+      throw Object.assign(new Error('R2_PRIVATE_BUCKET is not set'), { code: PROOF_BUCKET_UNCONFIGURED });
+    }
     try {
       const uploadUrl = await getSignedUrl(
         r2Client,
-        new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET, Key: params.key, ContentType: params.contentType }),
+        new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_ENV, Key: params.key, ContentType: params.contentType }),
         { expiresIn },
       );
       return { uploadUrl, backend: 'r2' };

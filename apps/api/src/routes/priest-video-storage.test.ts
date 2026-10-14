@@ -136,3 +136,15 @@ describe('PF-05 — video-proof presign answers 503 when storage is not really c
     expect(res.json().uploadUrl).toBe('https://storage.test/put');
   });
 });
+
+describe('R2 without R2_PRIVATE_BUCKET', () => {
+  it('answers 503 with an actionable message', async () => {
+    storage.demoMode = false;
+    storage.presign.mockImplementation(() => {
+      throw Object.assign(new Error('R2_PRIVATE_BUCKET is not set'), { code: 'PROOF_BUCKET_UNCONFIGURED' });
+    });
+    const res = await signedUrl();
+    expect(res.statusCode).toBe(503);
+    expect(res.json().message).toMatch(/R2_PRIVATE_BUCKET/);
+  });
+});

@@ -19,6 +19,8 @@ Adding a new integration? Match this contract.
 | `MAGIC_LINK_SECRET` | `routes/magic-link.ts` | required for HMAC; falls back to dev secret with warning |
 | `RESEND_API_KEY` | `lib/email.ts` | `sendEmail` returns `{skipped:true}`; magic-link route returns `devLink` for manual testing |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | `routes/donations.ts` + booking | `isDemoPayment=true`; signature verification skipped, demo orderId returned |
+| `R2_BUCKET` | `lib/r2.ts` | R2 public media bucket; defaults `darshya-media`. Never used for booking proofs. |
+| `R2_PRIVATE_BUCKET` | `lib/r2.ts` (booking video proof) | **Required when R2 is enabled** (`R2_ACCOUNT_ID`+`R2_ACCESS_KEY_ID`+`R2_SECRET_ACCESS_KEY`). Unset => `POST /priest/bookings/:id/video-proof/signed-url` answers 503 "Video proof storage is not configured" (logged once) instead of writing proofs to the public `R2_BUCKET`. Reads/deletes of existing proof keys still fall back to `R2_BUCKET` (signed GET only) so older proofs stay reachable. Supabase-storage mode (no R2 vars) is unaffected: it uses its own private `STORAGE_PROOF_BUCKET` (`booking-proofs-private`). |
 | `STORAGE_BUCKET` | `lib/r2.ts` (Supabase Storage adapter) | defaults to `darshya-media` if unset; bucket must exist in Supabase Storage |
 | `GROQ_API_KEY` | `services/ai.service.ts` + `routes/voice-pandit.ts` (STT via Groq Whisper + LLM via Groq Llama) | AI endpoints unavailable; voice-pandit returns demo reply. **Note**: Whisper is hosted by Groq (NOT OpenAI) — `whisper-large-v3-turbo` runs on Groq's inference, single `GROQ_API_KEY` covers both STT and LLM. |
 | `ELEVENLABS_API_KEY` | `routes/voice-pandit.ts` (R-Q3-E-001 TTS) | voice-pandit returns transcript + reply text but empty audio (`demo:true`) |
