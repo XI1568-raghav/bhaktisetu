@@ -67,6 +67,7 @@ interface StoreOrder {
   deliveryFeeInr?: number;
   trackingNumber?: string | null;
   paymentId?: string | null;
+  paymentStatus?: string | null;
   statusHistory?: OrderHistoryEntry[];
   items: OrderItem[];
 }
@@ -83,6 +84,15 @@ const STATUS_META: Record<
   CANCELLED: { label: 'Cancelled', icon: XCircle, className: 'bg-red-50 text-red-700' },
   REFUNDED: { label: 'Refunded', icon: RotateCcw, className: 'bg-surface-100 text-surface-600' },
 };
+
+function totalLabel(o: { paymentStatus?: string | null; status: string }): string {
+  const ps = o.paymentStatus;
+  if (ps === 'captured' || ps === 'partially_refunded') return 'Total paid';
+  if (ps === 'refunded') return 'Total (refunded)';
+  if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return 'Total';
+  if (ps == null) return 'Total (not paid online)';
+  return 'Total (payment pending)';
+}
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -304,7 +314,7 @@ function StoreOrdersInner() {
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-surface-800 pt-1">
-                      <span>Total paid</span>
+                      <span data-testid="order-total-label">{totalLabel(order)}</span>
                       <span>{formatPrice(order.totalAmount)}</span>
                     </div>
                   </div>
