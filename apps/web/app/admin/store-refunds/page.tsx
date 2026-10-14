@@ -9,13 +9,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertTriangle, CheckCircle2, Loader2, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
+import { userFacingMessage } from '../../../lib/friendly-error';
 import { H1 } from '../../../components/ui/heading-recipe';
 import {
   approveStoreRefund,
   listPendingStoreRefunds,
   refundableAmount,
   rejectStoreRefund,
-  StoreRefundApiError,
   validateRejectReason,
   type PendingStoreRefund,
 } from '../../../lib/admin-store-refunds';
@@ -49,7 +49,7 @@ export default function AdminStoreRefundsPage() {
       setRows(await listPendingStoreRefunds(token));
     } catch (err) {
       setRows([]);
-      setLoadError(err instanceof Error ? err.message : 'Could not load the refund queue.');
+      setLoadError(userFacingMessage(err, 'Could not load the refund queue.'));
     } finally {
       setLoading(false);
     }
@@ -93,7 +93,7 @@ export default function AdminStoreRefundsPage() {
       setDialog(null);
       await load();
     } catch (err) {
-      setActionError(err instanceof StoreRefundApiError ? err.message : 'Something went wrong. Please try again.');
+      setActionError(userFacingMessage(err, 'Something went wrong. Please try again.'));
     } finally {
       inFlight.current = false;
       setBusy(false);

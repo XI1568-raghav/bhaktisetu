@@ -203,6 +203,7 @@ describe('AO-06 — the detail page actions hit the API and verify the write', (
     await renderDetail();
 
     fireEvent.click(screen.getByRole('button', { name: /^block$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /block account/i }));
 
     await waitFor(() => expect(screen.getByRole('status')).toBeTruthy());
     const patch = fetchMock.mock.calls.find(
@@ -220,6 +221,7 @@ describe('AO-06 — the detail page actions hit the API and verify the write', (
     await renderDetail();
 
     fireEvent.click(screen.getByRole('button', { name: /^block$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /block account/i }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.queryByRole('status')).toBeNull();

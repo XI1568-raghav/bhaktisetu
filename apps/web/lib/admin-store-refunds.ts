@@ -6,6 +6,7 @@
  */
 
 import { API_BASE_URL, fetchWithTimeout } from './api-config';
+import { UserFacingError } from './friendly-error';
 
 export const MIN_REJECT_REASON = 3;
 
@@ -19,13 +20,6 @@ export interface PendingStoreRefund {
   items: { name: string; quantity: number }[];
   payment?: { id: string; status: string; amount: string; refundAmount?: string | null } | null;
   statusHistory?: { status?: string; note?: string | null; changedAt?: string }[];
-}
-
-export class StoreRefundApiError extends Error {
-  constructor(message: string, readonly status: number, readonly code: string | null) {
-    super(message);
-    this.name = 'StoreRefundApiError';
-  }
 }
 
 export function validateRejectReason(reason: string): string | null {
@@ -66,7 +60,7 @@ export async function listPendingStoreRefunds(token: string | undefined): Promis
   const res = await fetchWithTimeout(`${API_BASE_URL}/store/orders/refunds/pending`, { headers: headers(token) });
   const body = await readBody(res);
   if (!res.ok) {
-    throw new StoreRefundApiError(String(body?.error ?? 'Could not load the refund queue.'), res.status, null);
+    throw new UserFacingError(String(body?.error ?? 'Could not load the refund queue.'), res.status);
   }
   return ((body?.data as PendingStoreRefund[]) ?? []) as PendingStoreRefund[];
 }
@@ -84,10 +78,9 @@ export async function approveStoreRefund(
   const body = await readBody(res);
   if (!res.ok) {
     const code = typeof body?.code === 'string' ? body.code : null;
-    throw new StoreRefundApiError(
+    throw new UserFacingError(
       describeApproveFailure(res.status, code, typeof body?.error === 'string' ? body.error : null),
       res.status,
-      code,
     );
   }
   const refund = (body?.refund ?? {}) as { amountInr?: number; skipped?: boolean };
@@ -102,10 +95,6 @@ export async function rejectStoreRefund(token: string | undefined, orderId: stri
   });
   const body = await readBody(res);
   if (!res.ok) {
-    throw new StoreRefundApiError(
-      String(body?.error ?? 'We could not record the rejection.'),
-      res.status,
-      typeof body?.code === 'string' ? body.code : null,
-    );
+    throw new UserFacingError(String(body?.error ?? 'We could not record the rejection.'), res.status);
   }
 }
