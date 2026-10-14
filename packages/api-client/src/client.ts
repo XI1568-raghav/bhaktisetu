@@ -38,6 +38,8 @@ export interface ApiClientConfig {
   defaultHeaders?: Record<string, string>;
   /** Called when a 401 is received (e.g., to trigger re-auth) */
   onUnauthorised?: () => void;
+  /** Called when the API refuses a blocked account (403 whose message says "suspended"). */
+  onSuspended?: (message: string) => void;
 }
 
 export interface RequestOptions<T = unknown> extends Omit<RequestInit, "body"> {
@@ -259,6 +261,14 @@ async function request<T>(
       // `{ error: "<sentence>" }` first and foremost. See error-shapes.ts for
       // the enumeration and the resolution order.
       const resolved = resolveApiErrorBody(data, response.status);
+
+      if (response.status === 403 && config.onSuspended && /suspended/i.test(resolved.message)) {
+        try {
+          config.onSuspended(resolved.message);
+        } catch {
+          /* a failing hook must not mask the 403 */
+        }
+      }
 
       const apiError: ApiError = {
         success: false,
