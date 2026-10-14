@@ -6,12 +6,13 @@ import { prisma } from './prisma.js';
  * WHY. `authenticateUser` verifies the HS256 signature in-process, so a token
  * that GoTrue has since signed out stays valid until its own `exp` (up to an
  * hour), and the 60 s auth cache keeps even a remote-verified one alive after a
- * logout, a password reset, a block or a deletion.
+ * logout, a block or a deletion.
  *
  * WHAT. One tiny table, `auth_token_revocations`, keyed (user_id, session_id):
  *   - session_id = ''            user-wide cutoff: every token with `iat` before
- *                                `valid_after` is dead (logout-all, password
- *                                reset, block, deletion, admin force-logout);
+ *                                `valid_after` is dead (logout-all, change-password,
+ *                                block, deletion, admin force-logout; a reset done in Supabase
+ *                                is not seen by the API, so it relies on token expiry);
  *   - session_id = <session_id>  only the access tokens carrying that
  *                                `session_id` claim (per-device logout).
  * A per-device logout of a token WITHOUT a `session_id` claim writes nothing:

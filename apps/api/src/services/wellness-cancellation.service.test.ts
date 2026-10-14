@@ -257,6 +257,16 @@ describe('gateway refund (slice L)', () => {
     expect(refundMock).not.toHaveBeenCalled();
   });
 
+  it('refund sent but payment row update fails: stamps the refund id so a retry never re-sends', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_7' });
+    prismaMock.payment.update.mockRejectedValue(new Error('db down'));
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ refundId: 'rfnd_7' });
+    const stamp = prismaMock.payment.updateMany.mock.calls.at(-1)![0];
+    expect(stamp.data.metadata.wellnessRefundInflight).toMatchObject({ refundId: 'rfnd_7' });
+  });
+
   it('reservation writes the in-flight marker in the same compare-and-set', async () => {
     refundMock.mockResolvedValue({ id: 'rfnd_4' });
     prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
