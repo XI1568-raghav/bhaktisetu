@@ -349,7 +349,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     // `metadata.refundFailureReason`, which the next refund attempt overwrites,
     // so a devotee chasing money that never arrived left no trace of the
     // attempts made on their behalf.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.REFUND_FAILED,
       actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
       subjectType: 'payment',
@@ -364,7 +364,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       statusAfter: captured.status,
       note: failureReason,
       metadata: { refundType, initiatedBy, reason },
-    });
+    }).catch(() => undefined);
     return {
       ok: false,
       bookingId,
@@ -378,7 +378,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // transaction below fails, the devotee has still been refunded and that is
   // precisely the state an audit trail must be able to show. No local write
   // precedes this one, so there is nothing to record "after".
-  void recordMoneyEvent({
+  await recordMoneyEvent({
     eventType: MONEY_EVENTS.REFUND_INITIATED,
     actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
     subjectType: 'payment',
@@ -394,7 +394,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
     idempotencyKey: refund.id,
     note: reason,
     metadata: { refundType, initiatedBy, refundableBeforeInr: refundableInr },
-  });
+  }).catch(() => undefined);
 
   // PAY-03: status and the ledger branch key off the CUMULATIVE total, not off
   // the caller's `refundType`. A partial that happens to clear the remaining
@@ -522,7 +522,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
   // OPS-05 — recorded AFTER the transaction commits, never inside it: the
   // event is "this happened", and it has not happened until the transaction
   // commits. `statusBefore` is the pre-image read at the top of this function.
-  void recordMoneyEvent({
+  await recordMoneyEvent({
     eventType: MONEY_EVENTS.REFUND_COMPLETED,
     actorType: initiatedBy === 'system' || initiatedBy === 'cron' ? 'system' : 'admin',
     subjectType: 'payment',
@@ -544,7 +544,7 @@ export async function processRefund(params: ProcessRefundParams): Promise<Proces
       refundedTotalInr: newRefundTotalInr,
       fullyRefunded: isFullyRefunded,
     },
-  });
+  }).catch(() => undefined);
 
   // OPS-05 — and the ledger unwind that rode along with it. "Was the pandit's
   // earning minted before or after the refund" is one of the questions this

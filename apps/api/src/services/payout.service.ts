@@ -25,6 +25,7 @@
  * carries the Razorpay Route / UPI / bank ref for reconciliation.
  */
 
+import { settleBounded } from '../lib/background.js';
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
 import { sendEmail, payoutSettledEmail } from '../lib/email.js';
@@ -592,7 +593,7 @@ export async function requestPayout(
   // OPS-05 — after the transaction RESOLVES. `created.amount` is the figure
   // the transaction actually sized from the rows it linked, not the advisory
   // pre-check balance, so the trail agrees with the ledger.
-  void recordMoneyEvent({
+  await recordMoneyEvent({
     eventType: MONEY_EVENTS.PAYOUT_REQUESTED,
     actorType: 'provider',
     actorId: providerId,
@@ -604,14 +605,14 @@ export async function requestPayout(
     idempotencyKey: created.id,
     note: `${role} payout requested via ${method}`,
     metadata: { role, method, kycVerified: kyc.verified, skipKyc: opts.skipKyc === true },
-  });
+  }).catch(() => undefined);
 
   // Notify the provider the request is in (fire-and-forget).
-  void notifyUser(providerId, {
+  await settleBounded(notifyUser(providerId, {
     title: 'Payout requested',
     body: `Your payout of ₹${Number(created.amount).toLocaleString('en-IN')} is being processed.`,
     url: '/payouts',
-  }).catch(() => undefined);
+  }), 'payout');
   return created;
 }
 
@@ -734,7 +735,7 @@ export async function processPayout(
     // this system (a bank/UPI transfer an admin performs by hand), so this row
     // is the platform's only durable statement of who authorised it, out of
     // what status, and against which external reference.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType:
         action === 'complete'
           ? MONEY_EVENTS.PAYOUT_PROCESSED
@@ -760,25 +761,25 @@ export async function processPayout(
         role: req.role,
         reference: (req as { reference?: string | null }).reference ?? reference ?? null,
       },
-    });
+    }).catch(() => undefined);
 
-    void notifyUser(req.providerId, {
+    await settleBounded(notifyUser(req.providerId, {
       title: action === 'complete' ? 'Payout sent' : 'Payout update',
       body:
         action === 'complete'
           ? `Your payout of ₹${Number(req.amount).toLocaleString('en-IN')} has been sent.`
           : `Your payout could not be completed${failureReason ? `: ${failureReason}` : ''}. Your balance is intact.`,
       url: '/payouts',
-    }).catch(() => undefined);
+    }), 'payout');
 
     // NOTIF-16: and off push, where the provider actually is.
-    void fanOutPayoutSettled({
+    await settleBounded(fanOutPayoutSettled({
       providerId: req.providerId,
       amount: new Prisma.Decimal(req.amount),
       status: req.status as 'completed' | 'rejected' | 'failed',
       reference: (req as { reference?: string | null }).reference ?? reference ?? null,
       failureReason: failureReason ?? null,
-    });
+    }), 'payout');
   }
 
   // DI-10: tell the caller whether this call CHANGED anything.

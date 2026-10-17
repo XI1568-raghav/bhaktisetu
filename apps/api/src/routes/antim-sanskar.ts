@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { settleBounded } from '../lib/background.js';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { sendOpsAlert } from '../lib/alert.js';
@@ -291,7 +292,7 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
 
     // Best-effort ops alert. Treated as critical — a coordinator must call
     // back as soon as possible.
-    void sendOpsAlert({
+    await settleBounded(sendOpsAlert({
       severity: 'critical',
       subject: `Antim sanskar request — ${body.city}`,
       body: [
@@ -308,10 +309,10 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
       ]
         .filter(Boolean)
         .join('\n'),
-    }).catch((err) => server.log.warn({ err }, 'antim-sanskar: ops alert failed'));
+    }), 'antim');
 
     if (body.email && process.env.RESEND_API_KEY) {
-      void sendEmail({
+      await settleBounded(sendEmail({
         to: body.email,
         subject: 'We have received your request — Darshya',
         html: familyEmailHtml({
@@ -320,7 +321,7 @@ export async function antimSanskarRoutes(server: FastifyInstance) {
           packageName: pkg.name,
           priceInr: pkg.priceInr,
         }),
-      }).catch((err) => server.log.warn({ err }, 'antim-sanskar: family email failed'));
+      }), 'antim');
     }
 
     return reply.status(201).send({

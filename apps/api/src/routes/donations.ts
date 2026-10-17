@@ -350,7 +350,7 @@ export async function finalizeDonationReceipt(
   // donation in a race — the early-return above closes the common case, but not
   // a true concurrent one — and the namespaced unique key collapses that to a
   // single row instead of double-counting the money.
-  void recordMoneyEvent({
+  await recordMoneyEvent({
     eventType: MONEY_EVENTS.DONATION_RECEIVED,
     actorType: audit?.actorType ?? 'gateway',
     actorId: audit?.actorId ?? null,
@@ -378,7 +378,7 @@ export async function finalizeDonationReceipt(
       // Deliberately NOT donor_pan. The trail is a support tool, not a second
       // store of tax identifiers.
     },
-  });
+  }).catch(() => undefined);
 
   // The name the donor typed on the form (when they gave one) is the name on
   // their tax receipt; the account name is the fallback.
@@ -749,7 +749,7 @@ export async function donationRoutes(server: FastifyInstance) {
     // completed leaves no record that the donor ever tried, and the gap
     // between intent and capture (the window a chargeback lands in) is
     // invisible.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.PAYMENT_INITIATED,
       actorType: 'devotee',
       actorId: userId,
@@ -770,7 +770,7 @@ export async function donationRoutes(server: FastifyInstance) {
         doneeId: kind === 'temple' ? templeId : doneeGaushalaId,
         planId: planId ?? null,
       },
-    });
+    }).catch(() => undefined);
 
     return reply.send({
       donationId,
@@ -857,7 +857,7 @@ export async function donationRoutes(server: FastifyInstance) {
         // 'failed' is the single hardest dispute to answer, and until now the
         // answer was "check the Render logs", which on the free plan are gone.
         // Keyed per gateway payment id so a second attempt logs a second row.
-        void recordMoneyEvent({
+        await recordMoneyEvent({
           eventType: MONEY_EVENTS.PAYMENT_FAILED,
           actorType: 'devotee',
           actorId: request.currentUser?.id ?? null,
@@ -878,7 +878,7 @@ export async function donationRoutes(server: FastifyInstance) {
           // — `redactMetadata` would blank a `razorpay_signature` key anyway,
           // and storing the bytes we just refused to trust helps nobody.
           metadata: { rail: 'donations/verify', reason: 'signature-mismatch' },
-        });
+        }).catch(() => undefined);
         return reply.code(400).send({ error: 'Invalid payment signature' });
       }
 
@@ -908,7 +908,7 @@ export async function donationRoutes(server: FastifyInstance) {
             idempotencyKey: `${donation.id}:${body.razorpay_payment_id}:gateway-check`,
             note: `donation verify refused: ${chk.reason}`,
             metadata: { rail: 'donations/verify', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
-          });
+          }).catch(() => undefined);
           return reply.code(409).send({
             error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it; you will not be charged twice.',
             code: 'payment_needs_review',

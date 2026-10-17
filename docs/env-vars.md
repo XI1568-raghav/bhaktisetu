@@ -103,3 +103,16 @@ To test magic-link locally without Resend:
 | `RATE_LIMIT_TRUST_CF_HEADER` | unset | Rollback lever: `true` trusts `CF-Connecting-IP` unconditionally (the pre-2026-10-13 behaviour). Use it if the API log shows `CF-Connecting-IP ignored` for real production traffic. |
 | `RATE_LIMIT_IP_CEILING` | `RATE_LIMIT_MAX * 12` | Per-client-IP cap per minute regardless of credential; stops `Authorization: Bearer <random>` bucket minting. |
 | `RAZORPAY_TIMEOUT_MS` | `15000` | Timeout on every Razorpay SDK call and the reconcile fetch. A stalled gateway answers the friendly 503 instead of hanging. |
+
+## Cloud Run / scale-to-zero (added 2026-10-17)
+
+See `docs/runbooks/cloud-run-api-deploy.md`.
+
+| Var | Default | Behaviour |
+|---|---|---|
+| `DISABLE_INPROCESS_JOBS` | unset | `true` turns off in-process timers (ops scheduler, per-booking offer timeouts, latency reporter); an external caller must hit `POST /api/v1/cron/tick`. `false` forces them on. Unset: off when `K_SERVICE` is set (Cloud Run), on elsewhere. Overrides `OPS_SCHEDULER_ENABLED`. |
+| `K_SERVICE` | set by Cloud Run | Do not set by hand. Presence implies scale-to-zero, so timers default off. |
+| `CRON_AUTH_TOKEN` | unset | Bearer token for `POST /api/v1/cron/tick`, `/daily`, `/run/:job`. Unset => every cron request is 401 (fail closed). Use a 32+ byte random value. |
+| `BACKGROUND_AWAIT_MS` | `4000` | Max time a request waits for receipts/audit/notification side effects before replying (`lib/background.ts`). `0` restores fire-and-forget. |
+| `RUN_MIGRATIONS_ON_BOOT` | unset | Docker image only (`apps/api/Dockerfile`). `true` runs `prisma migrate deploy` before starting; default is to skip (migrations are manual). |
+| `PORT` / `HOST` | `4000` / `0.0.0.0` | Cloud Run injects `PORT=8080`; the server honours it. |

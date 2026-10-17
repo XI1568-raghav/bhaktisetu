@@ -9,6 +9,12 @@ import { detailCta } from '../../../lib/detail-route-cta';
 
 export const revalidate = 86400;
 
+// Prerender every known slug at build so a Worker/Node request serves static HTML
+// instead of rendering per request (Cloudflare free plan: 10 ms CPU/request).
+export function generateStaticParams() {
+  return HINDU_SYMBOLS.map((x) => ({ slug: x.slug }));
+}
+
 const BASE_URL = 'https://darshya.online';
 
 interface Props { params: Promise<{ slug: string }> }

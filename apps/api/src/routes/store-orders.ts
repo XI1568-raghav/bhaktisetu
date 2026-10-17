@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { settleBounded } from '../lib/background.js';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -541,8 +542,11 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       // confirmed (the Razorpay-verify path wrote it; COD/manual leaked).
       // Fire-and-forget + idempotent — never blocks the status flip.
       if (body.data.status === 'CONFIRMED') {
-        void writeStoreOrderCommission(order.id, undefined, { requirePayment: true }).catch((err) =>
-          request.log.warn({ err }, '[store-orders] commission write failed'),
+        await settleBounded(
+          writeStoreOrderCommission(order.id, undefined, { requirePayment: true }).catch((err) =>
+            request.log.warn({ err }, '[store-orders] commission write failed'),
+          ),
+          'store-commission',
         );
       }
       return reply.send({ data: serializeOrder(updated) });
@@ -704,7 +708,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       });
 
       // Best-effort invoice — never block status flip.
-      void (async () => {
+      await settleBounded((async () => {
         try {
           if (!order.user.email) return;
           // items + shippingAddress are stored as Json; narrow to the shapes
@@ -748,7 +752,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         } catch (err) {
           console.warn('[store-orders] invoice send failed:', err);
         }
-      })();
+      })(), 'store-invoice');
 
       return reply.send({ data: serializeOrder(updated) });
     }

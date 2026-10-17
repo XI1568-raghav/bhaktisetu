@@ -1,4 +1,5 @@
 import { Prisma } from '@prisma/client';
+import { settleBounded } from '../lib/background.js';
 import { prisma } from '../lib/prisma.js';
 import { sendEmail, orderCancelledEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
@@ -166,7 +167,7 @@ export async function customerCancelStoreOrder(opts: {
       idempotencyKey: `cancel:${order.id}`,
       note: `store order ${order.orderNumber} cancelled by customer before shipping; refund awaits admin approval`,
       metadata: { rail: 'store-cancel', execution: 'pending-admin-approval' },
-    });
+    }).catch(() => undefined);
   }
   if (reversed > 0) {
     await recordMoneyEvent({
@@ -181,10 +182,10 @@ export async function customerCancelStoreOrder(opts: {
       idempotencyKey: `cancel:${order.id}`,
       note: `owner earning reversed (store order ${order.orderNumber} cancelled)`,
       metadata: { rail: 'store-cancel', reversed },
-    });
+    }).catch(() => undefined);
   }
   // Slice L: tell the customer (best effort, html-escaped template, no internal ids).
-  void (async () => {
+  await settleBounded((async () => {
     const u = await prisma.user.findUnique({
       where: { id: order.userId },
       select: { email: true, fullName: true },
@@ -198,7 +199,7 @@ export async function customerCancelStoreOrder(opts: {
         refundOwedInr: paid ? total : 0,
       }),
     });
-  })().catch(() => undefined);
+  })(), 'store-cancel-email');
   return {
     outcome: 'cancelled',
     status: 'CANCELLED',
@@ -307,7 +308,7 @@ export async function refundStoreOrder(opts: {
       statusAfter: payment.status,
       note: failure,
       metadata: { rail: 'store-refund' },
-    });
+    }).catch(() => undefined);
     return { ok: false, httpStatus: 502, code: 'gateway_failed', error: failure };
   }
 
@@ -364,7 +365,7 @@ export async function refundStoreOrder(opts: {
     idempotencyKey: refund.id,
     note: reason,
     metadata: { rail: 'store-refund', mode: opts.mode, orderStatusBefore: order.status },
-  });
+  }).catch(() => undefined);
   if (reversed > 0 || settled > 0) {
     await recordMoneyEvent({
       eventType: MONEY_EVENTS.COMMISSION_REVERSED,
@@ -379,19 +380,19 @@ export async function refundStoreOrder(opts: {
       idempotencyKey: refund.id,
       note: 'owner earning reversed by store refund',
       metadata: { rail: 'store-refund', reversed, alreadySettled: settled },
-    });
+    }).catch(() => undefined);
   }
   if (settled > 0) {
     console.error(JSON.stringify({ event: 'store_ledger_manual_review', storeOrderId: order.id, alreadySettled: settled }));
   }
 
   if (order.user?.email) {
-    void sendEmail({
+    await settleBounded(sendEmail({
       to: order.user.email,
       subject: `Refund processed for order ${order.orderNumber}`,
       html: `<p>Namaste ${esc(order.user.fullName ?? 'Devotee')},</p><p>A refund of <strong>Rs ${refundableInr}</strong> for order <strong>${esc(order.orderNumber)}</strong> has been processed to your original payment method (5-7 business days). Reference: ${esc(refund.id)}.</p>`,
       text: `A refund of Rs ${refundableInr} for order ${order.orderNumber} has been processed (5-7 business days). Reference: ${refund.id}.`,
-    }).catch(() => undefined);
+    }), 'store-refund-email');
   }
 
   return {

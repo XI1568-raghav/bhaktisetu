@@ -1,4 +1,5 @@
 import { TOO_EARLY_TO_COMPLETE, pujaScheduledInstant, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
+import { settleBounded } from '../lib/background.js';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
@@ -767,7 +768,7 @@ function evaluatePriestSlot(input: {
 // scaffolding for this route file anywhere in the suite, so anything expressed
 // only inline in a handler is untestable. The builder is exported through
 // `__testing` and asserted in bookings.money-trail.ops05.test.ts; the handlers
-// keep just the `void recordMoneyEvent(...)`.
+// keep just the `await recordMoneyEvent(...)`.
 function bookingCreatedEvent(input: {
   booking: {
     id: string;
@@ -1002,7 +1003,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         });
 
         // OPS-05: after the write, never inside it.
-        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: '/book' }));
+        await recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: '/book' })).catch(() => undefined);
 
         return reply.status(201).send({ booking });
       } catch (error: any) {
@@ -1537,10 +1538,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         // regardless of whether the status also moved. Fire-and-forget by
         // contract — a notification failure must never undo a committed write.
         if (reassigned) {
-          void notifyReassignment({
+          await settleBounded(notifyReassignment({
             booking: reassigned,
             previousPriestId: booking.priestId,
-          }).catch(() => undefined);
+          }), 'booking');
         }
 
         if (
@@ -1629,7 +1630,7 @@ export async function bookingRoutes(server: FastifyInstance) {
 
         // D6: devotee cancelled — tell them the cancellation registered (and a
         // refund, if any, is being reviewed). Fire-and-forget.
-        void (async () => {
+        await settleBounded((async () => {
           try {
             const b = await prisma.pujaBooking.findUnique({
               where: { id },
@@ -1648,7 +1649,7 @@ export async function bookingRoutes(server: FastifyInstance) {
           } catch {
             /* notification must never break cancel */
           }
-        })();
+        })(), 'booking');
 
         return {
           message: 'Booking cancelled successfully',
@@ -2173,7 +2174,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         // request; if the order call throws, the booking row still exists as
         // `pending_payment`, and without this row the trail could not tell that
         // from "the devotee never tried". recordMoneyEvent never throws.
-        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'create-order' }));
+        await recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'create-order' })).catch(() => undefined);
 
         // 4. Create the Razorpay order. In demo mode (no RAZORPAY_KEY_ID)
         // payment.service returns a synthetic order_demo_* id and the web
@@ -2582,7 +2583,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         // in the trail. recordMoneyEvent takes no `tx` on purpose: a failed
         // audit INSERT inside that transaction would abort it in Postgres and
         // roll the booking back.
-        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'from-offering' }));
+        await recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'from-offering' })).catch(() => undefined);
 
         // 7. Create the payment order. Razorpay is the ONLY rail — Stripe was
         // removed 2026-08-10 (PayPal via Razorpay replaces it for international

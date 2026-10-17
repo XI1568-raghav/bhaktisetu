@@ -1,4 +1,5 @@
 import { TOO_EARLY_TO_COMPLETE, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
+import { settleBounded } from '../lib/background.js';
 import { FastifyInstance } from 'fastify';
 import crypto from 'node:crypto';
 import { z } from 'zod';
@@ -924,7 +925,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
               idempotencyKey: `${enrollment.id}:${razorpayPaymentId}:gateway-check`,
               note: `wellness verify refused: ${chk.reason}`,
               metadata: { rail: 'wellness/verify', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
-            });
+            }).catch(() => undefined);
             return reply.code(409).send({
               error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it; you will not be charged twice.',
               code: 'payment_needs_review',
@@ -955,10 +956,10 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       });
 
       // P0 #wp-03: record the instructor's payout ledger entry (fire-and-forget).
-      void writeWellnessCommissionOnPaid(updated.id);
+      await settleBounded(Promise.resolve(writeWellnessCommissionOnPaid(updated.id)), 'wellness');
 
       // Slice L: keep the gateway payment id so a cancel can refund through the gateway.
-      void (async () => {
+      await settleBounded((async () => {
         const sess = await prisma.wellnessSession.findUnique({
           where: { id: enrollment.sessionId },
           select: { priceInr: true },
@@ -970,10 +971,10 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           razorpayOrderId: enrollment.razorpayOrderId,
           razorpayPaymentId: body.data.razorpayPaymentId,
         });
-      })().catch(() => undefined);
+      })(), 'wellness');
 
       // Best-effort payment receipt — failure here must NOT block the PAID flip.
-      void (async () => {
+      await settleBounded((async () => {
         try {
           const detail = await prisma.wellnessEnrollment.findUnique({
             where: { id: updated.id },
@@ -1012,7 +1013,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         } catch (err) {
           console.warn('[wellness-sessions] invoice send failed:', err);
         }
-      })();
+      })(), 'wellness');
 
       return reply.send({ data: updated });
     }
@@ -1246,7 +1247,7 @@ export async function finalizeWellnessEnrollmentFromWebhook(
         idempotencyKey: `${enrollment.id}:${gatewayPaymentId}:gateway-check`,
         note: `wellness webhook capture refused: ${chk.reason}`,
         metadata: { rail: 'wellness/webhook', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
-      });
+      }).catch(() => undefined);
       return { handled: false, reason: 'amount-mismatch' };
     }
     if (chk.verdict === 'unavailable') {

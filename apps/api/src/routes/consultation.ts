@@ -1,4 +1,5 @@
 import { TOO_EARLY_TO_COMPLETE, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
+import { settleBounded } from '../lib/background.js';
 import { FastifyInstance } from 'fastify';
 import {
   ASTROLOGER_PLATFORM_RATE,
@@ -422,23 +423,25 @@ export async function finalizeConsultationPaymentFromWebhook(
       // True when the expiry cron had already cancelled this row.
       recovered: row.status === 'cancelled' || row.status === 'payment_review',
     },
-  });
+  }).catch(() => undefined);
 
   await writeConsultationCommission(row, log);
 
-  void notifyAstrologerNewConsult({
-    astrologerRef: row.astrologer_id,
-    devoteeName: null,
-    minutes: row.minutes ?? 0,
-    amountInr: Number(row.amount_inr ?? 0),
-    consultationId: row.id,
-  }).catch(() => undefined);
-  void notifyDevoteeConsultConfirmed({
-    devoteeUserId: row.user_id,
-    astrologerName: row.astrologer_name ?? 'Your astrologer',
-    minutes: row.minutes ?? 0,
-    consultationId: row.id,
-  }).catch(() => undefined);
+  await settleBounded([
+    notifyAstrologerNewConsult({
+      astrologerRef: row.astrologer_id,
+      devoteeName: null,
+      minutes: row.minutes ?? 0,
+      amountInr: Number(row.amount_inr ?? 0),
+      consultationId: row.id,
+    }),
+    notifyDevoteeConsultConfirmed({
+      devoteeUserId: row.user_id,
+      astrologerName: row.astrologer_name ?? 'Your astrologer',
+      minutes: row.minutes ?? 0,
+      consultationId: row.id,
+    }),
+  ], 'consult-notify');
 
   return {
     handled: true,
@@ -694,7 +697,7 @@ export async function consultationRoutes(server: FastifyInstance) {
         scheduledAt: scheduledAt ?? null,
         demo: isDemoPayment,
       },
-    });
+    }).catch(() => undefined);
 
     return reply.code(201).send({
       consultationId: row.id,
@@ -794,7 +797,7 @@ export async function consultationRoutes(server: FastifyInstance) {
           idempotencyKey: `${consultationId}:${razorpay_payment_id}:gateway-check`,
           note: `consultation verify refused: ${chk.reason}`,
           metadata: { rail: 'consultation-verify-payment', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
-        });
+        }).catch(() => undefined);
         return reply.code(409).send({
           error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it.',
           code: 'payment_needs_review',
@@ -861,30 +864,32 @@ export async function consultationRoutes(server: FastifyInstance) {
         minutes: row.minutes,
         demo: isDemoPayment,
       },
-    });
+    }).catch(() => undefined);
 
     // Astrologer revamp (2026-08-05): ping the astrologer that a paid consult
     // just landed (there was NO astrologer notification before — they only saw
     // it by refreshing the portal). Fire-and-forget.
-    void notifyAstrologerNewConsult({
-      astrologerRef: row.astrologer_id,
-      devoteeName: null,
-      minutes: row.minutes ?? 0,
-      amountInr: Number(row.amount_inr ?? 0),
-      consultationId,
-    }).catch(() => undefined);
-    void notifyDevoteeConsultConfirmed({
-      devoteeUserId: userId,
-      astrologerName: row.astrologer_name ?? 'Your astrologer',
-      minutes: row.minutes ?? 0,
-      consultationId,
-    }).catch(() => undefined);
+    await settleBounded([
+      notifyAstrologerNewConsult({
+        astrologerRef: row.astrologer_id,
+        devoteeName: null,
+        minutes: row.minutes ?? 0,
+        amountInr: Number(row.amount_inr ?? 0),
+        consultationId,
+      }),
+      notifyDevoteeConsultConfirmed({
+        devoteeUserId: userId,
+        astrologerName: row.astrologer_name ?? 'Your astrologer',
+        minutes: row.minutes ?? 0,
+        consultationId,
+      }),
+    ], 'consult-notify');
 
     // P0 #AP-06 (2026-07-09): the Commission ledger write lives in
     // writeConsultationCommission (below) so the PAY-01 webhook backstop runs
     // the identical ledger rule. Fire-and-forget here: a ledger write failure
     // must never block the verified response.
-    void writeConsultationCommission(row, server.log);
+    await settleBounded(Promise.resolve(writeConsultationCommission(row, server.log)), 'consult-commission');
 
     return reply.send({
       verified: true,
@@ -1064,7 +1069,7 @@ export async function consultationRoutes(server: FastifyInstance) {
         // without re-deriving the window from a row that has since changed.
         priorStatus: row.status,
       },
-    });
+    }).catch(() => undefined);
 
     // ...and the claw-back, through the same shared emitter the two puja refund
     // rails use. Skips silently when nothing moved; still records when the
@@ -1111,7 +1116,7 @@ export async function consultationRoutes(server: FastifyInstance) {
     }
 
     // Slice L: cancellation email to the devotee (best effort).
-    void (async () => {
+    await settleBounded((async () => {
       const u = await prisma.user.findUnique({
         where: { id: row.user_id },
         select: { email: true, fullName: true },
@@ -1126,7 +1131,7 @@ export async function consultationRoutes(server: FastifyInstance) {
           refundEligible: refundEligible && row.status === 'confirmed',
         }),
       });
-    })().catch(() => undefined);
+    })(), 'consult-cancel-email');
 
     return reply.send({
       cancelled: true,

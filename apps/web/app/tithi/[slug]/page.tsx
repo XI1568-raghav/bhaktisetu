@@ -11,6 +11,12 @@ import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
+// Prerender every known slug at build so a Worker/Node request serves static HTML
+// instead of rendering per request (Cloudflare free plan: 10 ms CPU/request).
+export function generateStaticParams() {
+  return TITHIS.map((x) => ({ slug: x.slug }));
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const { slug } = await params;
   const t = getTithiBySlug(slug);

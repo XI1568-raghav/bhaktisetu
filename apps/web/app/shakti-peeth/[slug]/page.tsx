@@ -9,6 +9,12 @@ import { ENRICHMENT } from '../../../lib/enrich';
 
 export const revalidate = 86400;
 
+// Prerender every known slug at build so a Worker/Node request serves static HTML
+// instead of rendering per request (Cloudflare free plan: 10 ms CPU/request).
+export function generateStaticParams() {
+  return SHAKTI_PEETHS.map((x) => ({ slug: x.slug }));
+}
+
 const BASE_URL = 'https://darshya.online';
 
 const COUNTRY_CODE: Record<ShaktiPeethCountry, string> = {

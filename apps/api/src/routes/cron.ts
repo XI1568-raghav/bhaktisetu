@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { requireCronBearer } from '../middlewares/cron-auth.js';
 import { runDailyOps } from '../jobs/master-cron.js';
+import { runTickOnce } from '../jobs/scheduler.js';
 import { runAartiNotify } from '../jobs/aarti-notify.js';
 import { dispatchService } from '../services/dispatch.service.js';
 import { accountDeletionService } from '../services/account-deletion.service.js';
@@ -102,8 +103,30 @@ const JOBS: Record<string, () => Promise<unknown>> = {
 
 // ── Routes ──────────────────────────────────────────────────────────
 
+// Brute-force guard on the bearer check. @fastify/rate-limit runs in onRequest,
+// i.e. BEFORE requireCronBearer, so wrong guesses are throttled too. Cloud
+// Scheduler is a single caller at 1 req / 5-10 min, so 20/min is generous.
+const CRON_RATE_LIMIT = { config: { rateLimit: { max: 20, timeWindow: '1 minute' } } };
+
 export async function cronRoutes(server: FastifyInstance) {
-  server.post('/daily', { preHandler: requireCronBearer }, async (request, reply) => {
+  /**
+   * One externally-driven tick for scale-to-zero hosts (Cloud Run + Cloud
+   * Scheduler): the same runDailyOps chain the in-process scheduler runs (email
+   * outbox, dispatch sweep, auto-refunds, reconcile, aarti, digest, settlement…)
+   * plus the account-purge sweep. Idempotent: every step claims its work via
+   * notification-run-log / row status, so a retried or doubled call is safe. A
+   * tick already running in this instance is skipped (overlap guard), never
+   * run twice in parallel. Fails closed: 401 when CRON_AUTH_TOKEN is unset.
+   */
+  server.post('/tick', { preHandler: requireCronBearer, ...CRON_RATE_LIMIT }, async (request, reply) => {
+    const t0 = Date.now();
+    const tick = await runTickOnce(request.log);
+    const purge = await runJob('account-purge', JOBS['account-purge']!);
+    const ok = tick.ok && purge.ok;
+    return reply.code(ok ? 200 : 500).send({ ok, durationMs: Date.now() - t0, tick, purge });
+  });
+
+  server.post('/daily', { preHandler: requireCronBearer, ...CRON_RATE_LIMIT }, async (request, reply) => {
     const t0 = Date.now();
     try {
       const result = await runDailyOps();
@@ -120,7 +143,7 @@ export async function cronRoutes(server: FastifyInstance) {
     }
   });
 
-  server.post<{ Params: { job: string } }>('/run/:job', { preHandler: requireCronBearer }, async (request, reply) => {
+  server.post<{ Params: { job: string } }>('/run/:job', { preHandler: requireCronBearer, ...CRON_RATE_LIMIT }, async (request, reply) => {
     const fn = JOBS[request.params.job];
     if (!fn) {
       return reply.code(404).send({ error: `Unknown job: ${request.params.job}`, available: Object.keys(JOBS) });
