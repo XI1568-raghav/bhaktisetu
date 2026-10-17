@@ -23,6 +23,7 @@ jobs:
   cloudflare:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    environment: NEXT_PUBLIC_SUPABASE_ANON_KEY
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
       MODE: ${{ inputs.mode || (contains(github.event.pull_request.title, '[cf-deploy]') && 'deploy') || 'preflight' }}
