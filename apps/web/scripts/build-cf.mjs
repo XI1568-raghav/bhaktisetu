@@ -18,6 +18,7 @@ function findBin(name) {
 }
 function run(cmd, args, env = {}) {
   const r = spawnSync(cmd, args, { stdio: 'inherit', shell: win, env: { ...process.env, ...env } });
+  if (r.error) console.error(`build-cf: could not run ${cmd}: ${r.error.message}`);
   if (r.status !== 0) process.exit(r.status ?? 1);
 }
 run(findBin('tsx'), ['--tsconfig', 'scripts/tsconfig.prerender.json', 'scripts/prerender-og.mjs']);
