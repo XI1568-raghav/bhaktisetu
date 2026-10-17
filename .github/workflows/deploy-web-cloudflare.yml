@@ -1,12 +1,12 @@
 name: Deploy web to Cloudflare Workers
 
-# Manual (or a PR that edits this file: preflight only). `preflight` checks the stored Cloudflare token and account without deploying.
+# Manual, or a same-repo PR (preflight only unless the PR title contains [cf-deploy]). `preflight` checks the stored Cloudflare token and account without deploying.
 # `deploy` builds apps/web with OpenNext and uploads the Worker to the workers.dev address
 # (no custom domain change; the DNS cutover is a separate manual step in
 # docs/runbooks/cloudflare-web-deploy.md). Secrets are never echoed.
 on:
   pull_request:
-    paths: ['.github/workflows/deploy-web-cloudflare.yml']
+    types: [opened, synchronize, reopened, edited]
   workflow_dispatch:
     inputs:
       mode:
@@ -23,7 +23,9 @@ jobs:
   cloudflare:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     env:
+      MODE: ${{ inputs.mode || (contains(github.event.pull_request.title, '[cf-deploy]') && 'deploy') || 'preflight' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
@@ -45,19 +47,19 @@ jobs:
           fi
 
       - uses: pnpm/action-setup@v4
-        if: inputs.mode == 'deploy'
+        if: env.MODE == 'deploy'
       - uses: actions/setup-node@v4
-        if: inputs.mode == 'deploy'
+        if: env.MODE == 'deploy'
         with:
           node-version: 20
           cache: pnpm
 
       - name: Install
-        if: inputs.mode == 'deploy'
+        if: env.MODE == 'deploy'
         run: pnpm install --frozen-lockfile
 
       - name: Build and deploy Worker
-        if: inputs.mode == 'deploy'
+        if: env.MODE == 'deploy'
         working-directory: apps/web
         env:
           NEXT_PUBLIC_API_URL: https://api.darshya.online
