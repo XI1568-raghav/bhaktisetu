@@ -1,10 +1,12 @@
 name: Deploy web to Cloudflare Workers
 
-# Manual only. `preflight` checks the stored Cloudflare token and account without deploying.
+# Manual (or a PR that edits this file: preflight only). `preflight` checks the stored Cloudflare token and account without deploying.
 # `deploy` builds apps/web with OpenNext and uploads the Worker to the workers.dev address
 # (no custom domain change; the DNS cutover is a separate manual step in
 # docs/runbooks/cloudflare-web-deploy.md). Secrets are never echoed.
 on:
+  pull_request:
+    paths: ['.github/workflows/deploy-web-cloudflare.yml']
   workflow_dispatch:
     inputs:
       mode:
