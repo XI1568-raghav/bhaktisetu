@@ -47,6 +47,35 @@ jobs:
             echo "workers.dev subdomain http: $code"
           fi
 
+      - name: DNS check or cutover (darshya.online)
+        if: contains(github.event.pull_request.title, '[cf-dns]') || contains(github.event.pull_request.title, '[cf-cutover]')
+        env:
+          CUTOVER: ${{ contains(github.event.pull_request.title, '[cf-cutover]') }}
+        run: |
+          set -u
+          api=https://api.cloudflare.com/client/v4
+          H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          zone=$(curl -s -H "$H" "$api/zones?name=darshya.online" | jq -r '.result[0].id // empty')
+          [ -n "$zone" ] && echo "zone found" || { echo "zone NOT visible to this token"; exit 1; }
+          echo "--- current records for apex and www (name type content proxied id)"
+          for n in darshya.online www.darshya.online; do
+            curl -s -H "$H" "$api/zones/$zone/dns_records?name=$n" | jq -r '.result[]|"\(.name) \(.type) \(.content) proxied=\(.proxied) id=\(.id)"'
+          done
+          echo "--- worker custom domains now"
+          curl -s -H "$H" "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains?service=darshya-web" | jq -r '.result[]?|"\(.hostname) zone=\(.zone_name)"'
+          if [ "$CUTOVER" = true ]; then
+            echo "--- CUTOVER: removing Render CNAMEs for apex and www, attaching Worker domains"
+            for n in darshya.online www.darshya.online; do
+              for id in $(curl -s -H "$H" "$api/zones/$zone/dns_records?name=$n" | jq -r '.result[]|select(.content|test("onrender.com"))|.id'); do
+                code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "$H" "$api/zones/$zone/dns_records/$id"); echo "deleted record for $n http=$code"
+              done
+            done
+            for n in darshya.online www.darshya.online; do
+              code=$(curl -s -o /tmp/dom.json -w '%{http_code}' -X PUT -H "$H" -H 'Content-Type: application/json' "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" --data "{\"hostname\":\"$n\",\"service\":\"darshya-web\",\"environment\":\"production\",\"zone_id\":\"$zone\"}")
+              echo "attach $n http=$code $(jq -r '.errors[0].message // "ok"' /tmp/dom.json)"
+            done
+          fi
+
       - uses: pnpm/action-setup@v4
         if: env.MODE == 'deploy'
       - uses: actions/setup-node@v4
