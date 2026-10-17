@@ -67,6 +67,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
           NEXT_PUBLIC_ENV: production
         run: |
-          [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] || { echo "missing Supabase public values (secrets SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)"; exit 1; }
+          miss=0
+          [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo "SUPABASE_URL secret: present" || { echo "SUPABASE_URL secret: MISSING or empty"; miss=1; }
+          [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && echo "NEXT_PUBLIC_SUPABASE_ANON_KEY secret: present" || { echo "NEXT_PUBLIC_SUPABASE_ANON_KEY secret: MISSING or empty (must be a repository Actions secret)"; miss=1; }
+          [ "$miss" = 0 ] || exit 1
           pnpm build:cf
           pnpm deploy:cf
