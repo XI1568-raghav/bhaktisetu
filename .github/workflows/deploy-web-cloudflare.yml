@@ -1,0 +1,68 @@
+name: Deploy web to Cloudflare Workers
+
+# Manual only. `preflight` checks the stored Cloudflare token and account without deploying.
+# `deploy` builds apps/web with OpenNext and uploads the Worker to the workers.dev address
+# (no custom domain change; the DNS cutover is a separate manual step in
+# docs/runbooks/cloudflare-web-deploy.md). Secrets are never echoed.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: preflight or deploy
+        required: true
+        default: preflight
+        type: choice
+        options: [preflight, deploy]
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight (token and account, no secrets printed)
+        run: |
+          set -u
+          [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && echo "token secret: present" || { echo "token secret: MISSING"; exit 1; }
+          [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] && echo "account id secret: present" || echo "account id secret: MISSING"
+          code=$(curl -s -o /tmp/verify.json -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "token verify http: $code status: $(jq -r '.result.status // "n/a"' /tmp/verify.json)"
+          if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            code=$(curl -s -o /tmp/workers.json -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")
+            echo "workers scripts list http: $code (200 = can manage Workers, 403 = token lacks Workers Scripts permission)"
+            echo "existing workers: $(jq -r '[.result[]?.id] | join(",")' /tmp/workers.json 2>/dev/null)"
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+            echo "workers.dev subdomain http: $code"
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: inputs.mode == 'deploy'
+      - uses: actions/setup-node@v4
+        if: inputs.mode == 'deploy'
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install
+        if: inputs.mode == 'deploy'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and deploy Worker
+        if: inputs.mode == 'deploy'
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL: https://api.darshya.online
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_ENV: production
+        run: |
+          [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] || { echo "missing Supabase public values (secrets SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY)"; exit 1; }
+          pnpm build:cf
+          pnpm deploy:cf
