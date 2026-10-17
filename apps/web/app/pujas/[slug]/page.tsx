@@ -13,6 +13,7 @@ export const revalidate = 3600;
 // variable, and the fix live in the header of app/temples/[slug]/page.tsx.
 // Guarded by __tests__/seo/soft-404-status.test.ts.
 
+import { staticOgPath } from '../../../lib/og-static';
 import { HAS_PUJA_MATERIALS_PROMISE } from '../../../lib/launch-gates';
 import Link from 'next/link';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -207,7 +208,7 @@ export async function generateMetadata({
  const pujaCatalogImage = getPujaImage(slug);
  const deitySlug = (puja.deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-');
  // Dynamic branded card — always available, reflects live title + price.
- const dynamicOg = `https://darshya.online/og/puja/${slug}`;
+ const dynamicOg = `https://darshya.online${staticOgPath('puja', slug) ?? `/og/puja/${slug}`}`;
  const ogImage = firstPujaImage || pujaCatalogImage || getDeityImage(deitySlug) || dynamicOg;
 
  return {

@@ -40,6 +40,7 @@ export const revalidate = 3600;
 // keeps covering /temples without covering /temples/<slug>. Guarded by
 // __tests__/seo/soft-404-status.test.ts.
 // ──────────────────────────────────────────────────────────────
+import { staticOgPath } from '../../../lib/og-static';
 import type { Metadata } from 'next';
 // DU-03: the one primary-CTA recipe. Layout-only extras in the third slot —
 // never h-*, px-*, py-* or rounded-*, which is the invariant every call site holds.
@@ -191,7 +192,7 @@ export async function generateMetadata({
      : (apiImages[0] as { url?: string } | undefined)?.url
    : undefined;
  // Dynamic branded card — reflects live name + deity + location.
- const dynamicOg = `https://darshya.online/og/temple/${slug}`;
+ const dynamicOg = `https://darshya.online${staticOgPath('temple', slug) ?? `/og/temple/${slug}`}`;
  const ogImage =
    firstApiImage ||
    (rich ? getTempleHero(slug) : undefined) ||

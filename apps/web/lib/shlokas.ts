@@ -566,6 +566,8 @@ export function shlokaShareUrl(slug: string): string {
 export function shlokaOgUrl(slug: string): string {
   const s = getShloka(slug);
   if (!s) return 'https://darshya.online/og/default.png';
+  // Pre-rendered by `pnpm build:cf` (lib/og-static.ts); dynamic route otherwise.
+  if (process.env.NEXT_PUBLIC_OG_STATIC === '1') return `https://darshya.online/og/shloka/${slug}.png`;
   const q = new URLSearchParams({
     text: s.text,
     ...(s.translit ? { translit: s.translit } : {}),

@@ -6,7 +6,7 @@ const SIZE = { width: 1200, height: 630 };
 // renders as boxes. Fetched once per instance; if the fetch fails the card
 // still renders (Latin text only) rather than the route 500ing.
 let devanagari: ArrayBuffer | null | undefined;
-async function loadDevanagari(): Promise<ArrayBuffer | null> {
+export async function loadDevanagari(): Promise<ArrayBuffer | null> {
   if (devanagari !== undefined) return devanagari;
   try {
     const res = await fetch(

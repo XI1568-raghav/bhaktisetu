@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
 import ClassDetailClient from './ClassDetailClient';
 
+// Public shell only (the class is fetched client-side): safe to cache at the edge.
+export const revalidate = 3600;
+
 /**
  * SEO-09 (prod sweep 2026-08-12) — every /wellness/classes/<id> URL served the
  * root layout's title and description, so each live class shared a SERP entry
