@@ -38,6 +38,7 @@ import { formatClassPrice, formatClassWhen, type WellnessClass } from '../Wellne
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../../../lib/friendly-error';
+import CancelEnrolment from '../../../../components/wellness/CancelEnrolment';
 type ClassDetail = WellnessClass & { roomUrl?: string | null };
 
 let razorpayScriptPromise: Promise<void> | null = null;
@@ -91,6 +92,10 @@ export default function ClassDetailClient() {
   const [enrolling, setEnrolling] = useState(false);
   const [enrolError, setEnrolError] = useState<string | null>(null);
   const [enrolled, setEnrolled] = useState(false);
+  // The signed-in devotee's own enrolment in THIS class (needed to offer Cancel).
+  const [mine, setMine] = useState<{ id: string; status: string } | null>(null);
+  const [mineTick, setMineTick] = useState(0);
+  const [cancelledId, setCancelledId] = useState<string | null>(null);
 
   const authHeaders = useCallback(
     (): Record<string, string> => ({
@@ -110,6 +115,31 @@ export default function ClassDetailClient() {
     const json = (await res.json()) as { data?: ClassDetail };
     return json.data ?? null;
   }, [sessionId, authHeaders]);
+
+  useEffect(() => {
+    if (!token || !sessionId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/wellness/enrollments/mine`, {
+          headers: { authorization: `Bearer ${token}` },
+          credentials: 'include',
+          cache: 'no-store',
+        });
+        if (!res.ok) return;
+        const json = (await res.json()) as { data?: { id: string; sessionId: string; status: string }[] };
+        const row = (json.data ?? []).find(
+          (r) => r.sessionId === sessionId && (r.status === 'PAID' || r.status === 'ATTENDED' || r.status === 'PENDING_PAYMENT'),
+        );
+        if (!cancelled) setMine(row ? { id: row.id, status: row.status } : null);
+      } catch {
+        // Cancel is an extra; the page works without it.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [token, sessionId, enrolled, mineTick]);
 
   useEffect(() => {
     let cancelled = false;
@@ -351,7 +381,13 @@ export default function ClassDetailClient() {
 
         {/* The server returns roomUrl only to a PAID enrollee — its presence is
             the entitlement, so a returning devotee sees Join without re-paying. */}
-        {detail.roomUrl ? (
+        {cancelledId ? (
+          <div className="mt-4">
+            <Link href="/wellness/classes" className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>
+              Browse other classes
+            </Link>
+          </div>
+        ) : detail.roomUrl ? (
           <div className="mt-4">
             <p
               className="flex items-center gap-1.5 text-sm font-medium mb-3"
@@ -368,7 +404,7 @@ export default function ClassDetailClient() {
               Join the live room
             </a>
           </div>
-        ) : enrolled ? (
+        ) : enrolled || mine?.status === 'PAID' || mine?.status === 'ATTENDED' ? (
           <div className="mt-4">
             <p className="flex items-center gap-1.5 text-sm font-medium" style={{ color: 'var(--color-text)' }}>
               <CheckCircle2 className="w-4 h-4" /> You are enrolled in this class.
@@ -405,6 +441,23 @@ export default function ClassDetailClient() {
             ) : null}
           </div>
         )}
+
+        {mine || cancelledId ? (
+          <CancelEnrolment
+            key={cancelledId ?? mine!.id}
+            token={token}
+            enrollmentId={cancelledId ?? mine!.id}
+            status={cancelledId ? 'PAID' : mine!.status}
+            priceInr={detail.priceInr}
+            scheduledAt={detail.scheduledAt}
+            onCancelled={() => {
+              setCancelledId(mine?.id ?? cancelledId);
+              setEnrolled(false);
+              setMine(null);
+              setMineTick((n) => n + 1);
+            }}
+          />
+        ) : null}
 
         {enrolError ? (
           <p

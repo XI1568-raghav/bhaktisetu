@@ -38,6 +38,16 @@ import { friendlyApiError } from '../../../lib/friendly-error';
 import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import {
+  canCancelStoreOrder,
+  courierFromHistory,
+  describeStoreCancelError,
+  describeStoreCancelled,
+  storeCancelBlockedReason,
+  storeCancelConfirmText,
+  storeRefundState,
+  type OrderHistoryEntry,
+} from '../../../lib/store-order-cancel';
 
 interface OrderItem {
   productId: string;
@@ -56,6 +66,9 @@ interface StoreOrder {
   subtotalInr?: number;
   deliveryFeeInr?: number;
   trackingNumber?: string | null;
+  paymentId?: string | null;
+  paymentStatus?: string | null;
+  statusHistory?: OrderHistoryEntry[];
   items: OrderItem[];
 }
 
@@ -71,6 +84,15 @@ const STATUS_META: Record<
   CANCELLED: { label: 'Cancelled', icon: XCircle, className: 'bg-red-50 text-red-700' },
   REFUNDED: { label: 'Refunded', icon: RotateCcw, className: 'bg-surface-100 text-surface-600' },
 };
+
+function totalLabel(o: { paymentStatus?: string | null; status: string }): string {
+  const ps = o.paymentStatus;
+  if (ps === 'captured' || ps === 'partially_refunded') return 'Total paid';
+  if (ps === 'refunded') return 'Total (refunded)';
+  if (o.status === 'CANCELLED' || o.status === 'REFUNDED') return 'Total';
+  if (ps == null) return 'Total (not paid online)';
+  return 'Total (payment pending)';
+}
 
 function formatPrice(amount: number): string {
   return new Intl.NumberFormat('en-IN', {
@@ -103,6 +125,39 @@ function StoreOrdersInner() {
   // no page read. A 401 here is a dead session, and the sentence it produces
   // instructs the buyer to sign in again — so something has to let them.
   const [reauth, setReauth] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+  const [cancelBusy, setCancelBusy] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelNotice, setCancelNotice] = useState<{ id: string; text: string } | null>(null);
+
+  async function cancelOrder(orderId: string) {
+    setCancelBusy(true);
+    setCancelError(null);
+    try {
+      const res = await fetch(`${API_BASE_URL}/store/orders/${orderId}/cancel`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          ...(session?.accessToken ? { authorization: `Bearer ${session.accessToken}` } : {}),
+        },
+        credentials: 'include',
+        body: '{}',
+      });
+      const body = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+      if (!res.ok) {
+        setCancelError(describeStoreCancelError(res.status, body as { error?: string; code?: string } | null));
+        return;
+      }
+      setCancelNotice({ id: orderId, text: describeStoreCancelled((body ?? {}) as Parameters<typeof describeStoreCancelled>[0]) });
+      setConfirmId(null);
+      setReloadTick((n) => n + 1);
+    } catch {
+      setCancelError('We could not cancel this order just now. Please try again.');
+    } finally {
+      setCancelBusy(false);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -138,7 +193,7 @@ function StoreOrdersInner() {
     return () => {
       cancelled = true;
     };
-  }, [session?.accessToken]);
+  }, [session?.accessToken, reloadTick]);
 
   return (
     <div className="min-h-[100dvh] bg-surface-50">
@@ -259,16 +314,19 @@ function StoreOrdersInner() {
                       </div>
                     )}
                     <div className="flex justify-between font-semibold text-surface-800 pt-1">
-                      <span>Total paid</span>
+                      <span data-testid="order-total-label">{totalLabel(order)}</span>
                       <span>{formatPrice(order.totalAmount)}</span>
                     </div>
                   </div>
 
                   {order.trackingNumber ? (
-                    <p className="mt-3 text-sm text-surface-600">
+                    <p className="mt-3 text-sm text-surface-600" data-testid="order-tracking">
                       <Truck className="w-4 h-4 inline-block mr-1.5 -mt-0.5 text-surface-400" />
                       Tracking number:{' '}
                       <span className="font-medium text-surface-800">{order.trackingNumber}</span>
+                      {courierFromHistory(order) ? (
+                        <span className="text-surface-500"> via {courierFromHistory(order)}</span>
+                      ) : null}
                     </p>
                   ) : (
                     order.status === 'SHIPPED' && (
@@ -277,6 +335,77 @@ function StoreOrdersInner() {
                       </p>
                     )
                   )}
+
+                  {(() => {
+                    const refund = storeRefundState(order);
+                    const blocked = storeCancelBlockedReason(order.status);
+                    return (
+                      <>
+                        {refund.kind !== 'none' ? (
+                          <p
+                            data-testid="order-refund-state"
+                            className={`mt-3 text-sm ${refund.kind === 'declined' ? 'text-red-700' : 'text-surface-700'}`}
+                          >
+                            {refund.text}
+                          </p>
+                        ) : null}
+                        {cancelNotice?.id === order.id ? (
+                          <p role="status" data-testid="order-cancel-notice" className="mt-3 text-sm text-emerald-800">
+                            {cancelNotice.text}
+                          </p>
+                        ) : null}
+                        {canCancelStoreOrder(order.status) ? (
+                          confirmId === order.id ? (
+                            <div
+                              role="alertdialog"
+                              aria-label="Confirm order cancellation"
+                              className="mt-3 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-900"
+                            >
+                              <p className="font-medium">Cancel order {order.orderNumber}?</p>
+                              <p className="mt-1" data-testid="order-cancel-preview">{storeCancelConfirmText(order)}</p>
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                <button
+                                  type="button"
+                                  data-testid="order-cancel-confirm"
+                                  disabled={cancelBusy}
+                                  onClick={() => void cancelOrder(order.id)}
+                                  className="h-10 px-4 rounded-lg bg-red-700 text-white text-sm font-medium hover:bg-red-800 disabled:opacity-60"
+                                >
+                                  {cancelBusy ? 'Cancelling…' : 'Yes, cancel order'}
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={cancelBusy}
+                                  onClick={() => setConfirmId(null)}
+                                  className="h-10 px-4 rounded-lg border border-red-200 bg-white text-sm font-medium text-red-800 hover:bg-red-100"
+                                >
+                                  Keep order
+                                </button>
+                              </div>
+                              {cancelError ? (
+                                <p role="alert" data-testid="order-cancel-error" className="mt-2 text-red-700">{cancelError}</p>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              data-testid={`order-cancel-open-${order.id}`}
+                              onClick={() => {
+                                setConfirmId(order.id);
+                                setCancelError(null);
+                                setCancelNotice(null);
+                              }}
+                              className="mt-3 text-sm font-medium text-red-700 underline underline-offset-2 hover:text-red-800"
+                            >
+                              Cancel order
+                            </button>
+                          )
+                        ) : blocked ? (
+                          <p className="mt-3 text-xs text-surface-500" data-testid="order-cancel-blocked">{blocked}</p>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                 </div>
               );
             })}

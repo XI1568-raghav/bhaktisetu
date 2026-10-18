@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify';
 import { authenticateUser } from '../middlewares/auth.js';
 import { presignR2Upload, publicUrlFor, r2 } from '../lib/r2.js';
 import { randomBytes } from 'node:crypto';
+import { videoMaxMb } from '../lib/upload-limits.js';
+import { deleteFromR2, deletePrivateObject } from '../lib/r2.js';
+import { prisma } from '../lib/prisma.js';
 
 /**
  * Media upload endpoints backed by Cloudflare R2.
@@ -30,8 +33,9 @@ const TYPE_POLICY = {
   'audio/mpeg': { ext: 'mp3', maxSizeMb: 25 },
   'audio/wav': { ext: 'wav', maxSizeMb: 25 },
   'audio/webm': { ext: 'weba', maxSizeMb: 25 },
-  'video/mp4': { ext: 'mp4', maxSizeMb: 200 },
-  'video/webm': { ext: 'webm', maxSizeMb: 200 },
+  // maxSizeMb for video comes from lib/upload-limits (one shared constant).
+  'video/mp4': { ext: 'mp4', maxSizeMb: 0 },
+  'video/webm': { ext: 'webm', maxSizeMb: 0 },
   'application/pdf': { ext: 'pdf', maxSizeMb: 10 },
 } as const;
 
@@ -77,6 +81,14 @@ export async function mediaRoutes(server: FastifyInstance) {
     const id = randomBytes(8).toString('hex');
     const key = `${safeKind}/${safeUserId}/${Date.now()}-${id}.${ext}`;
 
+    // Booking video proof is private and bound to a booking: it goes through
+    // POST /priest/bookings/:id/video-proof/signed-url, never this generic route.
+    if (kind === 'puja-proof' && contentType.startsWith('video/')) {
+      return reply.code(400).send({
+        error: 'Video proof is uploaded from the booking page (it is stored privately and tied to the booking).',
+      });
+    }
+
     // Identity documents: images or PDF only, stored privately, no public URL.
     const isPrivate = kind === 'kyc-document';
     if (isPrivate && !contentType.startsWith('image/') && contentType !== 'application/pdf') {
@@ -96,7 +108,40 @@ export async function mediaRoutes(server: FastifyInstance) {
       expiresIn: 600,
       method: 'PUT',
       headers: { 'Content-Type': contentType },
-      maxSizeMb: policy.maxSizeMb,
+      maxSizeMb: contentType.startsWith('video/') ? videoMaxMb() : policy.maxSizeMb,
     });
+  });
+  // Owner-only removal of an uploaded KYC document or profile photo. Once a
+  // provider profile has been approved the file is part of the verification
+  // record, so only an admin may remove it then.
+  server.delete('/object', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const key = String((request.query as { key?: string } | undefined)?.key ?? '');
+    const m = /^(kyc-document|profile-photo)\/([a-z0-9-]+)\/[A-Za-z0-9._-]+$/i.exec(key);
+    if (!m || key.includes('..')) {
+      return reply.code(400).send({ error: 'Only an uploaded ID document or profile photo can be deleted.' });
+    }
+    const [, kind, ownerId] = m;
+    const me = request.currentUser!;
+    const isAdmin = (me.roles ?? []).includes('ADMIN' as never);
+    if (ownerId !== me.id.replace(/[^a-z0-9-]/gi, '') && !isAdmin) {
+      return reply.code(403).send({ error: 'You can only delete your own uploads.' });
+    }
+    if (!isAdmin) {
+      const where = { userId: me.id, approved: true };
+      const counts = await Promise.all([
+        prisma.panditProfile.count({ where }),
+        prisma.storeProfile.count({ where }),
+        prisma.astrologerProfile.count({ where }),
+        prisma.wellnessProfile.count({ where }),
+        prisma.gaushalaProfile.count({ where }),
+        prisma.templeProfile.count({ where }),
+      ]);
+      if (counts.some((c) => c > 0)) {
+        return reply.code(403).send({ error: 'Your profile is approved. Contact support to change verified documents.' });
+      }
+    }
+    const ok = kind === 'kyc-document' ? await deletePrivateObject(key) : await deleteFromR2(key);
+    if (!ok) return reply.code(503).send({ error: 'Could not delete the file right now. Please try again.' });
+    return reply.send({ deleted: true });
   });
 }

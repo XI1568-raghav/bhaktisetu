@@ -38,6 +38,8 @@ export interface ApiClientConfig {
   defaultHeaders?: Record<string, string>;
   /** Called when a 401 is received (e.g., to trigger re-auth) */
   onUnauthorised?: () => void;
+  /** Called when the API refuses a blocked account (403 whose message says "suspended"). */
+  onSuspended?: (message: string) => void;
 }
 
 export interface RequestOptions<T = unknown> extends Omit<RequestInit, "body"> {
@@ -240,7 +242,11 @@ async function request<T>(
     // Handle error responses
     if (!response.ok) {
       // P1-46: latch so a burst of 401s only triggers onUnauthorised once.
-      if (response.status === 401 && config.onUnauthorised && !unauthorisedInProgress) {
+      // noAuth requests (login, /auth/refresh) carry no session, so their 401 is
+      // not an expired session. Firing the hook for the refresh call itself made
+      // the handler wait on the very refresh it was running (deadlock whenever
+      // the refresh token was rejected and the 401 came from a bare-fetch caller).
+      if (response.status === 401 && !noAuth && config.onUnauthorised && !unauthorisedInProgress) {
         unauthorisedInProgress = true;
         // The handler may be async (e.g. token refresh). Reset the latch once
         // it settles. Handler errors are swallowed so the original 401 is the
@@ -259,6 +265,14 @@ async function request<T>(
       // `{ error: "<sentence>" }` first and foremost. See error-shapes.ts for
       // the enumeration and the resolution order.
       const resolved = resolveApiErrorBody(data, response.status);
+
+      if (response.status === 403 && config.onSuspended && /suspended/i.test(resolved.message)) {
+        try {
+          config.onSuspended(resolved.message);
+        } catch {
+          /* a failing hook must not mask the 403 */
+        }
+      }
 
       const apiError: ApiError = {
         success: false,

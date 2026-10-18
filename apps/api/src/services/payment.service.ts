@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import { settleBounded } from '../lib/background.js';
 import Razorpay from 'razorpay';
 import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { Prisma } from '@prisma/client';
@@ -43,6 +44,7 @@ import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { isUniqueViolation } from './wallet.service.js';
 import { generateInvoice } from '../lib/pdf-invoice.js';
 import { sendEmail } from '../lib/email.js';
+import { deliverOrQueue, type OutboxMail } from '../lib/email-outbox.js';
 import { esc } from '../lib/html-escape.js';
 // PBO-11: donation webhook backstop. Donations write no prisma.payment row, so
 // the booking webhook path never reaches them; these helpers let
@@ -55,39 +57,47 @@ import { handleSubscriptionEvent } from './recurring.service.js';
  * (PDF, email, or DB read) is swallowed and logged so it can never block
  * the payment-confirmation flow this is called from.
  */
+/** The receipt email for a puja booking, rebuilt from the booking id alone (outbox retry too). */
+export async function composePujaBookingInvoiceMail(bookingId: string): Promise<OutboxMail | null> {
+  const booking = await prisma.pujaBooking.findUnique({
+    where: { id: bookingId },
+    select: {
+      bookingNumber: true,
+      priceAmount: true,
+      createdAt: true,
+      user: { select: { fullName: true, email: true } },
+      temple: { select: { name: true, city: true } },
+      pujaType: { select: { name: true } },
+    },
+  });
+  if (!booking || !booking.user.email) return null;
+  const pdf = await generateInvoice({
+    type: 'puja_booking',
+    bookingNumber: booking.bookingNumber,
+    devoteeName: booking.user.fullName,
+    pujaName: booking.pujaType.name,
+    templeName: booking.temple.name,
+    templeCity: booking.temple.city,
+    amountInr: Number(booking.priceAmount),
+    createdAt: booking.createdAt.toISOString().slice(0, 10),
+  });
+  return {
+    to: booking.user.email,
+    subject: `Darshya payment receipt — ${booking.bookingNumber}`,
+    html: `<p>Namaste ${esc(booking.user.fullName)},</p><p>Your payment receipt for booking <strong>${esc(booking.bookingNumber)}</strong> is attached.</p>`,
+    text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
+    attachments: [
+      { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
+    ],
+  };
+}
+
 async function sendPujaBookingInvoice(bookingId: string): Promise<void> {
   try {
-    const booking = await prisma.pujaBooking.findUnique({
-      where: { id: bookingId },
-      select: {
-        bookingNumber: true,
-        priceAmount: true,
-        createdAt: true,
-        user: { select: { fullName: true, email: true } },
-        temple: { select: { name: true, city: true } },
-        pujaType: { select: { name: true } },
-      },
-    });
-    if (!booking || !booking.user.email) return;
-    const pdf = await generateInvoice({
-      type: 'puja_booking',
-      bookingNumber: booking.bookingNumber,
-      devoteeName: booking.user.fullName,
-      pujaName: booking.pujaType.name,
-      templeName: booking.temple.name,
-      templeCity: booking.temple.city,
-      amountInr: Number(booking.priceAmount),
-      createdAt: booking.createdAt.toISOString().slice(0, 10),
-    });
-    await sendEmail({
-      to: booking.user.email,
-      subject: `Darshya payment receipt — ${booking.bookingNumber}`,
-      html: `<p>Namaste ${esc(booking.user.fullName)},</p><p>Your payment receipt for booking <strong>${esc(booking.bookingNumber)}</strong> is attached.</p>`,
-      text: `Payment receipt for booking ${booking.bookingNumber} attached.`,
-      attachments: [
-        { filename: `receipt-${booking.bookingNumber}.pdf`, content: pdf },
-      ],
-    });
+    const mail = await composePujaBookingInvoiceMail(bookingId);
+    if (!mail) return;
+    // Inline attempt, then the email outbox retries a failure (lib/email-outbox.ts).
+    await deliverOrQueue(mail, { kind: 'puja_invoice', refId: bookingId });
   } catch (err) {
     console.warn('[payment.service] sendPujaBookingInvoice failed:', err);
   }
@@ -235,7 +245,7 @@ async function recordStoreOrderCommissionMinted(
         ...(commission.providerId ? { providerId: commission.providerId } : {}),
         ...metadata,
       },
-    });
+    }).catch(() => undefined);
   } catch (err) {
     // The lookup can fail even though recordMoneyEvent cannot. Swallow it for
     // the same reason recordMoneyEvent swallows: the capture has already
@@ -253,66 +263,72 @@ async function recordStoreOrderCommissionMinted(
  * after Razorpay capture flips the order to CONFIRMED. Any failure is
  * swallowed so payment confirmation never blocks on email/PDF errors.
  */
+export async function composeStoreOrderInvoiceMail(storeOrderId: string): Promise<OutboxMail | null> {
+  const order = await prisma.storeOrder.findUnique({
+    where: { id: storeOrderId },
+    include: { user: { select: { fullName: true, email: true } } },
+  });
+  if (!order || !order.user.email) return null;
+  type Item = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
+  type Addr = {
+    fullName?: string; line1?: string; line2?: string; city?: string;
+    state?: string; pincode?: string; country?: string;
+  };
+  const items: Item[] = Array.isArray(order.items)
+    ? (order.items as unknown as Item[])
+    : [];
+  // QA 2026-10-13: order.items stores {productId, qty, priceAtPurchase} with no
+  // name, so the receipt's description column printed the product's UUID; and
+  // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
+  // not add up to the printed total. Resolve names, and add the fee as its own line.
+  const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
+  let named: Array<{ id: string; name: string }> = [];
+  if (ids.length) {
+    try {
+      named = (await prisma.storeProduct.findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })) ?? [];
+    } catch {
+      named = [];
+    }
+  }
+  const nameById = new Map(named.map((p) => [p.id, p.name]));
+  const lineItems = items.map((it) => ({
+    name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
+    qty: Number(it.qty ?? 1),
+    priceInr: Number(it.priceAtPurchase ?? 0),
+  }));
+  const itemsSubtotal = lineItems.reduce((a, l) => a + l.qty * l.priceInr, 0);
+  const feeInr = Math.round((Number(order.totalAmountInr) - itemsSubtotal) * 100) / 100;
+  if (feeInr > 0) lineItems.push({ name: 'Delivery & handling', qty: 1, priceInr: feeInr });
+  const addr = order.shippingAddress as unknown as Addr;
+  const addrStr = [
+    addr?.fullName, addr?.line1, addr?.line2, addr?.city,
+    addr?.state, addr?.pincode, addr?.country,
+  ].filter(Boolean).join(', ');
+  const pdf = await generateInvoice({
+    type: 'store_order',
+    orderNumber: order.orderNumber,
+    customerName: order.user.fullName,
+    items: lineItems,
+    shippingAddress: addrStr,
+    totalInr: Number(order.totalAmountInr),
+    createdAt: order.createdAt.toISOString().slice(0, 10),
+  });
+  return {
+    to: order.user.email,
+    subject: `Darshya payment receipt — ${order.orderNumber}`,
+    html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
+    text: `Payment receipt for order ${order.orderNumber} attached.`,
+    attachments: [
+      { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
+    ],
+  };
+}
+
 async function sendStoreOrderInvoice(storeOrderId: string): Promise<void> {
   try {
-    const order = await prisma.storeOrder.findUnique({
-      where: { id: storeOrderId },
-      include: { user: { select: { fullName: true, email: true } } },
-    });
-    if (!order || !order.user.email) return;
-    type Item = { productId?: string; qty?: number; priceAtPurchase?: number; name?: string };
-    type Addr = {
-      fullName?: string; line1?: string; line2?: string; city?: string;
-      state?: string; pincode?: string; country?: string;
-    };
-    const items: Item[] = Array.isArray(order.items)
-      ? (order.items as unknown as Item[])
-      : [];
-    // QA 2026-10-13: order.items stores {productId, qty, priceAtPurchase} with no
-    // name, so the receipt's description column printed the product's UUID; and
-    // the delivery fee (part of totalAmountInr) was not itemised, so the lines did
-    // not add up to the printed total. Resolve names, and add the fee as its own line.
-    const ids = items.map((it) => it.productId).filter((id): id is string => typeof id === 'string');
-    let named: Array<{ id: string; name: string }> = [];
-    if (ids.length) {
-      try {
-        named = (await prisma.storeProduct.findMany({ where: { id: { in: ids } }, select: { id: true, name: true }, take: ids.length })) ?? [];
-      } catch {
-        named = [];
-      }
-    }
-    const nameById = new Map(named.map((p) => [p.id, p.name]));
-    const lineItems = items.map((it) => ({
-      name: typeof it.name === 'string' ? it.name : (nameById.get(it.productId ?? '') ?? 'Store item'),
-      qty: Number(it.qty ?? 1),
-      priceInr: Number(it.priceAtPurchase ?? 0),
-    }));
-    const itemsSubtotal = lineItems.reduce((a, l) => a + l.qty * l.priceInr, 0);
-    const feeInr = Math.round((Number(order.totalAmountInr) - itemsSubtotal) * 100) / 100;
-    if (feeInr > 0) lineItems.push({ name: 'Delivery & handling', qty: 1, priceInr: feeInr });
-    const addr = order.shippingAddress as unknown as Addr;
-    const addrStr = [
-      addr?.fullName, addr?.line1, addr?.line2, addr?.city,
-      addr?.state, addr?.pincode, addr?.country,
-    ].filter(Boolean).join(', ');
-    const pdf = await generateInvoice({
-      type: 'store_order',
-      orderNumber: order.orderNumber,
-      customerName: order.user.fullName,
-      items: lineItems,
-      shippingAddress: addrStr,
-      totalInr: Number(order.totalAmountInr),
-      createdAt: order.createdAt.toISOString().slice(0, 10),
-    });
-    await sendEmail({
-      to: order.user.email,
-      subject: `Darshya payment receipt — ${order.orderNumber}`,
-      html: `<p>Namaste ${esc(order.user.fullName)},</p><p>Your payment receipt for order <strong>${esc(order.orderNumber)}</strong> is attached.</p>`,
-      text: `Payment receipt for order ${order.orderNumber} attached.`,
-      attachments: [
-        { filename: `receipt-${order.orderNumber}.pdf`, content: pdf },
-      ],
-    });
+    const mail = await composeStoreOrderInvoiceMail(storeOrderId);
+    if (!mail) return;
+    await deliverOrQueue(mail, { kind: 'store_invoice', refId: storeOrderId });
   } catch (err) {
     console.warn('[payment.service] sendStoreOrderInvoice failed:', err);
   }
@@ -641,13 +657,14 @@ async function fireAndForgetPostConfirmSideEffects(
   bookingId: string,
   userId: string,
 ): Promise<void> {
-  void sendPujaBookingInvoice(bookingId);
+  const pending: Array<Promise<unknown>> = [];
+  pending.push(Promise.resolve(sendPujaBookingInvoice(bookingId)));
   // Fire-and-forget — referral reward MUST NOT fail booking confirmation.
-  void tryRewardReferralForBooking(userId, bookingId);
+  pending.push(Promise.resolve(tryRewardReferralForBooking(userId, bookingId)));
   // Booking revamp: snapshot the cancellation policy + notify the devotee +
   // kick off dispatch if this booking requested a speed tier (T1/T2/T3). All
   // fire-and-forget — none of these may roll back a captured payment.
-  void (async () => {
+  pending.push((async () => {
     try {
       const { cancellationService } = await import('./cancellation.service.js');
       const { notifyDevotee, buildBookingCtx } = await import('./booking-notify.service.js');
@@ -674,7 +691,10 @@ async function fireAndForgetPostConfirmSideEffects(
     } catch (err) {
       console.warn('[payment.service] post-confirm dispatch/notify failed:', err);
     }
-  })();
+  })());
+  // Cloud Run throttles CPU after the response: wait (bounded) so the receipt,
+  // referral credit and dispatch actually run before the webhook/verify replies.
+  await settleBounded(pending, 'post-confirm');
 }
 
 
@@ -875,7 +895,7 @@ export class PaymentService {
     });
 
     // OPS-05 — rupees, never the paise figure sent to the gateway.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.PAYMENT_INITIATED,
       actorType: 'devotee',
       actorId: userId,
@@ -890,7 +910,7 @@ export class PaymentService {
       statusAfter: 'initiated',
       idempotencyKey: razorpayOrder.id,
       note: `Razorpay order opened for ${booking.bookingNumber}`,
-    });
+    }).catch(() => undefined);
 
     return {
       orderId: razorpayOrder.id,
@@ -1104,7 +1124,7 @@ export class PaymentService {
     // a null must never be logged as a mint.
     if (mintedCommission) {
       const minted: MintedCommission = mintedCommission;
-      void recordMoneyEvent({
+      await recordMoneyEvent({
         eventType: MONEY_EVENTS.COMMISSION_MINTED,
         actorType: 'system',
         subjectType: 'commission',
@@ -1124,14 +1144,14 @@ export class PaymentService {
           providerId: minted.providerId,
           gatewayPaymentId: razorpayPaymentId,
         },
-      });
+      }).catch(() => undefined);
     }
 
     // OPS-05 — the client-verify rail, recorded AFTER the transaction commits.
     // `payment.status` is the pre-image read before the update; it is the one
     // fact the mutable status column can never answer afterwards, and the
     // reason a dispute can tell "verified then captured" from "captured twice".
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
       actorType: userId ? 'devotee' : 'system',
       actorId: userId ?? null,
@@ -1154,7 +1174,7 @@ export class PaymentService {
         capturedNow,
         ...(oversold ? { slotOversoldNote: oversold } : {}),
       },
-    });
+    }).catch(() => undefined);
 
     // Post-commit side-effects (invoice email + referral reward) are network
     // calls that must NOT roll back a captured payment — fire-and-forget.
@@ -1285,7 +1305,7 @@ export class PaymentService {
     // Deliberately NOT emitted on the idempotent-reuse branch above: a refresh
     // mid-checkout opens no order and writes no row, and an event there would
     // put one checkout on the trail once per page reload.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.PAYMENT_INITIATED,
       actorType: 'devotee',
       actorId: userId,
@@ -1300,7 +1320,7 @@ export class PaymentService {
       idempotencyKey: razorpayOrder.id,
       note: `Razorpay order opened for store order ${order.orderNumber}`,
       metadata: { rail: 'store-order-create', orderNumber: order.orderNumber },
-    });
+    }).catch(() => undefined);
 
     return {
       orderId: razorpayOrder.id,
@@ -1426,7 +1446,7 @@ export class PaymentService {
       await recordStoreOrderCommissionMinted(storeOrder.id, 'store-client-verify', {
         gatewayPaymentId: razorpayPaymentId,
       });
-      void sendStoreOrderInvoice(storeOrder.id);
+      await settleBounded(Promise.resolve(sendStoreOrderInvoice(storeOrder.id)), 'store-invoice');
     }
 
     // OPS-13 — the client-verify rail. `payment.status` is the pre-image read
@@ -1441,7 +1461,7 @@ export class PaymentService {
     // ON CONFLICT DO NOTHING — so a capture event emitted here would silently
     // erase the webhook's row, which is the one that records the GATEWAY as
     // the actor. The capture fact is carried by `statusAfter` instead.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.PAYMENT_VERIFIED,
       actorType: 'devotee',
       actorId: userId,
@@ -1462,7 +1482,7 @@ export class PaymentService {
         orderNumber: storeOrder.orderNumber,
         confirmedOrder: shouldConfirm,
       },
-    });
+    }).catch(() => undefined);
 
     return {
       verified: true,
@@ -1714,7 +1734,7 @@ export class PaymentService {
             // returns null — so the trail names which rail actually did it.
             if (mintedCommission) {
               const minted: MintedCommission = mintedCommission;
-              void recordMoneyEvent({
+              await recordMoneyEvent({
                 eventType: MONEY_EVENTS.COMMISSION_MINTED,
                 actorType: 'gateway',
                 subjectType: 'commission',
@@ -1732,7 +1752,7 @@ export class PaymentService {
                   providerId: minted.providerId,
                   gatewayPaymentId: paymentEntity.id,
                 },
-              });
+              }).catch(() => undefined);
             }
 
             // OPS-05 — the gateway rail. `actorType:'gateway'` is the whole
@@ -1742,7 +1762,7 @@ export class PaymentService {
             // dispute. Keyed on the gateway payment id, which the writer
             // namespaces by event type — so this row coexists with the
             // PAYMENT_VERIFIED row carrying the same id instead of erasing it.
-            void recordMoneyEvent({
+            await recordMoneyEvent({
               eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
               actorType: 'gateway',
               subjectType: 'payment',
@@ -1765,7 +1785,7 @@ export class PaymentService {
                 capturedNow,
                 ...(oversold ? { slotOversoldNote: oversold } : {}),
               },
-            });
+            }).catch(() => undefined);
 
             if (oversold) {
               // Deliberately NOT a refusal to confirm: the devotee has already
@@ -1845,7 +1865,7 @@ export class PaymentService {
               }
             });
             // OPS-05 — same capture event, the store-order rail.
-            void recordMoneyEvent({
+            await recordMoneyEvent({
               eventType: MONEY_EVENTS.PAYMENT_CAPTURED,
               actorType: 'gateway',
               subjectType: 'store_order',
@@ -1861,7 +1881,7 @@ export class PaymentService {
               idempotencyKey: paymentEntity.id,
               note: `razorpay webhook ${event} (store order ${storeOrder.orderNumber})`,
               metadata: { rail: 'webhook-store-order', confirmedOrder: shouldConfirm },
-            });
+            }).catch(() => undefined);
             if (shouldConfirm) {
               // OPS-13 — the same gap as the client rail, on the rail that
               // actually confirms most store orders in production. This
@@ -1875,7 +1895,7 @@ export class PaymentService {
                 gatewayPaymentId: paymentEntity.id,
                 webhookEvent: event,
               });
-              void sendStoreOrderInvoice(storeOrder.id);
+              await settleBounded(Promise.resolve(sendStoreOrderInvoice(storeOrder.id)), 'store-invoice');
             }
           } else {
             // A Payment row with neither a booking nor a store order behind it
@@ -1954,6 +1974,7 @@ export class PaymentService {
                 await wellness.finalizeWellnessEnrollmentFromWebhook(
                   paymentEntity.order_id,
                   paymentEntity.amount ?? null,
+                  paymentEntity.id,
                 );
               }
             } catch (err) {
@@ -2003,7 +2024,7 @@ export class PaymentService {
           // OPS-05 — a failure is a money event too: it is the row that
           // explains why a booking the devotee insists they paid for never
           // confirmed.
-          void recordMoneyEvent({
+          await recordMoneyEvent({
             eventType: MONEY_EVENTS.PAYMENT_FAILED,
             actorType: 'gateway',
             subjectType: 'payment',
@@ -2023,7 +2044,32 @@ export class PaymentService {
               failureCode: paymentEntity.error_code ?? null,
               method: paymentEntity.method ?? null,
             },
-          });
+          }).catch(() => undefined);
+        } else {
+          // Slice L: no Payment row owns this order (donation / consultation / wellness rails
+          // write none) - the failure used to leave no trace at all.
+          const subjectId = paymentEntity.order_id ?? paymentEntity.id;
+          if (subjectId) {
+            await recordMoneyEvent({
+              eventType: MONEY_EVENTS.PAYMENT_FAILED,
+              actorType: 'gateway',
+              subjectType: 'payment',
+              subjectId,
+              amount: paymentEntity.amount != null ? Number(paymentEntity.amount) / 100 : null,
+              currency: paymentEntity.currency ?? 'INR',
+              gateway: 'razorpay',
+              gatewayOrderId: paymentEntity.order_id ?? null,
+              gatewayPaymentId: paymentEntity.id,
+              statusAfter: 'failed',
+              idempotencyKey: paymentEntity.id,
+              note: paymentEntity.error_description ?? `razorpay webhook ${event} (no payment row)`,
+              metadata: {
+                rail: 'webhook-failed-no-payment-row',
+                failureCode: paymentEntity.error_code ?? null,
+                method: paymentEntity.method ?? null,
+              },
+            }).catch(() => undefined);
+          }
         }
 
         return { handled: true, event };
@@ -2121,7 +2167,7 @@ export class PaymentService {
           // for a refund raised directly in the Razorpay dashboard, where the
           // platform has no other record of who authorised it; without this row
           // the trail shows a capture followed by an unexplained balance change.
-          void recordMoneyEvent({
+          await recordMoneyEvent({
             eventType: MONEY_EVENTS.REFUND_COMPLETED,
             actorType: 'gateway',
             subjectType: 'payment',
@@ -2142,7 +2188,7 @@ export class PaymentService {
               refundedTotal: newRefundTotal.toFixed(2),
               refundableBefore: refundableBefore.toFixed(2),
             },
-          });
+          }).catch(() => undefined);
 
           // OPS-05 — the ledger unwind this branch performs, recorded through
           // the SAME shared emitter the admin rail uses. This is the rail with
@@ -2397,7 +2443,7 @@ export class PaymentService {
           requestedInr: refundAmount.toFixed(2),
           reason,
         },
-      });
+      }).catch(() => undefined);
       throw err;
     }
 
@@ -2407,7 +2453,7 @@ export class PaymentService {
     // still been refunded and the Payment row still says `captured`. That
     // divergence is precisely the state an audit trail exists to show, and
     // REFUND_COMPLETED (emitted only after the commit) cannot show it.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.REFUND_INITIATED,
       actorType: adminId ? 'admin' : 'system',
       actorId: adminId ?? null,
@@ -2429,7 +2475,7 @@ export class PaymentService {
         refundFraction: refundFraction ?? null,
         refundableBeforeInr: refundable.toFixed(2),
       },
-    });
+    }).catch(() => undefined);
 
     const newRefundTotal = alreadyRefunded.plus(refundAmount);
     const newPaymentStatus = isFullRefund ? 'refunded' : 'partially_refunded';
@@ -2528,7 +2574,7 @@ export class PaymentService {
     // and when, and on whose authority" was previously only `metadata.refundedBy`,
     // which the next refund on the same capture overwrites. `statusBefore` is
     // the pre-image read at the top of this method.
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.REFUND_COMPLETED,
       actorType: adminId ? 'admin' : 'system',
       actorId: adminId ?? null,
@@ -2552,7 +2598,7 @@ export class PaymentService {
         refundedTotal: newRefundTotal.toFixed(2),
         fullyRefunded: isFullRefund,
       },
-    });
+    }).catch(() => undefined);
 
     // OPS-05 — and the SECOND half of the same story. REFUND_COMPLETED above
     // says the devotee got money back; it says nothing about whether the
@@ -2728,7 +2774,7 @@ export class PaymentService {
       // WORKING, and it is the fact a "why was this pandit never paid on rail
       // B" question turns on. Without a row here the trail is silent, and
       // silence is indistinguishable from the call never having been made.
-      void recordMoneyEvent({
+      await recordMoneyEvent({
         eventType: MONEY_EVENTS.PAYOUT_REJECTED,
         actorType: 'system',
         subjectType: 'booking',
@@ -2747,7 +2793,7 @@ export class PaymentService {
           bookingStatus: booking.status,
           priestId: booking.priestId,
         },
-      });
+      }).catch(() => undefined);
 
       return {
         skipped: true as const,
@@ -2828,7 +2874,7 @@ export class PaymentService {
     // rail's reversal was logged. Recorded AFTER the row lands, and `void`ed:
     // this is the last statement before the return and no money outcome may
     // depend on the log. Rupees, not paise — `priestPayout` is DECIMAL(10,2).
-    void recordMoneyEvent({
+    await recordMoneyEvent({
       eventType: MONEY_EVENTS.PRIEST_PAYOUT_CREATED,
       actorType: 'system',
       subjectType: 'payout',
@@ -2850,7 +2896,7 @@ export class PaymentService {
         bookingNumber: booking.bookingNumber,
         priestId: booking.priestId,
       },
-    });
+    }).catch(() => undefined);
 
     return payout;
   }

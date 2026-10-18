@@ -2,6 +2,14 @@ import type { Metadata } from 'next';
 
 export const revalidate = 3600;
 
+import { fetchSlugParams } from '../../../lib/static-params';
+
+// Prerender every puja from the live API at build time (Cloudflare Worker CPU cap: no
+// per-request SSR). [] on any API failure -> on-demand rendering, build never fails.
+export async function generateStaticParams() {
+  return fetchSlugParams('/pujas/types?limit=100', (j) => (j as { pujaTypes?: unknown }).pujaTypes);
+}
+
 // SEO-11 (prod sweep 2026-09-08) — an unknown slug renders app/not-found.tsx
 // but still answers HTTP 200. The cause is `app/pujas/loading.tsx`, not this
 // file, not ISR, and not the sibling error.tsx: a parent segment's loading.tsx
@@ -13,6 +21,7 @@ export const revalidate = 3600;
 // variable, and the fix live in the header of app/temples/[slug]/page.tsx.
 // Guarded by __tests__/seo/soft-404-status.test.ts.
 
+import { staticOgPath } from '../../../lib/og-static';
 import { HAS_PUJA_MATERIALS_PROMISE } from '../../../lib/launch-gates';
 import Link from 'next/link';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -149,17 +158,26 @@ type PujaLookup =
  | { status: 'not-found' }
  | { status: 'unavailable' };
 
+// Transient failures (network error, 429, 5xx) are retried a few times with a short
+// backoff: a build prerenders hundreds of puja pages at once against a small API, and one
+// dropped request must not fail the whole build. A 404 is never retried, and an API that
+// stays down still resolves to 'unavailable' (no invented data).
 async function getPujaBySlug(slug: string): Promise<PujaLookup> {
+ const delaysMs = [0, 600, 1800];
+ for (let attempt = 0; attempt < delaysMs.length; attempt++) {
+ if (delaysMs[attempt]) await new Promise((r) => setTimeout(r, delaysMs[attempt]));
  try {
  const res = await fetch(`${API_BASE}/pujas/types/${slug}`, {
  next: { revalidate: 300, tags: [`puja-${slug}`] },
  });
  if (res.status === 404) return { status: 'not-found' };
- if (!res.ok) throw new Error(`API error ${res.status}`);
- return { status: 'ok', puja: normalizePuja(await res.json()) };
+ if (res.ok) return { status: 'ok', puja: normalizePuja(await res.json()) };
+ if (res.status < 500 && res.status !== 429) return { status: 'unavailable' };
  } catch {
- return { status: 'unavailable' };
+ // network error: fall through to the next attempt
  }
+ }
+ return { status: 'unavailable' };
 }
 
 export async function generateMetadata({
@@ -207,7 +225,7 @@ export async function generateMetadata({
  const pujaCatalogImage = getPujaImage(slug);
  const deitySlug = (puja.deity || 'lord-shiva').toLowerCase().replace(/\s+/g, '-');
  // Dynamic branded card — always available, reflects live title + price.
- const dynamicOg = `https://darshya.online/og/puja/${slug}`;
+ const dynamicOg = `https://darshya.online${staticOgPath('puja', slug) ?? `/og/puja/${slug}`}`;
  const ogImage = firstPujaImage || pujaCatalogImage || getDeityImage(deitySlug) || dynamicOg;
 
  return {

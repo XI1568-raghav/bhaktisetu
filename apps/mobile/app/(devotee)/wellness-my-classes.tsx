@@ -8,17 +8,21 @@ import {
   ActivityIndicator,
   RefreshControl,
   Linking,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../lib/auth-context';
-import { useMyWellnessEnrolments } from '../../lib/wellness-queries';
+import { useMyWellnessEnrolments, postWellnessCancel } from '../../lib/wellness-queries';
 import {
   selectMyEnrolments,
   partitionEnrolments,
   enrolmentStatusLabel,
   isPaidEnrolment,
+  canCancelEnrolment,
+  previewEnrolmentCancel,
+  describeCancelOutcome,
   formatClassPrice,
   formatClassWhen,
   formatDuration,
@@ -82,6 +86,39 @@ export default function WellnessMyClassesScreen() {
       setRefreshing(false);
     }
   }, [query]);
+
+  const cancelEnrolment = useCallback(
+    (item: WellnessEnrolment) => {
+      const preview = previewEnrolmentCancel({
+        status: item.status,
+        priceInr: item.session?.priceInr ?? null,
+        scheduledAt: item.session?.scheduledAt,
+      });
+      if (preview.kind === 'none') return;
+      if (preview.kind === 'blocked') {
+        Alert.alert('Cannot cancel', preview.message);
+        return;
+      }
+      Alert.alert('Cancel this enrolment?', preview.message, [
+        { text: 'Keep my seat', style: 'cancel' },
+        {
+          text: 'Yes, cancel',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { status, body } = await postWellnessCancel(item.id, token);
+              const out = describeCancelOutcome(status, body);
+              Alert.alert(out.ok ? 'Cancelled' : 'Could not cancel', out.message);
+              if (out.ok) await query.refetch();
+            } catch {
+              Alert.alert('Could not cancel', 'We could not cancel this enrolment just now. Please try again.');
+            }
+          },
+        },
+      ]);
+    },
+    [token, query],
+  );
 
   const renderRow = useCallback(
     ({ item }: { item: WellnessEnrolment }) => {
@@ -190,10 +227,20 @@ export default function WellnessMyClassesScreen() {
               )}
             </>
           ) : null}
+          {canCancelEnrolment(item.status) && item.session?.status !== 'CANCELLED' ? (
+            <TouchableOpacity
+              style={styles.cancelBtn}
+              accessibilityRole="button"
+              accessibilityLabel={`Cancel enrolment in ${s?.title ?? 'this class'}`}
+              onPress={() => cancelEnrolment(item)}
+            >
+              <Text style={styles.cancelBtnText}>Cancel enrolment</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       );
     },
-    [],
+    [cancelEnrolment],
   );
 
   return (
@@ -379,6 +426,8 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     backgroundColor: colors.saffron[600],
   },
+  cancelBtn: { minHeight: 44, alignItems: 'center', justifyContent: 'center', marginTop: spacing.xs },
+  cancelBtnText: { fontSize: fontSize.base, fontWeight: '600', color: colors.red[600] },
   primaryBtnText: { fontSize: fontSize.base, fontWeight: '700', color: colors.white },
   stateBox: {
     flexDirection: 'row',

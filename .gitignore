@@ -70,3 +70,8 @@ docs/chat-archive/
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 graft/
+
+# Cloudflare Workers (OpenNext) build output
+apps/web/.open-next/
+apps/web/.wrangler/
+apps/web/.dev.vars

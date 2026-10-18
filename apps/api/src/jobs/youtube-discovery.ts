@@ -30,6 +30,8 @@ import { prisma } from '../lib/prisma.js';
 // param requires the canonical ID. Resolve a handle to its UC id via
 // https://commentpicker.com/youtube-channel-id.php or the channels.list API.
 //
+// IDs corrected 2026-10-18: the previous five returned 404 from the channel RSS feed.
+// Re-verify with apps/api/scripts/validate-darshan-streams.mjs.
 // To add a new temple: add the seeded `temples.slug`, find the temple's
 // official YouTube channel, get its UC channel ID, add a row below. Quota
 // budget allows up to 5 channels at 30-min cadence — see docs.
@@ -42,15 +44,15 @@ interface TempleChannel {
 
 const TEMPLE_CHANNELS: readonly TempleChannel[] = [
   // ISKCON Bangalore — Sri Radha Krishna-chandra Mandir, daily live darshans.
-  { templeSlug: 'iskcon-bangalore', channelId: 'UCipFI3i9P9YEHbCpe2nCK6A', templeName: 'ISKCON Bangalore' },
+  { templeSlug: 'iskcon-bangalore', channelId: 'UCPXnayBvF7ynbG_I3VOTgIg', templeName: 'ISKCON Bangalore' },
   // Tirumala Tirupati Devasthanams (TTD) — Sri Venkateswara Swamy.
-  { templeSlug: 'tirumala-tirupati', channelId: 'UCxLoy8c4M6OAQiVqJp7y4cw', templeName: 'TTD Tirumala Tirupati' },
+  { templeSlug: 'tirumala-tirupati', channelId: 'UCS2Y83GD-fc7qqgNW5uj41g', templeName: 'TTD Tirumala Tirupati' },
   // Shri Mata Vaishno Devi Shrine Board — Katra, J&K official channel.
-  { templeSlug: 'vaishno-devi-katra', channelId: 'UCgYIfCQpsBJU1lsJRy90uvQ', templeName: 'Vaishno Devi Shrine Board' },
+  { templeSlug: 'vaishno-devi-katra', channelId: 'UCFYQr1l7ereS27SrLJ8bBtw', templeName: 'Vaishno Devi Shrine Board' },
   // Shri Saibaba Sansthan Trust Shirdi — official live aarti channel.
-  { templeSlug: 'shirdi-sai-baba', channelId: 'UCwQ_9GYfJ7l7zqe2v6jTBmA', templeName: 'Shirdi Sai Baba Sansthan' },
+  { templeSlug: 'shirdi-sai-baba', channelId: 'UCKGvJDh7g_Kzocbwy7aKicA', templeName: 'Shirdi Sai Baba Sansthan' },
   // Shree Siddhivinayak Mumbai — official temple trust channel.
-  { templeSlug: 'siddhivinayak-mumbai', channelId: 'UCV_2k6k4hDQqj6n-5kLqA8Q', templeName: 'Shree Siddhivinayak Temple' },
+  { templeSlug: 'siddhivinayak-mumbai', channelId: 'UCF9FdiMBENIbM6jb44zWmCQ', templeName: 'Shree Siddhivinayak Temple' },
 ];
 
 // ── YouTube API response validation ─────────────────────────────────────────

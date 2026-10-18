@@ -1,0 +1,19 @@
+{
+  // Cloudflare Workers config for apps/web (OpenNext). Not used by the Render
+  // Docker build. Runbook: docs/runbooks/cloudflare-web-deploy.md
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "darshya-web",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-01-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "darshya-web" }
+  ],
+  // Runtime (non-secret) vars. NEXT_PUBLIC_* are baked at build time, not here.
+  "vars": {},
+  "observability": { "enabled": true }
+}

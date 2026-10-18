@@ -1,0 +1,105 @@
+name: Deploy web to Cloudflare Workers
+
+# Manual, or a same-repo PR (preflight only unless the PR title contains [cf-deploy]). `preflight` checks the stored Cloudflare token and account without deploying.
+# `deploy` builds apps/web with OpenNext and uploads the Worker to the workers.dev address
+# (no custom domain change; the DNS cutover is a separate manual step in
+# docs/runbooks/cloudflare-web-deploy.md). Secrets are never echoed.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: preflight or deploy
+        required: true
+        default: preflight
+        type: choice
+        options: [preflight, deploy]
+
+permissions:
+  contents: read
+
+jobs:
+  cloudflare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    env:
+      MODE: ${{ inputs.mode || (contains(github.event.pull_request.title, '[cf-deploy]') && 'deploy') || 'preflight' }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight (token and account, no secrets printed)
+        run: |
+          set -u
+          [ -n "${CLOUDFLARE_API_TOKEN:-}" ] && echo "token secret: present" || { echo "token secret: MISSING"; exit 1; }
+          [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ] && echo "account id secret: present" || echo "account id secret: MISSING"
+          code=$(curl -s -o /tmp/verify.json -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" https://api.cloudflare.com/client/v4/user/tokens/verify)
+          echo "token verify http: $code status: $(jq -r '.result.status // "n/a"' /tmp/verify.json)"
+          if [ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]; then
+            code=$(curl -s -o /tmp/workers.json -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts")
+            echo "workers scripts list http: $code (200 = can manage Workers, 403 = token lacks Workers Scripts permission)"
+            echo "existing workers: $(jq -r '[.result[]?.id] | join(",")' /tmp/workers.json 2>/dev/null)"
+            code=$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/subdomain")
+            echo "workers.dev subdomain http: $code"
+          fi
+
+      - name: DNS check or cutover (darshya.online)
+        if: contains(github.event.pull_request.title, '[cf-dns]') || contains(github.event.pull_request.title, '[cf-cutover]')
+        env:
+          CUTOVER: ${{ contains(github.event.pull_request.title, '[cf-cutover]') }}
+        run: |
+          set -u
+          api=https://api.cloudflare.com/client/v4
+          H="Authorization: Bearer $CLOUDFLARE_API_TOKEN"
+          zone=$(curl -s -H "$H" "$api/zones?name=darshya.online" | jq -r '.result[0].id // empty')
+          [ -n "$zone" ] && echo "zone found" || { echo "zone NOT visible to this token"; exit 1; }
+          echo "--- current records for apex and www (name type content proxied id)"
+          for n in darshya.online www.darshya.online; do
+            curl -s -H "$H" "$api/zones/$zone/dns_records?name=$n" | jq -r '.result[]|"\(.name) \(.type) \(.content) proxied=\(.proxied) id=\(.id)"'
+          done
+          echo "--- worker custom domains now"
+          curl -s -H "$H" "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains?service=darshya-web" | jq -r '.result[]?|"\(.hostname) zone=\(.zone_name)"'
+          if [ "$CUTOVER" = true ]; then
+            echo "--- CUTOVER: removing Render CNAMEs for apex and www, attaching Worker domains"
+            for n in darshya.online www.darshya.online; do
+              for id in $(curl -s -H "$H" "$api/zones/$zone/dns_records?name=$n" | jq -r '.result[]|select(.content|test("onrender.com"))|.id'); do
+                code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "$H" "$api/zones/$zone/dns_records/$id"); echo "deleted record for $n http=$code"
+              done
+            done
+            for n in darshya.online www.darshya.online; do
+              code=$(curl -s -o /tmp/dom.json -w '%{http_code}' -X PUT -H "$H" -H 'Content-Type: application/json' "$api/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/domains" --data "{\"hostname\":\"$n\",\"service\":\"darshya-web\",\"environment\":\"production\",\"zone_id\":\"$zone\"}")
+              echo "attach $n http=$code $(jq -r '.errors[0].message // "ok"' /tmp/dom.json)"
+            done
+          fi
+
+      - uses: pnpm/action-setup@v4
+        if: env.MODE == 'deploy'
+      - uses: actions/setup-node@v4
+        if: env.MODE == 'deploy'
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        if: env.MODE == 'deploy'
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and deploy Worker
+        if: env.MODE == 'deploy'
+        working-directory: apps/web
+        env:
+          NEXT_PUBLIC_API_URL: https://api.darshya.online
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.SUPABASE_URL || 'https://hlkvfarvfblhzhhnhtbp.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          NEXT_PUBLIC_ENV: production
+        run: |
+          miss=0
+          [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && echo "SUPABASE_URL secret: present" || { echo "SUPABASE_URL secret: MISSING or empty"; miss=1; }
+          [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && echo "NEXT_PUBLIC_SUPABASE_ANON_KEY secret: present" || { echo "NEXT_PUBLIC_SUPABASE_ANON_KEY secret: MISSING or empty (must be a repository Actions secret)"; miss=1; }
+          [ "$miss" = 0 ] || exit 1
+          pnpm build:cf
+          pnpm deploy:cf

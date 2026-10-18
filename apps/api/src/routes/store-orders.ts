@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { settleBounded } from '../lib/background.js';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
@@ -170,8 +171,13 @@ function serializeOrder(order: any, productNameMap?: Map<string, string>) {
     (sum: number, it: any) => sum + Number(it.priceAtPurchase ?? 0) * Number(it.quantity ?? 0),
     0,
   );
+  const { payment: paymentRow, ...orderRest } = order;
+  // Lets the order list say whether money was actually taken (a COD or unpaid
+  // order must not read "Total paid"). null = no payment on file.
+  const paymentStatus: string | null = paymentRow?.status ?? (order.paymentId ? 'unknown' : null);
   return {
-    ...order,
+    ...orderRest,
+    paymentStatus,
     items,
     customerName,
     totalAmount,
@@ -399,7 +405,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       where,
       orderBy: { createdAt: 'desc' },
       take: 200,
-      include: { user: { select: { fullName: true } } },
+      include: { user: { select: { fullName: true } }, payment: { select: { status: true } } },
     });
     // Build a product-name map for the items in this result set.
     const productIds = new Set<string>();
@@ -536,8 +542,11 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       // confirmed (the Razorpay-verify path wrote it; COD/manual leaked).
       // Fire-and-forget + idempotent — never blocks the status flip.
       if (body.data.status === 'CONFIRMED') {
-        void writeStoreOrderCommission(order.id, undefined, { requirePayment: true }).catch((err) =>
-          request.log.warn({ err }, '[store-orders] commission write failed'),
+        await settleBounded(
+          writeStoreOrderCommission(order.id, undefined, { requirePayment: true }).catch((err) =>
+            request.log.warn({ err }, '[store-orders] commission write failed'),
+          ),
+          'store-commission',
         );
       }
       return reply.send({ data: serializeOrder(updated) });
@@ -577,7 +586,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       refundStatus: result.paid && result.outcome === 'cancelled' ? 'pending_admin_approval' : 'none',
       commissionReversed: result.commissionReversed,
       note: result.paid && result.outcome === 'cancelled'
-        ? 'Order cancelled. Your refund will be processed within 5-7 business days.'
+        ? 'Order cancelled. Your refund request has been sent to our team for approval; it is not refunded instantly.'
         : 'Order cancelled.',
     });
   });
@@ -586,7 +595,16 @@ export async function storeOrderRoutes(server: FastifyInstance) {
   server.get('/orders/refunds/pending', { preHandler: [authenticateUser] }, async (request, reply) => {
     if (!isAdmin(request)) return reply.code(403).send({ error: 'Admin role required' });
     const orders = await listPendingStoreRefunds();
-    return reply.send({ data: orders.map((o) => serializeOrder(o)) });
+    // Name the line items so the admin sees what is being refunded, not "Item".
+    const ids = new Set<string>();
+    orders.forEach((o) => {
+      if (Array.isArray(o.items)) (o.items as any[]).forEach((it) => it?.productId && ids.add(it.productId));
+    });
+    const named = ids.size
+      ? (await prisma.storeProduct.findMany({ where: { id: { in: Array.from(ids) } }, select: { id: true, name: true }, take: ids.size })) ?? []
+      : [];
+    const nameMap = new Map(named.map((p) => [p.id, p.name]));
+    return reply.send({ data: orders.map((o) => serializeOrder(o, nameMap)) });
   });
 
   // POST /orders/:id/refund - admin approves a refund for a PAID store order.
@@ -690,7 +708,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
       });
 
       // Best-effort invoice — never block status flip.
-      void (async () => {
+      await settleBounded((async () => {
         try {
           if (!order.user.email) return;
           // items + shippingAddress are stored as Json; narrow to the shapes
@@ -734,7 +752,7 @@ export async function storeOrderRoutes(server: FastifyInstance) {
         } catch (err) {
           console.warn('[store-orders] invoice send failed:', err);
         }
-      })();
+      })(), 'store-invoice');
 
       return reply.send({ data: serializeOrder(updated) });
     }

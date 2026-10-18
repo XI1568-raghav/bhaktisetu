@@ -106,6 +106,17 @@ describe('request — 401 onUnauthorised latch', () => {
     expect(onUnauthorised).toHaveBeenCalledTimes(1);
   });
 
+  it('does not call onUnauthorised for a 401 on a noAuth request (the refresh call itself)', async () => {
+    const onUnauthorised = vi.fn();
+    initApiClient({ baseUrl: BASE_URL, onUnauthorised });
+    mockFetch(async () => jsonResponse(401, { error: { code: 'UNAUTHORISED', message: 'no', statusCode: 401 } }));
+
+    await expect(api.post('/api/v1/auth/refresh', { refreshToken: 'x' }, { noAuth: true })).rejects.toMatchObject({
+      statusCode: 401,
+    });
+    expect(onUnauthorised).not.toHaveBeenCalled();
+  });
+
   it('fires onUnauthorised only once for concurrent 401s while handler is in-flight', async () => {
     let release!: () => void;
     const handlerGate = new Promise<void>((resolve) => {

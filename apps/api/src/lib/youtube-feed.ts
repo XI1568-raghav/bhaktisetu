@@ -96,3 +96,98 @@ export function liveStreamUrl(channelId: string): string {
 export function videoEmbedUrl(videoId: string): string {
   return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&rel=0`;
 }
+
+// ---------------------------------------------------------------------------
+// Playback resolution (2026-10): live channel embed first, newest upload next.
+// ---------------------------------------------------------------------------
+
+export interface ChannelUpload {
+  videoId: string;
+  title: string;
+  publishedAt: string;
+}
+
+export type LiveProbe = 'live' | 'offline' | 'unknown';
+
+export type ChannelPlayback = {
+  mode: 'live' | 'recent' | 'none';
+  liveProbe: LiveProbe;
+  /** Durable channel live embed; shows the current broadcast whenever there is one. */
+  liveEmbedUrl: string;
+  latest: (ChannelUpload & { embedUrl: string }) | null;
+  /** Newest-first uploads (max 5) so a client can step past an unplayable one. */
+  uploads: ChannelUpload[];
+};
+
+const decodeEntities = (s: string) =>
+  s.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+
+/** Pure: parse a YouTube Atom feed into newest-first uploads. */
+export function parseFeedEntries(xml: string): ChannelUpload[] {
+  const out: ChannelUpload[] = [];
+  for (const m of xml.matchAll(/<entry>([\s\S]*?)<\/entry>/g)) {
+    const body = m[1]!;
+    const videoId = body.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1];
+    const title = body.match(/<title>([^<]*)<\/title>/)?.[1];
+    const publishedAt = body.match(/<published>([^<]+)<\/published>/)?.[1];
+    if (videoId && publishedAt) out.push({ videoId, title: decodeEntities(title ?? ''), publishedAt });
+  }
+  return out.sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt));
+}
+
+/**
+ * Pure: read the /channel/<id>/live page. A live channel's canonical link is the
+ * watch URL of the broadcast; an offline one keeps the channel URL. Anything
+ * else (consent wall, "undefined", redesign) is "unknown", never "offline".
+ */
+export function parseLiveProbe(html: string): LiveProbe {
+  const canonical = html.match(/<link rel="canonical" href="([^"]*)"/)?.[1];
+  if (!canonical) return 'unknown';
+  if (/youtube\.com\/watch\?v=[\w-]{11}/.test(canonical)) return 'live';
+  if (/youtube\.com\/channel\/UC[\w-]{22}/.test(canonical)) return 'offline';
+  return 'unknown';
+}
+
+const LIVE_PROBE_TTL_MS = 60 * 1000;
+const probeCache = new Map<string, { at: number; value: LiveProbe }>();
+
+export async function probeChannelLive(channelId: string): Promise<LiveProbe> {
+  const hit = probeCache.get(channelId);
+  if (hit && nowMs() - hit.at < LIVE_PROBE_TTL_MS) return hit.value;
+  let value: LiveProbe = 'unknown';
+  try {
+    const res = await fetch(`https://www.youtube.com/channel/${encodeURIComponent(channelId)}/live`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Darshya/1.0)', 'Accept-Language': 'en' },
+      signal: AbortSignal.timeout(4000),
+    });
+    if (res.ok) value = parseLiveProbe(await res.text());
+  } catch {
+    value = 'unknown';
+  }
+  probeCache.set(channelId, { at: nowMs(), value });
+  return value;
+}
+
+export async function fetchChannelUploads(channelId: string): Promise<ChannelUpload[]> {
+  const xml = await readFeed(channelId);
+  return xml ? parseFeedEntries(xml) : [];
+}
+
+/** Pure decision, split out so it is testable without the network. */
+export function buildChannelPlayback(channelId: string, liveProbe: LiveProbe, allUploads: ChannelUpload[]): ChannelPlayback {
+  const uploads = allUploads.slice(0, 5);
+  const first = uploads[0];
+  const latest = first ? { ...first, embedUrl: videoEmbedUrl(first.videoId) } : null;
+  // 'unknown' still tries the live embed first; the client steps to `uploads` on a player error.
+  const mode = liveProbe !== 'offline' ? 'live' : latest ? 'recent' : 'none';
+  return { mode, liveProbe, liveEmbedUrl: liveStreamUrl(channelId), latest, uploads };
+}
+
+export async function resolveChannelPlayback(channelId: string): Promise<ChannelPlayback> {
+  const [liveProbe, uploads] = await Promise.all([probeChannelLive(channelId), fetchChannelUploads(channelId)]);
+  return buildChannelPlayback(channelId, liveProbe, uploads);
+}
+
+export function channelIdFromUrl(url: string | null | undefined): string | null {
+  return url?.match(/[?&]channel=(UC[\w-]{22})/)?.[1] ?? null;
+}

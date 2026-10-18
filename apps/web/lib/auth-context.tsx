@@ -19,6 +19,13 @@ import {
  authHttpErrorMessage,
 } from './api-config';
 import { hasStoredProfile, reviveSessionFromCookieResult } from './session-revive';
+import {
+  SUSPENDED_EVENT,
+  installSuspendedFetchGuard,
+  isSuspendedBody,
+  redirectToSuspendedLogin,
+  suspensionReason,
+} from './suspended-notice';
 
 // ─── Types ─────────────────────────────────────────────────────────────────────
 
@@ -623,6 +630,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  setSession(outcome.session as AuthSession);
  setUser(revivedUser);
  persistProfileOnly(revivedUser);
+ } else if ('suspendedBody' in outcome && outcome.suspendedBody !== undefined) {
+ // The cookie revive was refused because the account is suspended: say so
+ // instead of a silent sign-out.
+ persistSession(null, null);
+ redirectToSuspendedLogin(suspensionReason(outcome.suspendedBody));
+ return;
  } else if (outcome.apiAnswered) {
  // The marker outlived the cookie. Clear it: middleware.ts gates every
  // portal on its mere presence, so leaving it behind keeps handing a
@@ -707,8 +720,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  setUser(storedUser);
  persistSession(newSession, storedUser);
  } else {
- // Refresh failed — clear session
+ // Refresh failed — clear session. A suspended account gets told why.
+ const failBody = await readJsonBody(refreshRes).catch(() => null);
  persistSession(null, null);
+ if (isSuspendedBody(refreshRes.status, failBody)) {
+   redirectToSuspendedLogin(suspensionReason(failBody));
+ }
  }
  } else {
  // Token still valid
@@ -794,7 +811,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // Definitive: the refresh credential itself is dead (expired,
  // rotated away, or family-revoked after a replay). Retrying cannot
  // help and would only delay telling the user.
+ const failBody = res.status === 403 ? await readJsonBody(res).catch(() => null) : null;
  giveUp();
+ if (isSuspendedBody(res.status, failBody)) {
+   redirectToSuspendedLogin(suspensionReason(failBody));
+ }
  return;
  }
  retryOrGiveUp();
@@ -806,6 +827,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  }, delay);
  return () => clearTimeout(timer);
  }, [session, user, persistSession, refreshAttempt]);
+
+ // Any API call answered 403 "suspended" (lib/api-config.ts announces it): sign
+ // out and say why on the login page instead of leaving a half-working session.
+ useEffect(() => {
+ const onSuspended = (e: Event) => {
+   const reason = (e as CustomEvent<{ reason: string | null }>).detail?.reason ?? null;
+   setSession(null);
+   setUser(null);
+   persistSession(null, null);
+   if (!window.location.pathname.startsWith('/auth/')) {
+     redirectToSuspendedLogin(reason);
+   }
+ };
+ installSuspendedFetchGuard(API_BASE_URL);
+ window.addEventListener(SUSPENDED_EVENT, onSuspended);
+ return () => window.removeEventListener(SUSPENDED_EVENT, onSuspended);
+ }, [persistSession]);
 
  /**
  * Sends OTP to the given phone number.

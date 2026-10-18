@@ -223,8 +223,8 @@ export default function PrivacyPage() {
  {/*
   TC-10. This bullet used to read "Database hosted on Supabase with
   row-level security policies." That was a false security representation,
-  not an overstatement: the 67 Prisma models are covered by zero RLS
-  statements across 36 Prisma migrations and all of apps/api. The only
+  not an overstatement: the 69 Prisma models are covered by zero RLS
+  statements across 49 Prisma migrations and all of apps/api. The only
   ENABLE ROW LEVEL SECURITY / CREATE POLICY in the repository covers two
   auxiliary tables outside the Prisma chain (antim_sanskar_pandits,
   wedding_vendors, in supabase/migrations). Even if a policy existed, the
@@ -244,7 +244,7 @@ export default function PrivacyPage() {
   TO MAKE THE ORIGINAL CLAIM TRUE (do not restore the sentence before all
   four are done): (1) ENABLE ROW LEVEL SECURITY plus a deny-by-default
   CREATE POLICY per user-data table, added as ordinary Prisma migrations
-  so they are versioned and auto-applied on API boot; (2) ALTER TABLE ...
+  so they are versioned (deploys do not run migrations: apply by hand); (2) ALTER TABLE ...
   FORCE ROW LEVEL SECURITY on each, or move Prisma off the owner role to
   a non-owner application role, otherwise every policy is inert for the
   path that carries all the traffic; (3) stop the admin client's

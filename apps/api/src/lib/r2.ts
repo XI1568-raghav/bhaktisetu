@@ -1,6 +1,7 @@
 import { supabaseAdmin } from './supabase.js';
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { videoMaxBytes } from './upload-limits.js';
 
 /**
  * Object storage layer.
@@ -34,6 +35,14 @@ const R2_SECRET_ACCESS_KEY = process.env.R2_SECRET_ACCESS_KEY;
 const R2_BUCKET = process.env.R2_BUCKET ?? 'darshya-media';
 const R2_PUBLIC_BASE = process.env.R2_PUBLIC_BASE;
 
+// Second R2 bucket for private objects (booking video proof). REQUIRED when R2 is
+// the backend: R2_BUCKET is the public media bucket, so proofs must never be
+// written there. Signing an upload refuses (PROOF_BUCKET_UNCONFIGURED) while this
+// is unset. Reads/deletes of existing keys still fall back to R2_BUCKET so proofs
+// stored before the variable was set stay reachable (signed GET only).
+const R2_PRIVATE_BUCKET_ENV = process.env.R2_PRIVATE_BUCKET?.trim() || undefined;
+const R2_PRIVATE_BUCKET = R2_PRIVATE_BUCKET_ENV ?? R2_BUCKET;
+
 const r2Enabled = Boolean(R2_ACCOUNT_ID && R2_ACCESS_KEY_ID && R2_SECRET_ACCESS_KEY);
 
 const supabaseBucket = process.env.STORAGE_BUCKET ?? 'darshya-media';
@@ -57,6 +66,38 @@ const MEDIA_MIME = [
   'video/mp4', 'video/webm', 'video/quicktime',
   'application/pdf',
 ];
+// Booking video proof: a separate PRIVATE bucket. Deliberately not named
+// `booking-proofs`: the web used to write straight into a bucket of that name
+// with the user's JWT (and getPublicUrl), so it may already exist as a public
+// bucket whose URLs are stored on old bookings; flipping it private would break
+// those, and leaving it public would defeat this. Override with
+// STORAGE_PROOF_BUCKET.
+const supabaseProofBucket = process.env.STORAGE_PROOF_BUCKET ?? 'booking-proofs-private';
+const PROOF_MIME = ['video/mp4', 'video/webm', 'video/quicktime'];
+let proofBucketReady: Promise<void> | null = null;
+function ensureProofBucket(): Promise<void> {
+  proofBucketReady ??= (async () => {
+    const options = {
+      public: false,
+      fileSizeLimit: `${Math.floor(videoMaxBytes() / (1024 * 1024))}MB`,
+      allowedMimeTypes: PROOF_MIME,
+    };
+    const { error } = await supabaseAdmin.storage.createBucket(supabaseProofBucket, options);
+    if (error && !/already exists|duplicate/i.test(error.message)) {
+      proofBucketReady = null;
+      throw new Error(error.message);
+    }
+    // Always (re)apply: a bucket that exists must end up private with the shared limit.
+    if (error) {
+      const upd = await supabaseAdmin.storage.updateBucket(supabaseProofBucket, options);
+      if (upd.error) {
+        proofBucketReady = null;
+        throw new Error(upd.error.message);
+      }
+    }
+  })();
+  return proofBucketReady;
+}
 let privateBucketReady: Promise<void> | null = null;
 function ensurePrivateBucket(): Promise<void> {
   privateBucketReady ??= (async () => {
@@ -87,6 +128,9 @@ function ensureMediaBucketPolicy(): Promise<void> {
   })();
   return mediaBucketPolicy;
 }
+
+export const PROOF_BUCKET_UNCONFIGURED = 'PROOF_BUCKET_UNCONFIGURED';
+let proofBucketWarned = false;
 
 const r2Client = r2Enabled
   ? new S3Client({
@@ -296,3 +340,159 @@ export async function inspectOwnVideoUrl(
   }
 }
 const MIN_VIDEO_BYTES = 1024;
+
+
+// ─── Private booking video proof ────────────────────────────────────────────
+// Objects are addressed by KEY (`booking-proofs/<bookingId>/<ts>-<rand>.<ext>`)
+// and are only ever reachable through short-lived signed URLs minted for a
+// viewer the API has authorised (lib/booking-proof.ts).
+
+/** Signed PUT URL for a proof object in the private proof bucket. null = storage unavailable. */
+export async function presignProofUpload(params: {
+  key: string;
+  contentType: string;
+  expiresInSec?: number;
+}): Promise<{ uploadUrl: string; backend: 'r2' | 'supabase' } | null> {
+  const expiresIn = params.expiresInSec ?? 300;
+  if (r2Enabled && r2Client) {
+    if (!R2_PRIVATE_BUCKET_ENV) {
+      if (!proofBucketWarned) {
+        proofBucketWarned = true;
+        console.error('[storage] R2 is enabled but R2_PRIVATE_BUCKET is unset: refusing booking-proof uploads rather than writing to the public media bucket.');
+      }
+      throw Object.assign(new Error('R2_PRIVATE_BUCKET is not set'), { code: PROOF_BUCKET_UNCONFIGURED });
+    }
+    try {
+      const uploadUrl = await getSignedUrl(
+        r2Client,
+        new PutObjectCommand({ Bucket: R2_PRIVATE_BUCKET_ENV, Key: params.key, ContentType: params.contentType }),
+        { expiresIn },
+      );
+      return { uploadUrl, backend: 'r2' };
+    } catch {
+      return null;
+    }
+  }
+  if (!supabaseEnabled) return null;
+  try {
+    await ensureProofBucket();
+    const { data, error } = await supabaseAdmin.storage.from(supabaseProofBucket).createSignedUploadUrl(params.key);
+    if (error || !data) return null;
+    return { uploadUrl: data.signedUrl, backend: 'supabase' };
+  } catch {
+    return null;
+  }
+}
+
+/** Short-lived signed GET URL for a proof object, or null when storage cannot sign it. */
+export async function signProofRead(key: string, expiresInSec = 300): Promise<string | null> {
+  if (r2Enabled && r2Client) {
+    try {
+      return await getSignedUrl(r2Client, new GetObjectCommand({ Bucket: R2_PRIVATE_BUCKET, Key: key }), {
+        expiresIn: expiresInSec,
+      });
+    } catch {
+      return null;
+    }
+  }
+  if (!supabaseEnabled) return null;
+  try {
+    const { data, error } = await supabaseAdmin.storage.from(supabaseProofBucket).createSignedUrl(key, expiresInSec);
+    if (error || !data) return null;
+    return data.signedUrl;
+  } catch {
+    return null;
+  }
+}
+
+export type ProofInspection =
+  | { ok: true; bytes: number }
+  | { ok: false; reason: 'missing' | 'empty' | 'not_video' | 'too_large' | 'unreachable' };
+
+/**
+ * Is there a real, in-limit video behind this proof key? A signed upload URL
+ * takes any bytes, so the size/type promised at presign time is re-checked on
+ * the stored object before the key is accepted as proof.
+ */
+/** MP4/MOV/3GP (`ftyp` box), WebM/MKV (EBML magic) or AVI (RIFF....AVI). */
+export function looksLikeVideoContainer(b: Uint8Array): boolean {
+  if (b.length >= 8 && b[4] === 0x66 && b[5] === 0x74 && b[6] === 0x79 && b[7] === 0x70) return true;
+  if (b.length >= 4 && b[0] === 0x1a && b[1] === 0x45 && b[2] === 0xdf && b[3] === 0xa3) return true;
+  const t = (i: number, w: string) => [...w].every((c, k) => b[i + k] === c.charCodeAt(0));
+  return b.length >= 12 && t(0, 'RIFF') && t(8, 'AVI ');
+}
+
+export async function inspectProofObject(key: string): Promise<ProofInspection> {
+  const url = await signProofRead(key, 60);
+  if (!url) {
+    // Could not sign: either storage is down, or the object does not exist (Supabase
+    // refuses to sign a missing object). Tell them apart with a second, cheap call.
+    return { ok: false, reason: r2Enabled ? 'unreachable' : (await proofObjectMissing(key)) ? 'missing' : 'unreachable' };
+  }
+  try {
+    const res = await fetch(url, { method: 'HEAD', signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return { ok: false, reason: res.status >= 500 ? 'unreachable' : 'missing' };
+    const len = Number(res.headers.get('content-length') ?? '0');
+    if (!Number.isFinite(len) || len < MIN_VIDEO_BYTES) return { ok: false, reason: 'empty' };
+    if (len > videoMaxBytes()) return { ok: false, reason: 'too_large' };
+    if (!(res.headers.get('content-type') ?? '').toLowerCase().startsWith('video/')) return { ok: false, reason: 'not_video' };
+    // The declared type is client-controlled: read the first bytes and check a real container header.
+    const head = await fetch(url, { headers: { Range: 'bytes=0-15' }, signal: AbortSignal.timeout(5000) });
+    if (!head.ok) return { ok: false, reason: head.status >= 500 ? 'unreachable' : 'missing' };
+    if (!looksLikeVideoContainer(new Uint8Array(await head.arrayBuffer()).subarray(0, 16))) return { ok: false, reason: 'not_video' };
+    return { ok: true, bytes: len };
+  } catch {
+    return { ok: false, reason: 'unreachable' };
+  }
+}
+
+async function proofObjectMissing(key: string): Promise<boolean> {
+  try {
+    const slash = key.lastIndexOf('/');
+    const { data, error } = await supabaseAdmin.storage
+      .from(supabaseProofBucket)
+      .list(key.slice(0, slash), { search: key.slice(slash + 1), limit: 1 });
+    if (error) return false;
+    return !data?.some((o) => o.name === key.slice(slash + 1));
+  } catch {
+    return false;
+  }
+}
+
+/** Best-effort removal (e.g. a proof the admin flagged invalid). */
+export async function deleteProofObject(key: string): Promise<boolean> {
+  if (r2Enabled && r2Client) {
+    try {
+      await r2Client.send(new DeleteObjectCommand({ Bucket: R2_PRIVATE_BUCKET, Key: key }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  if (!supabaseEnabled) return false;
+  try {
+    const { error } = await supabaseAdmin.storage.from(supabaseProofBucket).remove([key]);
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/** Delete an object from the private (identity-document) store. Best effort. */
+export async function deletePrivateObject(key: string): Promise<boolean> {
+  if (r2Enabled && r2Client) {
+    try {
+      await r2Client.send(new DeleteObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  if (!supabaseEnabled) return false;
+  try {
+    const { error } = await supabaseAdmin.storage.from(supabasePrivateBucket).remove([key]);
+    return !error;
+  } catch {
+    return false;
+  }
+}

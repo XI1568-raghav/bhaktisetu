@@ -1,4 +1,5 @@
 import { TOO_EARLY_TO_COMPLETE, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
+import { settleBounded } from '../lib/background.js';
 import { FastifyInstance } from 'fastify';
 import {
   ASTROLOGER_PLATFORM_RATE,
@@ -10,6 +11,9 @@ import crypto from 'node:crypto';
 import { randomBytes } from 'node:crypto';
 import Razorpay from 'razorpay';
 import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
+import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
+import { sendEmail, consultationCancelledEmail } from '../lib/email.js';
+import { ensureConsultationRefundColumns, isRefundRetryable, refundConsultation } from '../services/consultation-refund.service.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
@@ -76,6 +80,7 @@ async function ensureConsultationTables() {
   await prisma.$executeRawUnsafe(
     `CREATE INDEX IF NOT EXISTS astrologer_consultations_status_idx ON astrologer_consultations (status);`,
   );
+  await ensureConsultationRefundColumns();
 }
 
 type ConsultationRow = {
@@ -95,6 +100,9 @@ type ConsultationRow = {
   status: string;
   created_at: Date;
   paid_at: Date | null;
+  refund_status?: string | null;
+  refund_id?: string | null;
+  refund_started_at?: Date | string | null;
 };
 
 function nextConsultRef(): string {
@@ -415,23 +423,25 @@ export async function finalizeConsultationPaymentFromWebhook(
       // True when the expiry cron had already cancelled this row.
       recovered: row.status === 'cancelled' || row.status === 'payment_review',
     },
-  });
+  }).catch(() => undefined);
 
   await writeConsultationCommission(row, log);
 
-  void notifyAstrologerNewConsult({
-    astrologerRef: row.astrologer_id,
-    devoteeName: null,
-    minutes: row.minutes ?? 0,
-    amountInr: Number(row.amount_inr ?? 0),
-    consultationId: row.id,
-  }).catch(() => undefined);
-  void notifyDevoteeConsultConfirmed({
-    devoteeUserId: row.user_id,
-    astrologerName: row.astrologer_name ?? 'Your astrologer',
-    minutes: row.minutes ?? 0,
-    consultationId: row.id,
-  }).catch(() => undefined);
+  await settleBounded([
+    notifyAstrologerNewConsult({
+      astrologerRef: row.astrologer_id,
+      devoteeName: null,
+      minutes: row.minutes ?? 0,
+      amountInr: Number(row.amount_inr ?? 0),
+      consultationId: row.id,
+    }),
+    notifyDevoteeConsultConfirmed({
+      devoteeUserId: row.user_id,
+      astrologerName: row.astrologer_name ?? 'Your astrologer',
+      minutes: row.minutes ?? 0,
+      consultationId: row.id,
+    }),
+  ], 'consult-notify');
 
   return {
     handled: true,
@@ -687,7 +697,7 @@ export async function consultationRoutes(server: FastifyInstance) {
         scheduledAt: scheduledAt ?? null,
         demo: isDemoPayment,
       },
-    });
+    }).catch(() => undefined);
 
     return reply.code(201).send({
       consultationId: row.id,
@@ -756,6 +766,46 @@ export async function consultationRoutes(server: FastifyInstance) {
       if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
         return reply.code(400).send({ error: 'Invalid payment signature.' });
       }
+      // Slice L: signature proves the pair is genuine, not the amount. Ask the gateway.
+      const chk = await checkGatewayPayment(razorpay as never, {
+        paymentId: razorpay_payment_id,
+        orderId: row.razorpay_order_id,
+        amountInr: Number(row.amount_inr),
+        currency: row.currency,
+      });
+      if (chk.verdict === 'mismatch') {
+        console.error('[consultation][amount-mismatch] verify refused', JSON.stringify({ consultationId: row.id, reason: chk.reason }));
+        await prisma.$executeRawUnsafe(
+          `UPDATE astrologer_consultations SET status = 'payment_review', razorpay_payment_id = $1
+            WHERE id = $2::uuid AND status = 'pending_payment';`,
+          razorpay_payment_id,
+          consultationId,
+        );
+        await recordMoneyEvent({
+          eventType: MONEY_EVENTS.PAYMENT_FAILED,
+          actorType: 'devotee',
+          actorId: userId,
+          subjectType: 'consultation',
+          subjectId: consultationId,
+          amount: row.amount_inr,
+          currency: row.currency ?? 'INR',
+          gateway: 'razorpay',
+          gatewayOrderId: row.razorpay_order_id,
+          gatewayPaymentId: razorpay_payment_id,
+          statusBefore: row.status,
+          statusAfter: 'payment_review',
+          idempotencyKey: `${consultationId}:${razorpay_payment_id}:gateway-check`,
+          note: `consultation verify refused: ${chk.reason}`,
+          metadata: { rail: 'consultation-verify-payment', needsAdminReview: true, reason: 'gateway-amount-mismatch' },
+        }).catch(() => undefined);
+        return reply.code(409).send({
+          error: 'We could not confirm this payment with the payment gateway. Our team has been notified and will review it.',
+          code: 'payment_needs_review',
+        });
+      }
+      if (chk.verdict === 'unavailable') {
+        server.log.warn({ reason: chk.reason }, '[consultation] gateway payment check unavailable, using signature result');
+      }
     }
 
     // Mint a fresh Jitsi room and flip status.
@@ -814,30 +864,32 @@ export async function consultationRoutes(server: FastifyInstance) {
         minutes: row.minutes,
         demo: isDemoPayment,
       },
-    });
+    }).catch(() => undefined);
 
     // Astrologer revamp (2026-08-05): ping the astrologer that a paid consult
     // just landed (there was NO astrologer notification before — they only saw
     // it by refreshing the portal). Fire-and-forget.
-    void notifyAstrologerNewConsult({
-      astrologerRef: row.astrologer_id,
-      devoteeName: null,
-      minutes: row.minutes ?? 0,
-      amountInr: Number(row.amount_inr ?? 0),
-      consultationId,
-    }).catch(() => undefined);
-    void notifyDevoteeConsultConfirmed({
-      devoteeUserId: userId,
-      astrologerName: row.astrologer_name ?? 'Your astrologer',
-      minutes: row.minutes ?? 0,
-      consultationId,
-    }).catch(() => undefined);
+    await settleBounded([
+      notifyAstrologerNewConsult({
+        astrologerRef: row.astrologer_id,
+        devoteeName: null,
+        minutes: row.minutes ?? 0,
+        amountInr: Number(row.amount_inr ?? 0),
+        consultationId,
+      }),
+      notifyDevoteeConsultConfirmed({
+        devoteeUserId: userId,
+        astrologerName: row.astrologer_name ?? 'Your astrologer',
+        minutes: row.minutes ?? 0,
+        consultationId,
+      }),
+    ], 'consult-notify');
 
     // P0 #AP-06 (2026-07-09): the Commission ledger write lives in
     // writeConsultationCommission (below) so the PAY-01 webhook backstop runs
     // the identical ledger rule. Fire-and-forget here: a ledger write failure
     // must never block the verified response.
-    void writeConsultationCommission(row, server.log);
+    await settleBounded(Promise.resolve(writeConsultationCommission(row, server.log)), 'consult-commission');
 
     return reply.send({
       verified: true,
@@ -902,7 +954,17 @@ export async function consultationRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'Not authorized.' });
     }
     if (row.status === 'cancelled') {
-      return reply.send({ cancelled: true, refundEligible: false, alreadyCancelled: true });
+      // A refund the gateway refused earlier is retried by repeating the cancel.
+      const retried =
+        isRefundRetryable(row)
+          ? await refundConsultation(row, { type: 'devotee', id: request.currentUser!.id }, `consultation refund retry (${row.reference})`)
+          : null;
+      return reply.send({
+        cancelled: true,
+        refundEligible: false,
+        alreadyCancelled: true,
+        ...(retried ? { refundExecution: retried.execution } : {}),
+      });
     }
     if (row.status === 'completed') {
       return reply.code(409).send({ error: 'Consultation already completed.' });
@@ -1007,7 +1069,7 @@ export async function consultationRoutes(server: FastifyInstance) {
         // without re-deriving the window from a row that has since changed.
         priorStatus: row.status,
       },
-    });
+    }).catch(() => undefined);
 
     // ...and the claw-back, through the same shared emitter the two puja refund
     // rails use. Skips silently when nothing moved; still records when the
@@ -1026,6 +1088,18 @@ export async function consultationRoutes(server: FastifyInstance) {
       });
     }
 
+    // Slice L: actually send the money back (full amount, by the policy above). Never throws.
+    let refundExecution: 'gateway' | 'retry' | 'manual' | 'none' = 'none';
+    if (refundEligible && row.status === 'confirmed') {
+      try {
+        const ex = await refundConsultation(row, { type: 'devotee', id: request.currentUser!.id }, cancelReason);
+        refundExecution = ex.execution;
+      } catch (err) {
+        refundExecution = 'retry';
+        server.log.error({ err }, '[consultation] gateway refund threw');
+      }
+    }
+
     if (reversal.alreadySettled > 0) {
       // Money has left or is mid-transfer — a refund handler must not claw it
       // back silently. Greppable by `consultation_ledger_manual_review`.
@@ -1041,6 +1115,24 @@ export async function consultationRoutes(server: FastifyInstance) {
       );
     }
 
+    // Slice L: cancellation email to the devotee (best effort).
+    await settleBounded((async () => {
+      const u = await prisma.user.findUnique({
+        where: { id: row.user_id },
+        select: { email: true, fullName: true },
+      });
+      if (!u?.email) return;
+      await sendEmail({
+        to: u.email,
+        ...consultationCancelledEmail({
+          devoteeName: u.fullName ?? 'Devotee',
+          reference: row.reference,
+          astrologerName: row.astrologer_name,
+          refundEligible: refundEligible && row.status === 'confirmed',
+        }),
+      });
+    })(), 'consult-cancel-email');
+
     return reply.send({
       cancelled: true,
       refundEligible,
@@ -1048,8 +1140,11 @@ export async function consultationRoutes(server: FastifyInstance) {
       reference: row.reference,
       commissionReversed: reversal.reversedCommissions,
       ledgerManualReview: reversal.alreadySettled,
+      refundExecution,
       note: refundEligible
-        ? 'Cancellation accepted. Refund will be processed within 5-7 business days.'
+        ? refundExecution === 'retry'
+          ? 'Cancellation accepted. The refund could not be sent yet; repeat this request to retry.'
+          : 'Cancellation accepted. Refund will be processed within 5-7 business days.'
         : 'Cancellation accepted. Refund not eligible — past the 24-hour cancellation window.',
     });
   });
@@ -1251,6 +1346,72 @@ export async function consultationRoutes(server: FastifyInstance) {
       });
     },
   );
+
+  // ─── POST /admin/:id/refund ─────────────────────────────────────────────
+  // Admin queue action (slice L): retry the gateway refund of a CANCELLED, paid
+  // consultation whose refund the gateway refused (refund_status = 'failed'; /admin/all
+  // lists the column). Idempotent: a refunded row is a no-op, a FRESH 'sending' is not re-sent, a stale one
+  // (no refund id, older than CONSULTATION_REFUND_STALE_MIN) is retried like 'failed'.
+  server.post('/admin/:id/refund', { preHandler: [authenticateUser, requireRole('admin')] }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    if (!/^[0-9a-f-]{36}$/i.test(id)) return reply.code(400).send({ error: 'Invalid consultation id.' });
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+      id,
+    );
+    const row = rows[0];
+    if (!row) return reply.code(404).send({ error: 'Consultation not found.' });
+    if (row.status !== 'cancelled') {
+      return reply.code(409).send({ error: 'Only a cancelled consultation can be refunded.' });
+    }
+    const ex = await refundConsultation(row, { type: 'admin', id: request.currentUser!.id }, `consultation refund by admin (${row.reference})`);
+    return reply.send({ consultationId: row.id, refundExecution: ex.execution, refundId: ex.refundId ?? null });
+  });
+
+  // ─── GET /admin/stuck-refunds ───────────────────────────────────────────
+  // Cancelled, paid consultations whose refund is 'failed' or 'sending' (with `retryable` per
+  // isRefundRetryable), plus wellness Payment rows with an owed / in-flight refund marker.
+  server.get('/admin/stuck-refunds', { preHandler: [authenticateUser, requireRole('admin')] }, async (_request, reply) => {
+    await ensureConsultationTables();
+    const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations
+        WHERE status = 'cancelled' AND paid_at IS NOT NULL AND refund_status IN ('failed','sending')
+        ORDER BY created_at DESC LIMIT 200;`,
+    );
+    const consultations = rows.map((r) => ({
+      id: r.id,
+      reference: r.reference,
+      amountInr: Number(r.amount_inr),
+      refundStatus: r.refund_status ?? null,
+      refundId: r.refund_id ?? null,
+      refundStartedAt: r.refund_started_at ?? null,
+      retryable: isRefundRetryable(r),
+    }));
+    const wellness = await prisma
+      .$queryRawUnsafe<Array<{ id: string; amount: unknown; refund_amount: unknown; metadata: unknown }>>(
+        `SELECT id, amount, refund_amount, metadata FROM payments
+          WHERE metadata->>'rail' = 'wellness'
+            AND (COALESCE(NULLIF(metadata->>'wellnessRefundOwedInr','')::numeric, 0) > 0
+                 OR jsonb_typeof(metadata->'wellnessRefundInflight') = 'object')
+          ORDER BY created_at DESC LIMIT 200;`,
+      )
+      .catch(() => []);
+    return reply.send({
+      consultations,
+      wellness: wellness.map((p) => {
+        const m = (p.metadata ?? {}) as Record<string, any>;
+        return {
+          paymentId: p.id,
+          enrollmentId: m.wellnessEnrollmentId ?? null,
+          amountInr: Number(p.amount),
+          refundedInr: Number(p.refund_amount ?? 0),
+          owedInr: Number(m.wellnessRefundOwedInr ?? 0),
+          inflight: m.wellnessRefundInflight ?? null,
+        };
+      }),
+    });
+  });
 
   // ─── GET /admin/all ─────────────────────────────────────────────────────
   // ADMIN-only LIST across all AstrologerConsultation rows. Powers the

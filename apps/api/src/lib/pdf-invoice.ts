@@ -97,7 +97,10 @@ function formatInr(n: number): string {
 }
 
 function wrap(text: string, maxChars: number): string[] {
-  const words = text.split(/\s+/);
+  // A single word wider than the line (an unbroken product name) used to run off the page.
+  const words = text
+    .split(/\s+/)
+    .flatMap((w) => (w.length > maxChars ? w.match(new RegExp(`.{1,${maxChars}}`, 'g')) ?? [w] : [w]));
   const lines: string[] = [];
   let line = '';
   for (const w of words) {
@@ -192,7 +195,7 @@ export async function generateInvoice(rawInput: InvoiceInput): Promise<Buffer> {
   // Helvetica is WinAnsi-only; see pdf-safe-text.ts (Devanagari names used to throw).
   const input = pdfSafe(rawInput);
   const pdf = await PDFDocument.create();
-  const page = pdf.addPage([595, 842]); // A4
+  let page = pdf.addPage([595, 842]); // A4
   const font = await pdf.embedFont(StandardFonts.Helvetica);
   const fontBold = await pdf.embedFont(StandardFonts.HelveticaBold);
 
@@ -250,21 +253,49 @@ export async function generateInvoice(rawInput: InvoiceInput): Promise<Buffer> {
     }
   }
 
-  // Line items table
+  // Line items table. A store order can have any number of lines, so the table
+  // paginates: when the next row would run into the footer a new A4 page is
+  // started with the brand bar, a "continued" line and the column headers again.
+  // The totals block always sits on the LAST page, together with its notes.
+  const BOTTOM = 70; // footer text sits at y=28..40
+  const TOTALS_HEIGHT = 80;
+  const drawFooter = (pg: typeof page) => {
+    pg.drawText('Computer-generated receipt — valid without signature when issued via Darshya.', {
+      x: left, y: 40, size: 8, font, color: MUTED,
+    });
+    pg.drawText('Generated at https://darshya.online   ·   support@darshya.online', {
+      x: left, y: 28, size: 8, font, color: MUTED,
+    });
+  };
+  const drawColumnHeaders = () => {
+    page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.5, color: RULE });
+    y -= 16;
+    page.drawText('Description', { x: left, y, size: 9, font: fontBold, color: MUTED });
+    page.drawText('Qty', { x: 360, y, size: 9, font: fontBold, color: MUTED });
+    page.drawText('Unit (INR)', { x: 405, y, size: 9, font: fontBold, color: MUTED });
+    page.drawText('Total (INR)', { x: 478, y, size: 9, font: fontBold, color: MUTED });
+    y -= 6;
+    page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.3, color: RULE });
+  };
+  const newPage = () => {
+    drawFooter(page);
+    page = pdf.addPage([595, 842]);
+    page.drawRectangle({ x: 0, y: 822, width: 595, height: 20, color: SAFFRON });
+    page.drawText('Darshya', { x: left, y: 790, size: 14, font: fontBold, color: SAFFRON });
+    page.drawText(`Receipt No.:  ${receiptNumber}  (continued)`, { x: left, y: 770, size: 10, font, color: TEXT });
+    y = 748;
+    drawColumnHeaders();
+  };
+
   y -= 30;
-  page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.5, color: RULE });
-  y -= 16;
-  page.drawText('Description', { x: left, y, size: 9, font: fontBold, color: MUTED });
-  page.drawText('Qty', { x: 360, y, size: 9, font: fontBold, color: MUTED });
-  page.drawText('Unit (INR)', { x: 405, y, size: 9, font: fontBold, color: MUTED });
-  page.drawText('Total (INR)', { x: 478, y, size: 9, font: fontBold, color: MUTED });
-  y -= 6;
-  page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.3, color: RULE });
+  drawColumnHeaders();
 
   const items = lineItemsFor(input);
   for (const item of items) {
+    const descLines = wrap(item.description, 56).slice(0, 6);
+    const rowHeight = 16 + Math.max(0, descLines.length - 1) * 12;
+    if (y - rowHeight < BOTTOM) newPage();
     y -= 16;
-    const descLines = wrap(item.description, 56);
     page.drawText(descLines[0] ?? '', { x: left, y, size: 10, font, color: TEXT });
     page.drawText(String(item.qty), { x: 360, y, size: 10, font, color: TEXT });
     page.drawText(item.unitInr.toLocaleString('en-IN'), { x: 405, y, size: 10, font, color: TEXT });
@@ -275,6 +306,7 @@ export async function generateInvoice(rawInput: InvoiceInput): Promise<Buffer> {
     }
   }
 
+  if (y - TOTALS_HEIGHT < BOTTOM) newPage();
   y -= 14;
   page.drawLine({ start: { x: left, y }, end: { x: right, y }, thickness: 0.3, color: RULE });
 
@@ -301,13 +333,7 @@ export async function generateInvoice(rawInput: InvoiceInput): Promise<Buffer> {
     x: left, y, size: 9, font, color: MUTED,
   });
 
-  // Footer
-  page.drawText('Computer-generated receipt — valid without signature when issued via Darshya.', {
-    x: left, y: 40, size: 8, font, color: MUTED,
-  });
-  page.drawText('Generated at https://darshya.online   ·   support@darshya.online', {
-    x: left, y: 28, size: 8, font, color: MUTED,
-  });
+  drawFooter(page);
 
   const bytes = await pdf.save();
   return Buffer.from(bytes);

@@ -1,5 +1,6 @@
 import type { FastifyBaseLogger } from 'fastify';
 import { runDailyOps } from './master-cron.js';
+import { inProcessJobsDisabled } from '../lib/inprocess-jobs.js';
 
 // NOTIF-01 (P0) — nothing invoked runDailyOps, so every time-based feature was
 // dead code: no panchang push, no aarti reminder, no weekly digest, no rebroadcast
@@ -32,6 +33,8 @@ export interface TickRecord {
 
 export interface SchedulerStatus {
   enabled: boolean;
+  /** True when timers are off because an external scheduler drives /cron/tick. */
+  inProcessDisabled: boolean;
   startedAt: string | null;
   intervalMs: number;
   running: boolean;
@@ -65,6 +68,9 @@ function resolveIntervalMs(): number {
 }
 
 export function isSchedulerEnabled(): boolean {
+  // Cloud Run scale-to-zero: timers cannot be trusted; Cloud Scheduler drives
+  // POST /api/v1/cron/tick instead. Wins over OPS_SCHEDULER_ENABLED.
+  if (inProcessJobsDisabled()) return false;
   const flag = process.env.OPS_SCHEDULER_ENABLED;
   if (flag === '1' || flag === 'true') return true;
   if (flag === '0' || flag === 'false') return false;
@@ -78,6 +84,7 @@ export function getSchedulerStatus(): SchedulerStatus {
     : null;
   return {
     enabled: timer !== null,
+    inProcessDisabled: inProcessJobsDisabled(),
     startedAt,
     intervalMs,
     running,

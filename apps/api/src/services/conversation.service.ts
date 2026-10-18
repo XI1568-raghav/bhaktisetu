@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { settleBounded } from '../lib/background.js';
 import { notifyUser } from '../routes/notifications.js';
 
 /**
@@ -51,11 +52,11 @@ export async function ensureConversationForBooking(opts: {
     data: { lastMessageAt: new Date(), devoteeUnread: { increment: 1 } },
   });
 
-  void notifyUser(opts.devoteeId, {
+  await settleBounded(notifyUser(opts.devoteeId, {
     title: 'Your provider is ready',
     body: opts.systemMessage,
     url: `/messages/${conv.id}`,
-  }).catch(() => undefined);
+  }), 'conversation');
 
   return conv;
 }

@@ -3588,3 +3588,62 @@ temple booking path. Stripe removed entirely; password reset shipped.
 - After deploy, verify: `/api/v1/ai/health` ok; AI chats answer with `source` llm; temple pages show five offerings; `/admin/temples` loads for an admin; images come from `/images/...`.
 - Working rules that matter: merged main is verified locally in api, web AND mobile before any deploy (CI no longer runs on push to main); one commit and one push per PR to save Actions minutes; no schema changes (prod migrations are manual); no secrets in chat or docs.
 - Owner-only items are listed in TASKS.md; none can be done from code.
+
+
+## HANDOFF 2026-10-13/14 - end-to-end QA hardening (PR #338 squash 708b101, then round four in the tree)
+
+**Nothing is deployed.** Production still runs the pre-#338 build (see `docs/golive-status.md`). #338 was merged without CI because GitHub Actions was not starting jobs; the same checks were run locally (api 3934, web 4748, mobile 995 tests, tsc, forced `next build`, ops guards, commitlint, fleet-integrity). Round four (fix commits after 708b101 plus uncommitted edits: `auth.ts` signup repair, `payment.service.ts`, `donee-tax.ts`, `r2.ts`/`upload-limits.ts`, `media.ts`, temple/gaushala portals, `booking-notify`, `web/app/auth/callback`) is on branch `claude/jolly-babbage-5h6vud`, not yet a PR.
+
+**What was tested.** (1) A read-only browser crawl of the live site as every role (no writes). (2) Agent testing on a local stack with stand-ins for Supabase, Razorpay and Resend: every role's happy path, unhappy paths, edge cases and cross-role visibility; each bug retested after its fix.
+
+**What was fixed (grouped, 200 files in #338).**
+- Auth/session: logout scope, session doors, signup repair, token revocation table, mobile session refresh and auth errors.
+- Payments: webhook idempotency, idempotent donation orders, Razorpay timeout, reconcile job, temple donee tax, receipt/invoice PDF safe text.
+- Bookings and refunds: cancel-quote on unpaid bookings, admin refund guards, store-order cancel/refund service, wellness enrolment cancellation service.
+- Admin/content: self-lockout guard, rating hide (side table), NUL-byte and UUID guards, HTML escaping in lead emails, media/video inspect, store routes and admin orders UI.
+- Web/mobile: crawl findings (OG cards, address/place labels, auth context, org pages, many pages), plus mobile auth/queries.
+
+**Invariants added.**
+- Rate-limit trust rule: `CF-Connecting-IP` is trusted only with `x-origin-secret` == `CF_ORIGIN_SECRET`, else only when the last `X-Forwarded-For` hop is a Cloudflare edge IP; per-IP ceiling `RATE_LIMIT_IP_CEILING` stops random-bearer bucket minting; rollback lever `RATE_LIMIT_TRUST_CF_HEADER=true` (docs/env-vars.md).
+- TC-08: a pandit/provider must be approved before acting as one (the demo-role flow needs `PATCH /admin/users/:id {"approved":true}`).
+- Money audit: every refund/cancel writes money-audit rows; refunds are idempotent (double approval is a no-op).
+- Refund rails: puja bookings refund through Razorpay (`callRazorpayRefund`); store orders cancel then queue a refund request, executed on admin approval, FULL refunds only; wellness enrolment and astrologer consultation cancellations record a refund INTENT (tiered by hours-until-start) that ops pays from the Razorpay dashboard. Round four may change these: re-read `wellness-cancellation.service.ts` before relying on this.
+- `RAZORPAY_TIMEOUT_MS` (15 s default) on every SDK call.
+
+**Local QA stack additions.** Recipe is in `docs/runbooks/qa-local-stack.md`. The fake Supabase, Razorpay and Resend stand-ins live only under `/var/tmp/pgqa/stubs/` (not in the repo): rebuild each as a tiny HTTP server answering the few endpoints the API calls (Supabase auth user/token, Razorpay orders/payments/refunds, Resend emails), then point `SUPABASE_URL`, the Razorpay base URL and the Resend base URL at them from the API start script. Dummy keys only.
+
+
+## Archived from TASKS.md 2026-10-14 (Go-live 2026-10-05 block with the 2026-10-06/07 state snapshots, moved verbatim; superseded by the QA hardening block)
+
+## Go-live 2026-10-05 (read first; full detail in `docs/handoff.md` 2026-10-05 block)
+
+All roles were tested end to end on a local stack and fixed through #279-#312. Prod = both Render services deployed at the latest main (`31f9fe38` at write time; confirm with `render-diag.yml -f mode=detail`).
+`ci.yml` no longer runs on push to main (#308): before any deploy, verify merged main locally across `apps/api`, `apps/web` AND `apps/mobile` (tsc + vitest).
+
+**Owner-only, still open (none are code):**
+- Resend: verify sender domain `send.darshya.online`; Supabase Auth -> SMTP -> Resend; Auth redirect URL `https://darshya.online/auth/reset-password`.
+- Real Rs 101 card payment test; Razorpay International Payments (NRI card acceptance); payout rail (RazorpayX/Cashfree).
+- `BACKUP_S3_*` secrets; 80G registration number + PAN; PostHog key (analytics is dead without it).
+- Render 750 shared free hours (two services share one account budget; Aug 2026 suspension).
+- Decisions: prasad-abroad shipping, store returns policy.
+
+**STATE AT 2026-10-07 (supersedes everything below in this block; the bullets that follow are the 2026-10-06 snapshot). Prod runs main at c1fa51d (web + API); the launch-readiness batch is in a PR. Read `docs/golive-status.md` (newest section first) before acting. Before ANY API deploy run `scripts/ops/prod-like-smoke.sh` (docs/runbooks/prod-deploy-checklist.md). Launch blocker: seeded personas are live as real providers (see golive-status).**
+- `main` = `d818f153`. PRs #279-#322 are all merged. Verified locally on that tree: api 3591, web 4593, mobile 976 tests, tsc clean in all three.
+- **NOT DEPLOYED since `31f9fe38`:** GitHub Actions is out of free minutes (jobs fail to start: "recent account payments have failed or your spending limit needs to be increased"). Deploys, PR checks, the DB-task workflow and the daily backup all run on Actions, so all are blocked until the owner sets an Actions budget (github.com/settings/billing) or deploys by hand in the Render dashboard (web first, then API: the API returns `https://darshya.online/images/...` URLs that only exist after the web deploy).
+- **AI chats were down on prod** because Groq retired `llama-3.3-70b-versatile` / `llama-3.1-8b-instant` on 2026-08-16 (`GET /api/v1/ai/health` showed `404 model_not_found`). Fixed in #319 (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, `reasoning_effort=low`). After the API deploy, confirm `/api/v1/ai/health` shows `ok:true`, then test `/astrology/chat`, `/ask-pandit`, `/ai/translate`, voice-pandit.
+- **Two prod DB changes ready, not applied** (run via `prod-db-task.yml` dry-run then apply, or paste into the Supabase SQL editor): `ops/sql/commission-default-80.sql` (pandits 70% -> 80%) and `ops/sql/seed-default-temple-offerings.sql` (5 standard pujas for each temple with none; 15 of 20 temples on prod have zero offerings). `ops/sql/verify-commission-state.sql` is read-only.
+- Local E2E stack recipe: `docs/runbooks/local-e2e-stack.md`. Demo tokens: `Authorization: Bearer demo-<role>-token`.
+- Still owner-only: Resend sender, Supabase Auth SMTP, real Rs 101 payment, Razorpay International Payments, `BACKUP_S3_*`, 80G number/PAN, legal facts (entity/GSTIN/grievance officer), credential rotation (docs/runbooks/secret-rotation.md), Render hours decision, PostHog key.
+- Agent follow-ups that were open are DONE: claims gated (#315), temple onboarding link (#314), polish (#316), copy sweep (#309), prasad India-only + wording + labels (#320), temples bookable + admin temple editor (#321).
+
+**Invariants added this round:** earnings of pandit/astrologer/wellness/temple stay held until performed/proved (`payout.service.ts`, `upcomingInr`); cash-on-delivery orders create no commission; NRI price = 2.5x puja price charged in INR, shown in USD only when the explicit `nriPricing` flag is set (`apps/api/src/lib/nri-pricing.ts` + web twin); admin refunds default to the cancellation policy amount; referral stays hidden behind `HAS_REFERRAL_CREDIT`.
+
+
+## 2026-10-14 slice J (receipts, donations, ratings) - OWNER ACTIONS
+
+Migrations do not auto-apply on deploy (see TASKS.md). Apply by hand, then redeploy the API:
+`cd apps/api && DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy` (confirm with `migrate status`).
+- `20261013000000_review_moderation`: creates `review_moderation` (admin hide-rating). Until applied the API creates it lazily on the first hide (needs CREATE TABLE rights).
+- `20261013010000_donee_tax_and_email_outbox`: `temples.pan/regn_80g`, `gaushala_profiles.pan/regn_80g`, `donations.donor_name/email/phone`, table `email_outbox`. All additive/nullable; the API tolerates every one being absent.
+- Receipts print the 80G block only when donee 80G number AND PAN exist AND `HAS_80G` (`apps/api/src/lib/eighty-g.ts`, false) is true. Entering numbers (`PUT /temple-portal/tax-info`, `PUT /gaushala-portal/tax-info`, `PUT /admin/temples/:id/tax-info`) never flips that by itself.
+- Failed receipt/booking emails are retried by the `emailOutbox` step of `runDailyOps` (8 tries, backoff 1m..12h, then `dead`). Inspect: `SELECT status,count(*) FROM email_outbox GROUP BY 1`.

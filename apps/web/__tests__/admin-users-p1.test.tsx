@@ -270,6 +270,7 @@ describe('AO-08 — a moderation action is confirmed from the server, not from a
 
     const row = screen.getByText('Test User 1').closest('tr') as HTMLElement;
     fireEvent.click(within(row).getByTitle('Block'));
+    fireEvent.click(screen.getByRole('button', { name: /block account/i }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy());
     expect(screen.getByRole('alert').textContent).toMatch(/still reads as active/i);

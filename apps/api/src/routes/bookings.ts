@@ -1,4 +1,5 @@
 import { TOO_EARLY_TO_COMPLETE, pujaScheduledInstant, tooEarlyToCompleteMessage } from '../lib/completion-window.js';
+import { settleBounded } from '../lib/background.js';
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { BookingStatus, Prisma } from '@prisma/client';
@@ -18,6 +19,7 @@ import {
 } from '../services/cancellation.service.js';
 import { paymentService, PaymentGatewayError, PAYMENT_GATEWAY_USER_MESSAGE } from '../services/payment.service.js';
 import { prisma } from '../lib/prisma.js';
+import { canViewProof, resolveProof } from '../lib/booking-proof.js';
 import { uuidParamGuard } from '../lib/uuid.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
@@ -766,7 +768,7 @@ function evaluatePriestSlot(input: {
 // scaffolding for this route file anywhere in the suite, so anything expressed
 // only inline in a handler is untestable. The builder is exported through
 // `__testing` and asserted in bookings.money-trail.ops05.test.ts; the handlers
-// keep just the `void recordMoneyEvent(...)`.
+// keep just the `await recordMoneyEvent(...)`.
 function bookingCreatedEvent(input: {
   booking: {
     id: string;
@@ -1001,7 +1003,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         });
 
         // OPS-05: after the write, never inside it.
-        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: '/book' }));
+        await recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: '/book' })).catch(() => undefined);
 
         return reply.status(201).send({ booking });
       } catch (error: any) {
@@ -1536,10 +1538,10 @@ export async function bookingRoutes(server: FastifyInstance) {
         // regardless of whether the status also moved. Fire-and-forget by
         // contract — a notification failure must never undo a committed write.
         if (reassigned) {
-          void notifyReassignment({
+          await settleBounded(notifyReassignment({
             booking: reassigned,
             previousPriestId: booking.priestId,
-          }).catch(() => undefined);
+          }), 'booking');
         }
 
         if (
@@ -1628,7 +1630,7 @@ export async function bookingRoutes(server: FastifyInstance) {
 
         // D6: devotee cancelled — tell them the cancellation registered (and a
         // refund, if any, is being reviewed). Fire-and-forget.
-        void (async () => {
+        await settleBounded((async () => {
           try {
             const b = await prisma.pujaBooking.findUnique({
               where: { id },
@@ -1647,7 +1649,7 @@ export async function bookingRoutes(server: FastifyInstance) {
           } catch {
             /* notification must never break cancel */
           }
-        })();
+        })(), 'booking');
 
         return {
           message: 'Booking cancelled successfully',
@@ -1839,35 +1841,49 @@ export async function bookingRoutes(server: FastifyInstance) {
     }
   );
 
-  // GET /:id/video - Get video proof URL
+  // GET /:id/video - short-lived playable URL for the booking's video proof.
+  // Allowed: the booking's devotee, the assigned pandit, the manager of the
+  // booking's temple and admins. Private proofs come back as a signed URL
+  // (expires in `expiresIn` s); legacy http(s) values are returned as stored.
   server.get(
     '/:id/video',
     { preHandler: [authenticateUser, uuidParamGuard('id')] },
     async (request, reply) => {
       try {
         const { id } = paramsWithId.parse(request.params);
-        const userId = request.currentUser!.id;
-
-        const booking = await bookingService.getBookingById(id, userId);
-
-        return {
+        const user = request.currentUser!;
+        const booking = await prisma.pujaBooking.findUnique({
+          where: { id },
+          select: { id: true, bookingNumber: true, userId: true, templeId: true, priestId: true, videoProofUrl: true, videoUploadedAt: true },
+        });
+        if (!booking) return reply.status(404).send({ error: 'Booking not found.' });
+        if (!(await canViewProof({ id: user.id, roles: user.roles ?? [] }, booking))) {
+          return reply.status(403).send({ error: 'You are not authorized to view this booking.' });
+        }
+        const proof = await resolveProof(booking.id, booking.videoProofUrl);
+        reply.header('Cache-Control', 'no-store');
+        const base = {
           bookingId: booking.id,
           bookingNumber: booking.bookingNumber,
-          videoProofUrl: booking.videoProofUrl ?? null,
           videoUploadedAt: booking.videoUploadedAt ?? null,
-          status: booking.videoProofUrl ? 'available' : 'not_available',
+        };
+        if (proof.kind === 'none') {
+          return { ...base, videoProofUrl: null, videoUrl: null, status: 'not_available' };
+        }
+        if (proof.kind === 'unavailable') {
+          return reply.status(503).send({ error: 'The video could not be loaded right now. Please try again in a moment.' });
+        }
+        return {
+          ...base,
+          videoProofUrl: proof.url,
+          videoUrl: proof.url,
+          expiresIn: proof.kind === 'signed' ? proof.expiresIn : null,
+          private: proof.kind === 'signed',
+          status: 'available',
         };
       } catch (error: any) {
-        if (error.message?.includes('not found')) {
-          return reply.status(404).send({ error: error.message });
-        }
-        if (error.message?.includes('not authorized')) {
-          return reply.status(403).send({ error: error.message });
-        }
         server.log.error(error, 'Failed to fetch video proof');
-        return reply.status(500).send({
-          error: 'Failed to fetch video proof',
-        });
+        return reply.status(500).send({ error: 'Failed to fetch video proof' });
       }
     }
   );
@@ -2158,7 +2174,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         // request; if the order call throws, the booking row still exists as
         // `pending_payment`, and without this row the trail could not tell that
         // from "the devotee never tried". recordMoneyEvent never throws.
-        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'create-order' }));
+        await recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'create-order' })).catch(() => undefined);
 
         // 4. Create the Razorpay order. In demo mode (no RAZORPAY_KEY_ID)
         // payment.service returns a synthetic order_demo_* id and the web
@@ -2567,7 +2583,7 @@ export async function bookingRoutes(server: FastifyInstance) {
         // in the trail. recordMoneyEvent takes no `tx` on purpose: a failed
         // audit INSERT inside that transaction would abort it in Postgres and
         // roll the booking back.
-        void recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'from-offering' }));
+        await recordMoneyEvent(bookingCreatedEvent({ booking, userId, rail: 'from-offering' })).catch(() => undefined);
 
         // 7. Create the payment order. Razorpay is the ONLY rail — Stripe was
         // removed 2026-08-10 (PayPal via Razorpay replaces it for international

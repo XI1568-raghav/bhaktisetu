@@ -1,0 +1,56 @@
+name: prod-migrate
+
+# Apply or inspect Prisma migrations on the production database. Manual only.
+# Deploys do NOT run migrations (the Render start command skips them), so this is
+# the supported way when no one has a local connection string. Secrets are never
+# echoed; only the migration names and Prisma's own status text are printed.
+#
+#   gh workflow run prod-migrate.yml -f mode=status
+#   gh workflow run prod-migrate.yml -f mode=deploy     (main only)
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'status (read-only) or deploy (prisma migrate deploy, main only)'
+        type: choice
+        options: [status, deploy]
+        default: status
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-migrate
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Refuse deploy from anywhere but main
+        if: ${{ inputs.mode == 'deploy' && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "::error::mode=deploy only runs from main (this run is on ${GITHUB_REF})."
+          exit 1
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Prisma status or deploy
+        working-directory: apps/api
+        env:
+          DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
+          MODE: ${{ inputs.mode }}
+        run: |
+          [ -n "$DIRECT_URL" ] || { echo "SUPABASE_DIRECT_URL secret is missing or empty"; exit 1; }
+          export DATABASE_URL="$DIRECT_URL"
+          echo "database host: $(echo "$DIRECT_URL" | sed -E 's#^[a-z]+://[^@]*@([^:/]+).*#\1#')"
+          if [ "$MODE" = deploy ]; then
+            echo "--- status before"; npx prisma migrate status || true
+            echo "--- applying"; npx prisma migrate deploy
+          fi
+          echo "--- status"; npx prisma migrate status

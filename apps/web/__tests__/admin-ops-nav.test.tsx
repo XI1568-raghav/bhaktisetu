@@ -38,7 +38,8 @@ describe('AO-03 — the admin sidebar reaches the money and KYC screens', () => 
 
   it('links to refunds', () => {
     render(<AdminRootLayout>{null}</AdminRootLayout>);
-    expect(hrefOf(/refunds/i)).toBe('/admin/refunds');
+    expect(hrefOf(/^refunds$/i)).toBe('/admin/refunds');
+    expect(hrefOf(/^store refunds$/i)).toBe('/admin/store-refunds');
   });
 
   it('links to provider KYC', () => {

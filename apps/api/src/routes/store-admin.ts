@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { notHiddenReviewWhere } from '../lib/review-moderation.js';
 import { z } from 'zod';
 import { httpUrl } from '../lib/http-url.js';
+import { inspectOwnPhoto, attachFailureMessage } from '../lib/upload-inspect.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
@@ -246,6 +247,13 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
     }
+    if (parsed.data.imageUrl) {
+      const r = await inspectOwnPhoto(parsed.data.imageUrl);
+      if (!r.ok) {
+        const f = attachFailureMessage(r, 'product photo');
+        return reply.code(f.status).send({ error: f.error });
+      }
+    }
     const product = await prisma.storeProduct.create({
       data: {
         storeProfileId,
@@ -292,6 +300,13 @@ export async function storeAdminRoutes(server: FastifyInstance) {
     // save an edit in the other. A row the reads cannot show, the writes must
     // not resurrect — hence 404, matching what a read already answers.
     if (existing.deletedAt) return reply.code(404).send({ error: 'Product not found' });
+    if (parsed.data.imageUrl) {
+      const r = await inspectOwnPhoto(parsed.data.imageUrl);
+      if (!r.ok) {
+        const f = attachFailureMessage(r, 'product photo');
+        return reply.code(f.status).send({ error: f.error });
+      }
+    }
     const data: Record<string, unknown> = {};
     if (parsed.data.name !== undefined) data.name = parsed.data.name;
     if (parsed.data.description !== undefined) data.description = parsed.data.description;

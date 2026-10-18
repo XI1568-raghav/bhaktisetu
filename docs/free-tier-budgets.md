@@ -4,13 +4,62 @@
 > User refuses paid plans. Every external service must fit free tier.
 > Going over → service paused → user blocked from launching. Last updated 2026-07-10.
 
+## Current plan and hard rules (2026-10-18, authoritative; overrides anything below)
+
+Cause of the Oct 2026 outage: two always-on Render free services (`bhaktisetu` API +
+`darshya-web`) shared one 750 h pool, so both were suspended until the next billing
+period. Same failure as 2026-08-17 (see the corrected row below). It must not recur.
+
+**Architecture that fits every free tier (from 1 Nov 2026):**
+
+| Piece | Host | Free limit that matters | Safe budget |
+|---|---|---|---|
+| Website | Cloudflare Workers (`darshya-web`, domains `darshya.online` + `www`) | 100,000 requests/day, 10 ms CPU/request, Worker 64 MiB uncompressed | alert at 70,000/day; static assets are free |
+| API | Render **free** web service `bhaktisetu` ONLY | 750 h/month for the whole workspace, spins down after 15 min idle, Hobby bandwidth 5 GB then $0.15/GB | one always-on service = 720-744 h; NOTHING else on Render |
+| Database, auth, files | Supabase free | 500 MB DB, 1 GB storage, 5 GB egress, 50k MAU, pauses after 7 days idle | alert at 350 MB DB / 700 MB storage / 3.5 GB egress |
+| Email | Resend free | 100/day, 3,000/month | alert at 70/day; the outbox must retry, never burst |
+| Code and CI | GitHub public repo | unlimited Actions minutes on standard runners; scheduled workflows auto-disable after 60 days without repo activity | keep a commit every <60 days |
+
+**Rules, no exceptions (an agent that breaks one is wrong even if the user asked in passing; ask first):**
+1. **Render: exactly one service.** Never create, resume or deploy a second Render
+   service (web, worker, cron, preview, database). The website stays on Cloudflare.
+   `darshya-web` on Render stays suspended; delete it after a week of stability.
+2. **No paid anything without an explicit, itemised yes from the user.** Cards and
+   upgrades are the user's decision each time. Never suggest rotating accounts to
+   dodge a quota (breaks terms and has already burned the user).
+3. **Any paid plan is a loan: say the per-day cost up front and the exact downgrade
+   step.** Render Starter is $7/month = $0.226/day, billed per second. Switch back to
+   Free the moment the reason is gone; record the date in `TASKS.md`.
+4. **Before adding any workflow, cron, integration, SDK, page or background job,**
+   compute its monthly use against the table above and the rows below. Over 70% of
+   any cap = do not add; tell the user instead.
+5. **Hours check every session start:** if the API is suspended or `/health` is not 200,
+   say so first, before other work.
+6. **Keep-awake ping (UptimeRobot, free) every 5 min on `/health` is allowed only
+   because it is the single Render service** (about 720 h of 750 in a 30-day month).
+   Remove it if any second Render service ever exists.
+7. **Heavy server-rendered pages risk the 10 ms Cloudflare CPU cap.** New SSR routes
+   need `generateStaticParams`/caching or a Cache Rule; see `docs/runbooks/cloudflare-web-deploy.md`.
+8. **Supabase storage is the first thing to overflow** (proof videos up to 50 MB):
+   do not raise `VIDEO_MAX_MB`; compress or purge old proofs before 700 MB.
+9. **Migrations do not run on deploy.** Use the `prod-migrate` workflow or a local
+   `prisma migrate deploy`; never assume a green deploy applied them.
+10. **Secrets live only in GitHub secrets, Render env and Cloudflare; never in git,
+    docs or chat.** History was scrubbed on 2026-10-17 after a leak; the scanner
+    (`scripts/secret-scan.mjs`) must stay in the pre-commit hook.
+
+**Render bill policy for the Oct-Nov bridge:** the API is on Starter only because the
+free pool was exhausted until the next billing period. From 18 Oct 20:20 UTC to 1 Nov
+that is about 316 h = about $2.97. To spend less, downgrade to Free right after the
+migrations, deploy and smoke test (about $0.03), accepting API downtime until 1 Nov.
+
 ## Hard caps per service
 
 | Service                                      | Free cap                          | Resets               | What burns it                                            | Where to check                      |
 | -------------------------------------------- | --------------------------------- | -------------------- | -------------------------------------------------------- | ----------------------------------- |
 | **GitHub Actions** (private repo)            | 2000 min/mo                       | 1st of month         | Every workflow run. Linux runner = 1× multiplier.        | https://github.com/settings/billing |
 | **Cloudflare Pages** builds                  | 500/mo (n/a since 2026-07-08)     | 1st of month         | **Nothing.** Pages git integration was disabled 2026-07-08 (`cf-kill-zombie.yml`); web is a Render Docker service. Row kept so the zero is deliberate, not an omission. | CF dash → Pages → project → builds  |
-| **Cloudflare Pages** worker bundle           | 3 MiB compressed                  | per deploy           | Edge routes + their deps. Hard fail on overshoot.        | `docs/cf-worker-budget.md`          |
+| **Cloudflare Workers** bundle (changed 2026-09: 64 MiB uncompressed, no compressed limit) | 64 MiB                  | per deploy           | Edge routes + their deps. Hard fail on overshoot.        | `docs/cf-worker-budget.md`          |
 | **Cloudflare Pages** requests                | 100k/day                          | daily                | Visitor traffic                                          | CF dash → Analytics                 |
 | **Resend** emails                            | 100/day, 3000/mo                  | rolling 24h, monthly | Welcome / receipt / reset / referral.                    | resend.com/dashboard                |
 | **Supabase** DB                              | 500 MB                            | hard                 | Prisma writes.                                           | supabase.com/dashboard → storage    |

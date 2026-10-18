@@ -15,6 +15,11 @@ import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
+export function generateStaticParams() {
+  return VEDIC_YAJNAS.map((y) => ({ slug: y.slug }));
+}
+
+
 const BASE_URL = 'https://darshya.online';
 
 type Props = { params: Promise<{ slug: string }> };

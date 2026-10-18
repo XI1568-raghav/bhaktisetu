@@ -1,6 +1,7 @@
 // Programmatic-SEO mirror of /temples/[slug]/pujas — every puja gets a
 // dedicated temples listing page. Targets long-tail "best temple for
 // {puja}", "{puja} in {city}", "where to do {puja}" queries.
+import { staticOgPath } from '../../../../lib/og-static';
 import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../../../components/ui/heading-recipe';
@@ -16,6 +17,12 @@ import {
 } from '../../../../lib/trust-score';
 
 export const revalidate = 3600;
+
+import { fetchSlugParams } from '../../../../lib/static-params';
+
+export async function generateStaticParams() {
+  return fetchSlugParams('/pujas/types?limit=100', (j) => (j as { pujaTypes?: unknown }).pujaTypes);
+}
 
 // P0 #202 (cont.): this route used `process.env.API_URL || localhost:4000` —
 // on prod (Render) API_URL is unset, so loadPuja hit localhost and every
@@ -131,7 +138,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
       description: `${count} temple${count === 1 ? '' : 's'} offering ${puja.name}. Compare prices, lowest first. Video proof on every booking.`,
       url: `https://darshya.online/pujas/${slug}/temples`,
       type: 'website',
-      images: [`/og/puja/${slug}`],
+      images: [staticOgPath('puja', slug) ?? `/og/puja/${slug}`],
     },
   };
 }

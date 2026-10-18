@@ -1,11 +1,16 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getBlogPost, listBlogPosts } from '../../../lib/blog-posts';
+import { getBlogPost, listBlogPosts, blogPostSlugs } from '../../../lib/blog-posts';
 import { markdownToHtml } from '../../../lib/markdown';
 import { H1 } from '../../../components/ui/heading-recipe';
 
 export const revalidate = 3600;
+
+export async function generateStaticParams() {
+  return (await blogPostSlugs()).map((slug) => ({ slug }));
+}
+
 
 interface Params {
   params: Promise<{ slug: string }>;

@@ -19,6 +19,8 @@ Adding a new integration? Match this contract.
 | `MAGIC_LINK_SECRET` | `routes/magic-link.ts` | required for HMAC; falls back to dev secret with warning |
 | `RESEND_API_KEY` | `lib/email.ts` | `sendEmail` returns `{skipped:true}`; magic-link route returns `devLink` for manual testing |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | `routes/donations.ts` + booking | `isDemoPayment=true`; signature verification skipped, demo orderId returned |
+| `R2_BUCKET` | `lib/r2.ts` | R2 public media bucket; defaults `darshya-media`. Never used for booking proofs. |
+| `R2_PRIVATE_BUCKET` | `lib/r2.ts` (booking video proof) | **Required when R2 is enabled** (`R2_ACCOUNT_ID`+`R2_ACCESS_KEY_ID`+`R2_SECRET_ACCESS_KEY`). Unset => `POST /priest/bookings/:id/video-proof/signed-url` answers 503 "Video proof storage is not configured" (logged once) instead of writing proofs to the public `R2_BUCKET`. Reads/deletes of existing proof keys still fall back to `R2_BUCKET` (signed GET only) so older proofs stay reachable. Supabase-storage mode (no R2 vars) is unaffected: it uses its own private `STORAGE_PROOF_BUCKET` (`booking-proofs-private`). |
 | `STORAGE_BUCKET` | `lib/r2.ts` (Supabase Storage adapter) | defaults to `darshya-media` if unset; bucket must exist in Supabase Storage |
 | `GROQ_API_KEY` | `services/ai.service.ts` + `routes/voice-pandit.ts` (STT via Groq Whisper + LLM via Groq Llama) | AI endpoints unavailable; voice-pandit returns demo reply. **Note**: Whisper is hosted by Groq (NOT OpenAI) — `whisper-large-v3-turbo` runs on Groq's inference, single `GROQ_API_KEY` covers both STT and LLM. |
 | `ELEVENLABS_API_KEY` | `routes/voice-pandit.ts` (R-Q3-E-001 TTS) | voice-pandit returns transcript + reply text but empty audio (`demo:true`) |
@@ -101,3 +103,16 @@ To test magic-link locally without Resend:
 | `RATE_LIMIT_TRUST_CF_HEADER` | unset | Rollback lever: `true` trusts `CF-Connecting-IP` unconditionally (the pre-2026-10-13 behaviour). Use it if the API log shows `CF-Connecting-IP ignored` for real production traffic. |
 | `RATE_LIMIT_IP_CEILING` | `RATE_LIMIT_MAX * 12` | Per-client-IP cap per minute regardless of credential; stops `Authorization: Bearer <random>` bucket minting. |
 | `RAZORPAY_TIMEOUT_MS` | `15000` | Timeout on every Razorpay SDK call and the reconcile fetch. A stalled gateway answers the friendly 503 instead of hanging. |
+
+## Cloud Run / scale-to-zero (added 2026-10-17)
+
+See `docs/runbooks/cloud-run-api-deploy.md`.
+
+| Var | Default | Behaviour |
+|---|---|---|
+| `DISABLE_INPROCESS_JOBS` | unset | `true` turns off in-process timers (ops scheduler, per-booking offer timeouts, latency reporter); an external caller must hit `POST /api/v1/cron/tick`. `false` forces them on. Unset: off when `K_SERVICE` is set (Cloud Run), on elsewhere. Overrides `OPS_SCHEDULER_ENABLED`. |
+| `K_SERVICE` | set by Cloud Run | Do not set by hand. Presence implies scale-to-zero, so timers default off. |
+| `CRON_AUTH_TOKEN` | unset | Bearer token for `POST /api/v1/cron/tick`, `/daily`, `/run/:job`. Unset => every cron request is 401 (fail closed). Use a 32+ byte random value. |
+| `BACKGROUND_AWAIT_MS` | `4000` | Max time a request waits for receipts/audit/notification side effects before replying (`lib/background.ts`). `0` restores fire-and-forget. |
+| `RUN_MIGRATIONS_ON_BOOT` | unset | Docker image only (`apps/api/Dockerfile`). `true` runs `prisma migrate deploy` before starting; default is to skip (migrations are manual). |
+| `PORT` / `HOST` | `4000` / `0.0.0.0` | Cloud Run injects `PORT=8080`; the server honours it. |

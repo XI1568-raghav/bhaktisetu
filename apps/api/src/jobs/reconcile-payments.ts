@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
 import { paymentService } from '../services/payment.service.js';
 
 /**
@@ -183,6 +184,21 @@ export async function reconcilePayments(): Promise<ReconcileResult> {
             },
           });
           result.failedPayments += 1;
+          // Slice L: closing a payment as failed is a money fact; it had no trail row.
+          await recordMoneyEvent({
+            eventType: MONEY_EVENTS.PAYMENT_FAILED,
+            actorType: 'system',
+            subjectType: 'payment',
+            subjectId: row.id,
+            paymentId: row.id,
+            gateway: 'razorpay',
+            gatewayOrderId: orderId,
+            statusBefore: 'initiated',
+            statusAfter: 'failed',
+            idempotencyKey: `${row.id}:abandoned`,
+            note: 'abandoned checkout closed by reconciliation (no capture at Razorpay)',
+            metadata: { rail: 'reconcile-payments', abandonAfterHours: ABANDON_AFTER_HOURS },
+          });
         } catch {
           result.errors += 1;
         }
@@ -262,6 +278,19 @@ export async function reconcilePayments(): Promise<ReconcileResult> {
             row.id,
           );
           result.cancelledConsultations += 1;
+          await recordMoneyEvent({
+            eventType: MONEY_EVENTS.PAYMENT_FAILED,
+            actorType: 'system',
+            subjectType: 'consultation',
+            subjectId: row.id,
+            gateway: 'razorpay',
+            gatewayOrderId: orderId,
+            statusBefore: row.status,
+            statusAfter: 'cancelled',
+            idempotencyKey: `${row.id}:abandoned`,
+            note: 'abandoned consultation checkout closed by reconciliation (no capture at Razorpay)',
+            metadata: { rail: 'reconcile-payments', reference: row.reference },
+          });
         } catch {
           result.errors += 1;
         }

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../lib/prisma.js';
 import { getLiveStatus } from '../lib/darshan-schedule.js';
-import { getChannelEmbedInfo, liveStreamUrl, videoEmbedUrl } from '../lib/youtube-feed.js';
+import { channelIdFromUrl, resolveChannelPlayback } from '../lib/youtube-feed.js';
 import { authenticateUser } from '../middlewares/auth.js';
 
 // YouTube live stream embed URLs for major temples.
@@ -218,6 +218,8 @@ const SLUG_ALIASES: Record<string, string> = {
   'shirdi': 'shirdi-sai-baba',
   'siddhivinayak': 'siddhivinayak-mumbai',
   'mahakaleshwar': 'mahakaleshwar-ujjain',
+  // Seeded DB slugs that differ from the fallback table's slugs.
+  'vaishno-devi-katra': 'vaishno-devi',
 };
 
 function resolveSlug(idOrSlug: string): string {
@@ -340,13 +342,20 @@ export async function darshanRoutes(server: FastifyInstance) {
           const status = getLiveStatus(t.timingInfo);
           const stream = t.darshanStream[0];
           // Map slug → fallback YT URL from TEMPLE_LIVE_STREAMS
-          const fallback = TEMPLE_LIVE_STREAMS.find((s) => s.templeSlug === t.slug);
+          const fallback = TEMPLE_LIVE_STREAMS.find((s) => s.templeSlug === resolveSlug(t.slug));
           const playbackUrl = stream?.playbackUrl || t.streamUrl || fallback?.playbackUrl || null;
           if (status.isLive && playbackUrl) {
             liveStreams.push({
               id: stream?.id ?? `live-${t.slug}`,
               templeId: t.id,
               playbackUrl,
+              // Lets the web player use the durable channel embed + latest-upload
+              // fallback even when the stored playbackUrl is a dead per-video URL.
+              youtubeChannelId:
+                stream?.youtubeChannelId ??
+                channelIdFromUrl(playbackUrl) ??
+                fallback?.youtubeChannelId ??
+                null,
               status: 'live' as const,
               viewerCount: stream?.viewerCount ?? fallback?.viewerCount ?? 0,
               peakViewers: stream?.peakViewers ?? 0,
@@ -392,6 +401,7 @@ export async function darshanRoutes(server: FastifyInstance) {
           id: s.id,
           templeId: s.id,
           playbackUrl: s.playbackUrl,
+          youtubeChannelId: s.youtubeChannelId,
           status: 'live' as const,
           viewerCount: s.viewerCount,
           peakViewers: s.peakViewers,
@@ -474,19 +484,22 @@ export async function darshanRoutes(server: FastifyInstance) {
       (s) => s.id === id || s.templeSlug === id || s.templeSlug === canonicalSlug,
     );
     if (hardcoded) {
-      // Probe RSS for latest VOD as fallback. The live_stream embed is dark
-      // unless the channel is currently broadcasting; recent video keeps the
-      // player useful 24/7.
-      const feed = await getChannelEmbedInfo(hardcoded.youtubeChannelId);
-      const recentUrl = feed.videoId ? videoEmbedUrl(feed.videoId) : null;
+      // live_stream embed is dark unless the channel is broadcasting right now,
+      // so also hand back the newest upload (with its publish date) and the
+      // next few, for the player to fall back to. See resolveChannelPlayback.
+      const pb = await resolveChannelPlayback(hardcoded.youtubeChannelId);
       return {
         streamId: id,
         templeId: id,
         templeName: hardcoded.templeName,
         status: 'live',
-        playbackUrl: liveStreamUrl(hardcoded.youtubeChannelId),
-        recentVideoUrl: recentUrl,
-        recentVideoTitle: feed.title,
+        mode: pb.mode,
+        liveProbe: pb.liveProbe,
+        playbackUrl: pb.liveEmbedUrl,
+        recentVideoUrl: pb.latest?.embedUrl ?? null,
+        recentVideoTitle: pb.latest?.title ?? null,
+        recentVideoPublishedAt: pb.latest?.publishedAt ?? null,
+        uploads: pb.uploads,
         youtubeChannelId: hardcoded.youtubeChannelId,
         thumbnailUrl: hardcoded.thumbnailUrl,
         viewerCount: hardcoded.viewerCount,

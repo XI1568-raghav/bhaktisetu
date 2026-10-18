@@ -37,6 +37,7 @@ import ReauthPrompt from '../../../components/ReauthPrompt';
 // DB-09: shared with /bookings so the list CTA and this player agree about
 // what counts as a playable recording.
 import { videoProofState } from '../video-proof';
+import ProofLink from '../../../components/provider/ProofLink';
 import AuthGuard from '../../../components/AuthGuard';
 import BookingStatusTracker, { type BookingStatus } from '../../../components/BookingStatusTracker';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -1107,10 +1108,10 @@ function BookingDetailContent() {
  {/* S2C-03: videoUrl is now the real videoProofUrl, so the play surface
      and the download button open it instead of being inert decoration. */}
  <div className="overflow-hidden rounded-xl bg-surface-800">
- <a
- href={playableVideoUrl}
- target="_blank"
- rel="noopener noreferrer"
+ <ProofLink
+ bookingId={booking.id}
+ stored={playableVideoUrl}
+ token={session?.accessToken}
  className="relative flex aspect-video items-center justify-center"
  >
  <div className="text-center">
@@ -1122,21 +1123,21 @@ function BookingDetailContent() {
  <div className="absolute left-4 top-4 rounded-full bg-purple-600 px-3 py-1 text-xs font-bold text-white">
  Video Proof
  </div>
- </a>
+ </ProofLink>
  </div>
  <div className="mt-3 flex items-center justify-between">
  <p className="text-sm text-surface-500">
  Recorded on {formatDate(booking.scheduledDate)}
  </p>
- <a
- href={playableVideoUrl}
- target="_blank"
- rel="noopener noreferrer"
+ <ProofLink
+ bookingId={booking.id}
+ stored={playableVideoUrl}
+ token={session?.accessToken}
  className="inline-flex items-center gap-1.5 rounded-lg bg-purple-50 px-3 py-2 text-xs font-semibold text-purple-600 hover:bg-purple-100"
  >
  <Download className="h-3.5 w-3.5" />
  Download Video
- </a>
+ </ProofLink>
  </div>
 
  {/* PF-04 / F099 — the devotee's own close-out.

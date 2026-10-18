@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { inspectPrivateDocument, inspectOwnPhoto, attachFailureMessage } from '../lib/upload-inspect.js';
 import { z } from 'zod';
 import { httpUrlSchema } from '../lib/http-url.js';
 import { authenticateUser } from '../middlewares/auth.js';
@@ -279,6 +280,24 @@ export async function onboardingRoutes(server: FastifyInstance) {
     for (const k of [pd.aadhaarDocKey, pd.certificateDocKey]) {
       if (k && !k.startsWith(ownPrefix)) {
         return reply.code(400).send({ error: 'Invalid document reference. Please upload the file again.' });
+      }
+    }
+
+    // Inspect at attach: a signed upload URL accepts zero-byte or mislabelled files.
+    for (const [k, what] of [[pd.aadhaarDocKey, 'ID document'], [pd.certificateDocKey, 'certificate']] as const) {
+      if (!k) continue;
+      const r = await inspectPrivateDocument(k);
+      if (!r.ok) {
+        const f = attachFailureMessage(r, what);
+        return reply.code(f.status).send({ error: f.error });
+      }
+    }
+    const photo = (parsed.data.data as { photoUrl?: string }).photoUrl;
+    if (photo) {
+      const r = await inspectOwnPhoto(photo);
+      if (!r.ok) {
+        const f = attachFailureMessage(r, 'photo');
+        return reply.code(f.status).send({ error: f.error });
       }
     }
 

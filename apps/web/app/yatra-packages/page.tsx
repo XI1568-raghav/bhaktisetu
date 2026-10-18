@@ -99,7 +99,7 @@ export default async function YatraPackagesPage() {
                     <div className="p-4 flex flex-col flex-1">
                       <div className="flex items-center gap-3 text-xs mb-2" style={{ color: 'var(--color-text-muted)' }}>
                         <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> {pkg.duration_days} days</span>
-                        {HAS_PACKAGE_INCLUSIONS && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {seatsLeft} seats</span>}
+                        {HAS_PACKAGE_INCLUSIONS && <span className="flex items-center gap-1"><Users className="w-3 h-3" /> {seatsLeft} {seatsLeft === 1 ? "seat" : "seats"}</span>}
                       </div>
                       <p className="text-xs leading-relaxed line-clamp-3" style={{ color: 'var(--color-text-muted)' }}>
                         {pkg.short_description}

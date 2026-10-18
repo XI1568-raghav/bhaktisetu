@@ -34,11 +34,14 @@
 import { sendWhatsappTemplate, sendWhatsappText } from '../lib/whatsapp.js';
 import { notifyUser } from '../routes/notifications.js';
 import { prisma } from '../lib/prisma.js';
+import { deliverOrQueue } from '../lib/email-outbox.js';
 import {
   sendEmail,
   bookingConfirmationEmail,
   videoReadyEmail,
   refundProcessedEmail,
+  bookingCancelledEmail,
+  panditAssignedEmail,
 } from '../lib/email.js';
 import { parseSlotMinutes } from '../lib/slot-time.js';
 import { REFUND_DAYS_LABEL } from '../lib/refund-timing.js';
@@ -373,8 +376,48 @@ async function emailLegFor(
           amount: formatInr(ctx.amountInr),
         }),
       );
+    case 'cancelled':
+    case 'assigned': {
+      // Slice L: neither had an email leg. The callers' selects often omit User.email
+      // (bookings route cancel, dispatch), so re-read it by booking id.
+      const withEmail = ctx.devoteeEmail ? ctx : await ctxWithEmail(ctx);
+      if (event === 'cancelled') {
+        return sendCtxEmail(
+          withEmail,
+          bookingCancelledEmail({
+            devoteeName: withEmail.devoteeName ?? 'Devotee',
+            pujaName: withEmail.pujaName ?? 'Puja',
+            templeName: withEmail.templeName ?? 'Darshya',
+            bookingNumber: withEmail.bookingNumber ?? 'your booking',
+          }),
+        );
+      }
+      return sendCtxEmail(
+        withEmail,
+        panditAssignedEmail({
+          devoteeName: withEmail.devoteeName ?? 'Devotee',
+          pujaName: withEmail.pujaName ?? 'Puja',
+          templeName: withEmail.templeName ?? 'Darshya',
+          bookingNumber: withEmail.bookingNumber ?? 'your booking',
+          priestName: withEmail.priestName,
+          scheduledDate: withEmail.scheduledDate,
+        }),
+      );
+    }
     default:
       return 'no-target';
+  }
+}
+
+async function ctxWithEmail(ctx: BookingCtx): Promise<BookingCtx> {
+  try {
+    const b = await prisma.pujaBooking.findUnique({
+      where: { id: ctx.bookingId },
+      select: { user: { select: { email: true, fullName: true } } },
+    });
+    return { ...ctx, devoteeEmail: b?.user?.email ?? null, devoteeName: ctx.devoteeName ?? b?.user?.fullName ?? null };
+  } catch {
+    return ctx;
   }
 }
 
@@ -462,39 +505,55 @@ export async function notifyDevotee(
  * for a phone-OTP devotee — that cohort is served by the push + WhatsApp legs of
  * notifyDevotee('confirmed').
  */
+type ConfirmationMail = { to: string; subject: string; html: string; text: string };
+
+async function loadBookingConfirmation(
+  bookingId: string,
+): Promise<{ mail: ConfirmationMail } | { reason: 'booking-not-found' | 'no-email' }> {
+  const b = await prisma.pujaBooking.findUnique({
+    where: { id: bookingId },
+    select: {
+      bookingNumber: true,
+      scheduledDate: true,
+      scheduledTimeSlot: true,
+      priceAmount: true,
+      user: { select: { fullName: true, email: true } },
+      temple: { select: { name: true } },
+      pujaType: { select: { name: true } },
+      priest: { select: { displayName: true } },
+    },
+  });
+  if (!b) return { reason: 'booking-not-found' };
+  if (!b.user?.email) return { reason: 'no-email' };
+  const { subject, html, text } = bookingConfirmationEmail({
+    devoteeName: b.user.fullName ?? 'Devotee',
+    pujaName: b.pujaType?.name ?? 'Puja',
+    templeName: b.temple?.name ?? 'Darshya',
+    scheduledDate: formatBookingDate(b.scheduledDate),
+    scheduledTimeSlot: formatSlot(b.scheduledTimeSlot),
+    bookingNumber: b.bookingNumber,
+    // Decimal -> string, never Number(): the devotee is shown the stored figure.
+    amount: formatInr(b.priceAmount?.toString()) ?? '—',
+    priestName: b.priest?.displayName ?? null,
+  });
+  return { mail: { to: b.user.email, subject, html, text } };
+}
+
+/** The confirmation email rebuilt from the booking id (used by the outbox retry job). */
+export async function composeBookingConfirmationMail(bookingId: string): Promise<ConfirmationMail | null> {
+  const r = await loadBookingConfirmation(bookingId);
+  return 'mail' in r ? r.mail : null;
+}
+
 export async function sendBookingConfirmationEmail(
   bookingId: string,
 ): Promise<{ sent: boolean; reason?: string }> {
   try {
-    const b = await prisma.pujaBooking.findUnique({
-      where: { id: bookingId },
-      select: {
-        bookingNumber: true,
-        scheduledDate: true,
-        scheduledTimeSlot: true,
-        priceAmount: true,
-        user: { select: { fullName: true, email: true } },
-        temple: { select: { name: true } },
-        pujaType: { select: { name: true } },
-        priest: { select: { displayName: true } },
-      },
-    });
-    if (!b) return { sent: false, reason: 'booking-not-found' };
-    if (!b.user?.email) return { sent: false, reason: 'no-email' };
-
-    const { subject, html, text } = bookingConfirmationEmail({
-      devoteeName: b.user.fullName ?? 'Devotee',
-      pujaName: b.pujaType?.name ?? 'Puja',
-      templeName: b.temple?.name ?? 'Darshya',
-      scheduledDate: formatBookingDate(b.scheduledDate),
-      scheduledTimeSlot: formatSlot(b.scheduledTimeSlot),
-      bookingNumber: b.bookingNumber,
-      // Decimal -> string, never Number(): the devotee is shown the stored figure.
-      amount: formatInr(b.priceAmount?.toString()) ?? '—',
-      priestName: b.priest?.displayName ?? null,
-    });
-    const res = await sendEmail({ to: b.user.email, subject, html, text });
-    return { sent: res.ok, reason: res.ok ? undefined : (res.skipped ? 'email-disabled' : res.error) };
+    const loaded = await loadBookingConfirmation(bookingId);
+    if (!('mail' in loaded)) return { sent: false, reason: loaded.reason };
+    // Inline attempt, then the email outbox retries a failure (lib/email-outbox.ts).
+    const res = await deliverOrQueue(loaded.mail, { kind: 'booking_confirmation', refId: bookingId });
+    return { sent: res.sent, reason: res.sent ? undefined : (res.skipped ? 'email-disabled' : res.error) };
   } catch (err) {
     console.warn('[booking-notify] sendBookingConfirmationEmail failed:', err);
     return { sent: false, reason: 'error' };

@@ -17,6 +17,7 @@ import { clientIp, rateLimitKey, viaCloudflare } from './lib/rate-limit-key.js';
 import { createIpCeiling } from './lib/ip-ceiling.js';
 import { resolveRateLimitPolicy } from './lib/rate-limit-policy.js';
 import { resolveCorsOrigins } from './lib/cors-origins.js';
+import { inProcessJobsDisabled } from './lib/inprocess-jobs.js';
 import { startOpsScheduler, getSchedulerStatus } from './jobs/scheduler.js';
 import fastifyRawBody from 'fastify-raw-body';
 import fastifyCookie from '@fastify/cookie';
@@ -128,6 +129,7 @@ import { errorLocalizationPlugin } from './plugins/error-localization.js';
 import { localizeImages } from './lib/self-hosted-images.js';
 import { wrapRouteGuards } from './lib/stop-when-answered.js';
 import { registerNulByteGuard } from './lib/nul-guard.js';
+import { registerTolerantJsonParser } from './lib/json-body.js';
 
 const server = Fastify({
   logger: {
@@ -345,6 +347,8 @@ async function bootstrap() {
     runFirst: true,
   });
 
+  registerTolerantJsonParser(server);
+
   // Register auth decorators (must be before routes)
   await registerAuthDecorators(server);
 
@@ -452,7 +456,7 @@ async function bootstrap() {
     const route = request.routeOptions?.url ?? request.url.split('?')[0] ?? 'unknown';
     recordLatency(`${request.method} ${route} → ${reply.statusCode}`, ms);
   });
-  startMetricsReporter(server.log);
+  if (!inProcessJobsDisabled()) startMetricsReporter(server.log);
 
   // ── R-Q2-E-011: DB query instrumentation ──────────────────────────
   // Slow-query log: warn when any Prisma query > SLOW_QUERY_MS (default 100).

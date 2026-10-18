@@ -47,20 +47,27 @@ RUN cd apps/api && npx prisma generate
 # Copy the compiled output from the build stage
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 
+# Cloud Run injects PORT (8080) at runtime and the server binds 0.0.0.0:$PORT
+# (src/server.ts); 4000 is only the default for Render/local. /health is the
+# static liveness probe.
 EXPOSE 4000
 ENV NODE_ENV=production
 ENV PORT=4000
 
-# Run as the non-root `node` user (uid 1000, built into node:alpine). The
-# previous image ran as root inside the container.
+# Run as the non-root `node` user (uid 1000, built into node:alpine).
 USER node
 
 WORKDIR /app/apps/api
-# Apply migrations then serve compiled JS. Matches render.yaml startCommand
-# (`prisma migrate deploy && node dist/server.js`). The old image swallowed
-# migrate failures with `|| echo 'migrations skipped'` — this path fails hard,
-# consistent with the Render start script. A failed migrate must stop the boot,
-# not silently serve against a stale schema.
+# Runs through tsx, NOT `node dist/server.js`: @poojly/shared ships raw .ts
+# (package.json main/exports -> src/index.ts), so plain node cannot load the
+# compiled output (ERR_MODULE_NOT_FOUND, verified 2026-10-17). This matches the
+# command prod uses on Render (`tsx src/server.ts`).
+#
+# Migrations are NOT applied at boot by default. Cloud Run cold starts must be
+# fast and schema changes are applied by hand (`prisma migrate deploy` from a
+# workstation, docs/runbooks/prod-deploy-checklist.md). Set
+# RUN_MIGRATIONS_ON_BOOT=true to restore the old behaviour (fail hard: a failed
+# migrate stops the boot rather than serving a stale schema).
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
   CMD wget -qO- http://localhost:${PORT:-4000}/health || exit 1
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "if [ \"$RUN_MIGRATIONS_ON_BOOT\" = \"true\" ]; then npx prisma migrate deploy || exit 1; fi; exec ./node_modules/.bin/tsx src/server.ts"]

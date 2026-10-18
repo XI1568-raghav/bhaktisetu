@@ -31,6 +31,7 @@
  *    selection query orders by it, so low-acceptance pandits naturally sink.
  */
 
+import { inProcessJobsDisabled } from '../lib/inprocess-jobs.js';
 import { prisma } from '../lib/prisma.js';
 import { priestSlotKey, lockPriestSlot } from '../lib/priest-slot.js';
 import { mintProviderEarningForBooking } from './provider-earning-mint.js';
@@ -297,6 +298,9 @@ export class DispatchService {
    * Arm the per-booking offer timeout. Overridable/spy-able; see offerTimers.
    */
   armOfferTimeout(bookingId: string, acceptWindowSec: number): void {
+    // Scale-to-zero: a pending timer would be lost with the instance. The
+    // external tick runs dispatchService.sweepExpiredOffers() instead.
+    if (inProcessJobsDisabled()) return;
     const existing = offerTimers.get(bookingId);
     if (existing) clearTimeout(existing);
     const timer = setTimeout(() => {

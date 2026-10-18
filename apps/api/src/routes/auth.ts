@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { createSupabaseClient, supabaseAdmin } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
+import { revokeUserTokens, tokenClaims } from '../lib/token-revocation.js';
+import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
+import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 import { isAuthUpstreamDown, AUTH_UNAVAILABLE_BODY } from '../lib/auth-upstream.js';
@@ -977,6 +980,21 @@ export async function authRoutes(server: FastifyInstance) {
       } catch (err) {
         request.log.warn({ err }, 'Supabase signOut threw (non-critical)');
       }
+      // The token verified offline (SCAL-05) stays good until its own `exp`
+      // unless the API itself refuses it, so write the revocation here: global
+      // = every token issued before now; local = only this session's tokens,
+      // and only when the token names its session (otherwise a device logout
+      // would sign the user out everywhere).
+      if (!userId) {
+        const inspected = inspectSupabaseJwt(accessToken, process.env.SUPABASE_JWT_SECRET);
+        if (inspected.ok) userId = inspected.token.id;
+      }
+      if (userId) {
+        const sessionId = tokenClaims(accessToken).sessionId;
+        if (scope === 'global') await revokeUserTokens(userId);
+        else if (sessionId) await revokeUserTokens(userId, { sessionId });
+        invalidateAuthUser(userId);
+      }
       // Best-effort: revoke active JTIs for this user from the resolved id.
       try {
         if (userId && scope === 'global') {
@@ -1331,10 +1349,37 @@ export async function authRoutes(server: FastifyInstance) {
       const supabase = createSupabaseClient();
 
       // Sign up via Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      // emailRedirectTo: without it the confirmation link lands on the Supabase
+      // Site URL root with the tokens in the fragment and nothing consumes them.
+      // /auth/callback reads the session from the URL and finishes sign-in via
+      // /auth/google/sync (which works for any Supabase session). full_name is
+      // passed so that sync does not overwrite the name with the email prefix.
+      const webBase = (process.env.WEB_URL ?? process.env.WEB_PUBLIC_URL ?? 'https://darshya.online').replace(/\/+$/, '');
+      const signUpResult = await supabase.auth.signUp({
         email: emailLower,
         password,
+        options: { emailRedirectTo: `${webBase}/auth/callback`, data: { full_name: fullName } },
       });
+      let authData = signUpResult.data;
+      let authError = signUpResult.error;
+
+      // Idempotent retry: Supabase created the auth user on an earlier attempt
+      // but our DB write failed, so every retry hit "already registered" (409
+      // forever). Repair only when the caller proves ownership with the right
+      // password AND no DB row exists; otherwise this would double as a
+      // password-checking role-switch on a live account.
+      if (authError && ((authError as { code?: string }).code === 'user_already_exists' || /already registered/i.test(authError.message))) {
+        const proof = await supabase.auth.signInWithPassword({ email: emailLower, password });
+        const provenId = !proof.error ? proof.data?.user?.id : undefined;
+        if (provenId) {
+          const existing = await prisma.user.findUnique({ where: { id: provenId }, select: { id: true } });
+          if (!existing) {
+            request.log.warn({ event: 'signup_repair_missing_row', email: emailLower }, 'repairing missing DB row for existing auth user');
+            authData = proof.data as typeof authData;
+            authError = null;
+          }
+        }
+      }
 
       if (authError && isAuthUpstreamDown(authError)) {
         request.log.error({ err: authError, event: 'signup_auth_unreachable' }, 'signup could not reach auth');
@@ -1630,7 +1675,8 @@ export async function authRoutes(server: FastifyInstance) {
         update: {
           // Refresh display fields on every login so a Google avatar/name change reflects.
           fullName,
-          avatarUrl,
+          // Only overwrite when the provider supplied one; never null out a user-set avatar.
+          ...(avatarUrl ? { avatarUrl } : {}),
         },
         // phone is nullable per schema (20260428_phone_nullable migration).
         create: {

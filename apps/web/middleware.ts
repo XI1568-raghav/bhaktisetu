@@ -290,6 +290,28 @@ function withContentLanguage(req: NextRequest, res: NextResponse): NextResponse 
   return res;
 }
 
+// Query-less landings that are served from a prerendered copy (app/static-shell/*) because
+// the real page reads searchParams and would otherwise render on every request (Cloudflare
+// Worker free plan: 10 ms CPU). Any real filter/pagination param falls through to the
+// dynamic route; pure tracking params do not count.
+const STATIC_SHELLS: Record<string, string> = {
+  '/pujas': '/static-shell/pujas',
+  '/store': '/static-shell/store',
+};
+const TRACKING_PARAM = /^(utm_[a-z_]+|fbclid|gclid|ref|_rsc)$/i;
+
+function staticShellRewrite(req: NextRequest): NextResponse | null {
+  const target = STATIC_SHELLS[req.nextUrl.pathname];
+  if (!target || req.method !== 'GET') return null;
+  for (const key of req.nextUrl.searchParams.keys()) {
+    if (!TRACKING_PARAM.test(key)) return null;
+  }
+  const url = req.nextUrl.clone();
+  url.pathname = target;
+  url.search = '';
+  return NextResponse.rewrite(url);
+}
+
 export function middleware(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl;
 
@@ -325,7 +347,8 @@ export function middleware(req: NextRequest) {
   const rooted = rootLocaleRedirect(req);
   if (rooted) return rooted;
 
-  return withContentLanguage(req, withLocale(req, NextResponse.next()));
+  const shell = staticShellRewrite(req);
+  return withContentLanguage(req, withLocale(req, shell ?? NextResponse.next()));
 }
 
 export const config = {

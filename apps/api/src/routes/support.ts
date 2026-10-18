@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { settleBounded } from '../lib/background.js';
 import crypto from 'node:crypto';
 import { z } from 'zod';
 import { generateText, DEMO_MODE } from '../integrations/claude.js';
@@ -473,7 +474,7 @@ export async function supportRoutes(server: FastifyInstance) {
     });
 
     // Fire-and-forget email notifications. Never block ticket creation.
-    void (async () => {
+    await settleBounded((async () => {
       try {
         const user = await prisma.user.findUnique({
           where: { id: userId },
@@ -502,7 +503,7 @@ export async function supportRoutes(server: FastifyInstance) {
       } catch (err) {
         request.log?.warn({ err, ticketId: ticket.id }, 'support ticket email failed');
       }
-    })();
+    })(), 'support');
 
     return reply.code(201).send({ data: ticket });
   });
@@ -584,7 +585,7 @@ export async function supportRoutes(server: FastifyInstance) {
 
       // Notify the other side. Admin reply (non-internal) → email the ticket owner.
       // Devotee reply → alert the support inbox.
-      void (async () => {
+      await settleBounded((async () => {
         try {
           if (admin && !isInternal) {
             const owner = await prisma.user.findUnique({
@@ -616,7 +617,7 @@ export async function supportRoutes(server: FastifyInstance) {
         } catch (err) {
           request.log?.warn({ err, messageId: message.id }, 'support ticket reply email failed');
         }
-      })();
+      })(), 'support');
 
       return reply.code(201).send({ data: message });
     }

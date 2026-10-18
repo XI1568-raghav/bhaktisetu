@@ -1,49 +1,8 @@
-# CF Pages redirects — keep worker bundle under 3 MiB free tier limit.
-# OG image routes (formerly /og/* edge functions) now redirect to logo
-# to avoid bundling @vercel/og into the worker.
+# Cloudflare Workers static-assets redirect rules. Only real 3xx redirects belong here.
+# Workers assets answers these BEFORE the Worker runs and does not support 200 rewrites,
+# so the old Pages-era "/x /x 200" lines turned real routes into 404s. Every
+# dynamic route (/pujas/[slug]/book, /yatra/[slug]/book, /astrology/[id], /store/[handle],
+# /priest/bookings/[id], /admin/users/[id]) is a real Next route now; splat redirects
+# to the old ?id= "view" pages would swallow their siblings and are removed.
+# /og/puja/*, /og/temple/* and /og/shloka are real routes plus prerendered PNGs: not redirected.
 /og/default          /logo.svg     302
-/og/puja/*           /logo.svg     302
-/og/shloka           /logo.svg     302
-/og/temple/*         /logo.svg     302
-
-# View-pattern for heavy 'use client' [id] routes — preserves bookmarks while
-# dropping per-id edge functions from the worker bundle.
-/priest/bookings/view   /priest/bookings/view             200
-/priest/bookings/*      /priest/bookings/view?id=:splat   302
-/admin/support/view     /admin/support/view               200
-/admin/support/*        /admin/support/view?id=:splat     302
-/admin/users/view       /admin/users/view                 200
-/admin/users/*          /admin/users/view?id=:splat       302
-/bookings/view          /bookings/view                    200
-/bookings/*             /bookings/view?id=:splat          302
-/onboarding/view        /onboarding/view                  200
-/onboarding/*           /onboarding/view?role=:splat      302
-/support/tickets/view   /support/tickets/view             200
-/support/tickets/*      /support/tickets/view?id=:splat   302
-# /pujas/:slug/book — keep static /pujas/home-puja/book + /pujas/book + /pujas/marriage/book intact, redirect anything else.
-/pujas/book                  /pujas/book                                200
-/pujas/home-puja/book        /pujas/home-puja/book                      200
-/pujas/marriage/book         /pujas/marriage/book                       200
-/pujas/home-puja/:slug/book  /pujas/home-puja/book?slug=:slug           302
-/pujas/:slug/book            /pujas/book?slug=:slug                     302
-
-# /yatra/:slug/book — only one static sibling here.
-/yatra/book                  /yatra/book                                200
-/yatra/:slug/book            /yatra/book?slug=:slug                     302
-
-# /checkout/offering — flat single-segment param after /offering.
-/checkout/offering           /checkout/offering                         200
-/checkout/offering/:id       /checkout/offering?id=:id                  302
-
-# /astrology/:id — keep sibling routes (chat, horoscope, kundli, view) static; only refuse to swallow them.
-/astrology/view              /astrology/view                            200
-/astrology/chat              /astrology/chat                            200
-/astrology/kundli            /astrology/kundli                          200
-/astrology/horoscope/*       /astrology/horoscope/:splat                200
-/astrology/:id               /astrology/view?id=:id                     302
-
-# /store/:handle — keep cart + checkout + view static; only swallow product handles.
-/store/view                  /store/view                                200
-/store/cart                  /store/cart                                200
-/store/checkout              /store/checkout                            200
-/store/:handle               /store/view?handle=:handle                 302

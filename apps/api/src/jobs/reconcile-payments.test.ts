@@ -107,6 +107,22 @@ describe('PAY-06 — reconcilePayments', () => {
     );
   });
 
+  it('slice L: the abandoned-checkout close writes a payment.failed money-audit row (payment + consultation)', async () => {
+    prismaMock.payment.findMany.mockResolvedValue([
+      { id: 'pmt-old', gatewayOrderId: 'order_old', createdAt: new Date(Date.now() - 48 * HOURS) },
+    ]);
+    prismaMock.$queryRawUnsafe.mockResolvedValue([
+      { id: 'consult-9', reference: 'AC-9', status: 'pending_payment', razorpay_order_id: 'order_dead9', created_at: new Date(Date.now() - 48 * HOURS) },
+    ]);
+    vi.stubGlobal('fetch', vi.fn(async () => razorpayReply([])));
+    await reconcilePayments();
+    const audited = prismaMock.$executeRawUnsafe.mock.calls
+      .filter((c: unknown[]) => c.some((x) => x === 'payment.failed'))
+      .map((c: unknown[]) => c.map(String).join('|'));
+    expect(audited.some((t) => t.includes('pmt-old') && t.includes('order_old'))).toBe(true);
+    expect(audited.some((t) => t.includes('consult-9'))).toBe(true);
+  });
+
   it('never writes anything when the Razorpay lookup itself fails', async () => {
     prismaMock.payment.findMany.mockResolvedValue([
       { id: 'pmt-old', gatewayOrderId: 'order_old', createdAt: new Date(Date.now() - 48 * HOURS) },

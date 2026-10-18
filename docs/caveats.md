@@ -158,3 +158,10 @@ Imports are hoisted but Sentry's instrumentation needs to run before route handl
 **Also added same batch**: `form-action` now permits `https://checkout.stripe.com` (was missing — Stripe checkout form posts were silently blocked).
 
 **Don't**: Re-add `'unsafe-eval'` "just in case" — actually verify the breaking SDK first. Each unsafe-* directive widens XSS blast radius.
+
+
+### A password reset done directly in Supabase does not revoke already-issued access tokens
+
+`auth_token_revocations` (`lib/token-revocation.ts`) is only written by our own endpoints (logout-all, change-password, block, deletion, force-logout). A reset completed against Supabase/GoTrue directly (email link landing on Supabase, dashboard, admin API) never touches it, and GoTrue does not invalidate other sessions on a password update. Access tokens minted before the reset therefore stay valid until their own `exp` (up to 1 h); the refresh ledger is the separate lever.
+
+Not mitigated in code on purpose: comparing token `iat` to `auth.users.updated_at` is unsafe, because `updated_at` also moves on metadata/email-confirm/identity updates and would sign out healthy users, and it adds a cross-schema read on the hot auth path with no verified grant for the API DB role. A safe fix needs a dedicated signal (a Supabase Auth hook or webhook on password change that calls `revokeUserTokens`). Until then, the reset page in our web app (which routes through the API) is the only path that revokes; for a suspected compromise use admin force-logout after resetting.

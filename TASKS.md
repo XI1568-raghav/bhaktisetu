@@ -1,6 +1,6 @@
 # Tasks — Darshya
 
-> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last trimmed: 2026-10-05.
+> Live ledger. History → `docs/handoff.md`. Completed log → `docs/tasks-history.md`. User gates → `docs/activation-gates.md`. Last trimmed: 2026-10-14.
 
 ## Archived blocks (moved verbatim to `docs/handoff.md` → "Archived from TASKS.md 2026-10-04")
 
@@ -11,6 +11,7 @@
 - GTM Phase-0 deliverables narrative and verify cheatsheet (2026-08-07): archived; open items kept below.
 - ARE Autonomous Roadmap Engine (2026-06-10): archived.
 - 43 older blocks (2026-05-19 → 2026-06-08): archived 2026-08-10.
+- Go-live 2026-10-05 block + 2026-10-06/07 state snapshots: archived 2026-10-14 (`docs/handoff.md` "Archived from TASKS.md 2026-10-14").
 
 ## HANDOFF Full Audit + Fix Engagement — ✅ COMPLETE 2026-08-11
 
@@ -32,28 +33,25 @@
   emails depend on it.
 - **Stripe dashboard**: delete the webhook endpoint for `/payments/webhook/stripe` (now 404s).
 
-## Go-live 2026-10-05 (read first; full detail in `docs/handoff.md` 2026-10-05 block)
+## QA hardening 2026-10-13/14 (live; detail in `docs/handoff.md` 2026-10-13/14 block)
 
-All roles were tested end to end on a local stack and fixed through #279-#312. Prod = both Render services deployed at the latest main (`31f9fe38` at write time; confirm with `render-diag.yml -f mode=detail`).
-`ci.yml` no longer runs on push to main (#308): before any deploy, verify merged main locally across `apps/api`, `apps/web` AND `apps/mobile` (tsc + vitest).
+PR #338 (`708b101`) is merged to `main`; round four is on branch `claude/jolly-babbage-5h6vud` (PR open, see GitHub; not merged). **Nothing is deployed.** Prod still runs the pre-#338 build; read `docs/golive-status.md` (newest first) before acting. Local stack: `docs/runbooks/qa-local-stack.md`.
 
-**Owner-only, still open (none are code):**
-- Resend: verify sender domain `send.darshya.online`; Supabase Auth -> SMTP -> Resend; Auth redirect URL `https://darshya.online/auth/reset-password`.
-- Real Rs 101 card payment test; Razorpay International Payments (NRI card acceptance); payout rail (RazorpayX/Cashfree).
-- `BACKUP_S3_*` secrets; 80G registration number + PAN; PostHog key (analytics is dead without it).
-- Render 750 shared free hours (two services share one account budget; Aug 2026 suspension).
-- Decisions: prasad-abroad shipping, store returns policy.
+**Owner actions (none are code):**
+- GitHub Actions billing/budget (github.com/settings/billing): CI, deploys and prod-db-task cannot start without it.
+- Razorpay live keys in Render (currently the `rzp_test_demo` fallback).
+- Cloudflare: check Scrape Shield, Auto Minify and Rocket Loader are OFF for darshya.online (suspected cause of hydration error #418).
+- Sleeping web service: add a keep-alive ping or move off the free plan (Render 750 shared hours).
+- Deploy order: web first, then API. Before the API deploy run `scripts/ops/prod-like-smoke.sh`, then `docs/runbooks/prod-deploy-checklist.md`.
+- After the API deploy: grep the API log for `CF-Connecting-IP ignored`. If real traffic shows it, set `RATE_LIMIT_TRUST_CF_HEADER=true` (rollback lever). Optional hardening: set `CF_ORIGIN_SECRET` plus a Cloudflare Transform Rule adding `x-origin-secret` on `api.darshya.online` (docs/env-vars.md).
+- Migrations to apply BY HAND (deploys do not run them): `20261013000000_review_moderation`, `20261013010000_donee_tax_and_email_outbox`, `20261014000000_auth_token_revocations`, plus any other new folder under `apps/api/prisma/migrations`.
+  Authority: `prisma migrate status`; then redeploy the API. Code tolerates both tables being absent.
+- Set `R2_PRIVATE_BUCKET` in Render (booking proofs fall back to the public media bucket if unset).
+- Prod DB changes still waiting: `ops/sql/commission-default-80.sql`, `ops/sql/seed-default-temple-offerings.sql` (dry-run first).
+- Decisions: wellness/consultation refund policy (currently a recorded intent paid by ops); `/csr-match` stays off until 80G registration.
+- Still owner-only: Resend sender domain, Supabase Auth SMTP + redirect `https://darshya.online/auth/reset-password`, real Rs 101 payment, Razorpay International, `BACKUP_S3_*`, 80G number/PAN, legal facts, credential rotation, PostHog key, Stripe webhook endpoint delete.
 
-**STATE AT 2026-10-07 (supersedes everything below in this block; the bullets that follow are the 2026-10-06 snapshot). Prod runs main at c1fa51d (web + API); the launch-readiness batch is in a PR. Read `docs/golive-status.md` (newest section first) before acting. Before ANY API deploy run `scripts/ops/prod-like-smoke.sh` (docs/runbooks/prod-deploy-checklist.md). Launch blocker: seeded personas are live as real providers (see golive-status).**
-- `main` = `d818f153`. PRs #279-#322 are all merged. Verified locally on that tree: api 3591, web 4593, mobile 976 tests, tsc clean in all three.
-- **NOT DEPLOYED since `31f9fe38`:** GitHub Actions is out of free minutes (jobs fail to start: "recent account payments have failed or your spending limit needs to be increased"). Deploys, PR checks, the DB-task workflow and the daily backup all run on Actions, so all are blocked until the owner sets an Actions budget (github.com/settings/billing) or deploys by hand in the Render dashboard (web first, then API: the API returns `https://darshya.online/images/...` URLs that only exist after the web deploy).
-- **AI chats were down on prod** because Groq retired `llama-3.3-70b-versatile` / `llama-3.1-8b-instant` on 2026-08-16 (`GET /api/v1/ai/health` showed `404 model_not_found`). Fixed in #319 (`openai/gpt-oss-120b` / `openai/gpt-oss-20b`, `reasoning_effort=low`). After the API deploy, confirm `/api/v1/ai/health` shows `ok:true`, then test `/astrology/chat`, `/ask-pandit`, `/ai/translate`, voice-pandit.
-- **Two prod DB changes ready, not applied** (run via `prod-db-task.yml` dry-run then apply, or paste into the Supabase SQL editor): `ops/sql/commission-default-80.sql` (pandits 70% -> 80%) and `ops/sql/seed-default-temple-offerings.sql` (5 standard pujas for each temple with none; 15 of 20 temples on prod have zero offerings). `ops/sql/verify-commission-state.sql` is read-only.
-- Local E2E stack recipe: `docs/runbooks/local-e2e-stack.md`. Demo tokens: `Authorization: Bearer demo-<role>-token`.
-- Still owner-only: Resend sender, Supabase Auth SMTP, real Rs 101 payment, Razorpay International Payments, `BACKUP_S3_*`, 80G number/PAN, legal facts (entity/GSTIN/grievance officer), credential rotation (docs/runbooks/secret-rotation.md), Render hours decision, PostHog key.
-- Agent follow-ups that were open are DONE: claims gated (#315), temple onboarding link (#314), polish (#316), copy sweep (#309), prasad India-only + wording + labels (#320), temples bookable + admin temple editor (#321).
-
-**Invariants added this round:** earnings of pandit/astrologer/wellness/temple stay held until performed/proved (`payout.service.ts`, `upcomingInr`); cash-on-delivery orders create no commission; NRI price = 2.5x puja price charged in INR, shown in USD only when the explicit `nriPricing` flag is set (`apps/api/src/lib/nri-pricing.ts` + web twin); admin refunds default to the cancellation policy amount; referral stays hidden behind `HAS_REFERRAL_CREDIT`.
+**Invariants (do not break):** `Commission.amount` = provider earning, `percentage` = platform take rate; payout rails mutually exclusive (`createPriestPayout` refuses when a Commission owns the booking); provider earnings held until performed/proved; COD creates no commission; NRI price 2.5x charged in INR; rate-limit trust rule (see env-vars.md); refunds idempotent with money-audit rows.
 
 ## Open owner/runtime items (from the 2026-08-05 launch audit; none are code)
 - **#196 phone-OTP** — Supabase SMS provider unconfigured (MSG91/Twilio) or hide the Mobile tab.

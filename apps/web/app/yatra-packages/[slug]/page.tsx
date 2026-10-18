@@ -7,6 +7,15 @@ import { Calendar, Users, Check, X, MapPin, Clock, ArrowRight } from 'lucide-rea
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { HAS_PACKAGE_INCLUSIONS, INCLUSIONS_ON_ENQUIRY } from '../../../lib/launch-gates';
+import { fetchSlugParams } from '../../../lib/static-params';
+// Public, non-personalised: matches the fetch below so the page can be edge-cached.
+export const revalidate = 300;
+
+export async function generateStaticParams() {
+  return fetchSlugParams('/yatra-packages', (j) => (j as { packages?: unknown }).packages);
+}
+
+
 interface YatraPackage {
   id: string;
   slug: string;
@@ -92,7 +101,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
             <p className="mt-2 prose-body text-white/85 max-w-2xl">{pkg.short_description}</p>
             <div className="mt-4 flex flex-wrap items-center gap-4 text-xs md:text-sm text-white/80">
               <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {pkg.duration_days} days</span>
-              {HAS_PACKAGE_INCLUSIONS && <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {seatsLeft} of {pkg.max_group_size} seats left</span>}
+              {HAS_PACKAGE_INCLUSIONS && <span className="flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> {seatsLeft} of {pkg.max_group_size} {seatsLeft === 1 ? "seat" : "seats"} left</span>}
               <span className="flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> from ₹{Number(pkg.price_inr).toLocaleString('en-IN')}/person</span>
             </div>
           </div>
@@ -192,7 +201,7 @@ export default async function YatraPackageDetailPage({ params }: { params: Promi
               </a>
               )}
               {HAS_PACKAGE_INCLUSIONS && seatsLeft <= 5 && seatsLeft > 0 && (
-                <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Only {seatsLeft} seats left!</p>
+                <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Only {seatsLeft} {seatsLeft === 1 ? "seat" : "seats"} left!</p>
               )}
               {HAS_PACKAGE_INCLUSIONS && seatsLeft === 0 && (
                 <p className="mt-2 text-xs text-center" style={{ color: '#dc2626' }}>Group full — try another date</p>

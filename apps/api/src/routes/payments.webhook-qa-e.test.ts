@@ -85,6 +85,22 @@ describe('payment.failed after capture', () => {
   });
 });
 
+describe('payment.failed with no Payment row (slice L)', () => {
+  it('still leaves a money-audit row (donation / consultation / wellness orders own no Payment)', async () => {
+    prismaMock.payment.findFirst.mockResolvedValue(null);
+    prismaMock.$executeRawUnsafe.mockResolvedValue(1);
+    const res = await post(
+      { event: 'payment.failed', payload: { payment: { entity: { id: 'pay_orph', order_id: 'order_orph', amount: 10100, error_description: 'bank declined' } } } },
+      'evt_failed_orphan',
+    );
+    expect(res.statusCode).toBe(200);
+    await new Promise((r) => setTimeout(r, 20));
+    const rows = prismaMock.$executeRawUnsafe.mock.calls.filter((c: unknown[]) => c.includes('payment.failed'));
+    expect(rows.length).toBe(1);
+    expect(rows[0]!.map(String).join('|')).toContain('order_orph');
+  });
+});
+
 describe('payment.captured amount check', () => {
   it('refuses to confirm when the captured amount differs from the order', async () => {
     prismaMock.payment.findFirst.mockResolvedValue({

@@ -8,8 +8,12 @@
     "dev:turbo": "next dev --turbopack --port 3000",
     "prebuild": "node scripts/build-search-index.mjs",
     "build": "next build",
+    "build:cf": "node scripts/build-cf.mjs",
+    "prerender:og": "node scripts/build-cf.mjs --og-only",
+    "preview:cf": "opennextjs-cloudflare preview",
+    "deploy:cf": "opennextjs-cloudflare deploy",
     "start": "next start",
-    "lint": "echo \"lint: ok (next lint disabled — eslint-config-next 15 + eslint 8 ajv crash; see follow-up)\"",
+    "lint": "echo \"lint: ok (next lint disabled \u2014 eslint-config-next 15 + eslint 8 ajv crash; see follow-up)\"",
     "lint:check": "next lint",
     "test": "vitest run",
     "test:watch": "vitest",
@@ -30,6 +34,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.1",
     "@playwright/test": "^1.59.1",
     "@poojly/tsconfig": "workspace:*",
     "@testing-library/dom": "^10.4.1",
@@ -42,6 +47,8 @@
     "eslint-config-next": "^15.5",
     "happy-dom": "^20.10.2",
     "jsdom": "^26.1.0",
-    "typescript": "^5.8.3"
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.151.1"
   }
 }

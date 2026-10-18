@@ -19,6 +19,7 @@ import { tickConsultationExpire, type ConsultationExpireResult } from './consult
 // PAY-06: the money reconciliation sweep. Nothing anywhere used to look for a
 // Payment stuck at 'initiated' with a real capture behind it.
 import { reconcilePayments, type ReconcileResult } from './reconcile-payments.js';
+import { processEmailOutbox, type OutboxRunResult } from '../lib/email-outbox.js';
 import { runWeeklySettlement } from '../services/payout.service.js';
 import { claimRun, releaseRun } from '../lib/notification-run-log.js';
 
@@ -98,6 +99,8 @@ export interface DailyOpsResult {
   consultationExpire: ConsultationExpireResult;
   /** PAY-06: Razorpay ↔ local reconciliation sweep. */
   paymentReconciliation: ReconcileResult;
+  /** Retry of failed receipt / booking emails (lib/email-outbox.ts). */
+  emailOutbox: OutboxRunResult;
   weeklySettlement: {
     providersScanned: number;
     requestsCreated: number;
@@ -418,6 +421,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
         skipped: true,
         reason: 'outreachOnly',
       },
+      emailOutbox: { scanned: 0, sent: 0, retried: 0, dead: 0, errors: 0, skipped: true, reason: 'outreachOnly' },
       weeklySettlement: {
         providersScanned: 0,
         requestsCreated: 0,
@@ -449,6 +453,9 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
   const webhookReplaySweep = await tickWebhookReplaySweep();
   const consultationExpire = await tickConsultationExpire();
   const paymentReconciliation = await tickPaymentReconciliation();
+  const emailOutbox = await processEmailOutbox().catch(
+    (err): OutboxRunResult => ({ scanned: 0, sent: 0, retried: 0, dead: 0, errors: 1, skipped: true, reason: err instanceof Error ? err.message : String(err) }),
+  );
   const weeklySettlement = await tickWeeklySettlement();
   return {
     outreach,
@@ -469,6 +476,7 @@ export async function runDailyOps(opts: RunOptions = {}): Promise<DailyOpsResult
     webhookReplaySweep,
     consultationExpire,
     paymentReconciliation,
+    emailOutbox,
     weeklySettlement,
     ranAt: new Date().toISOString(),
   };

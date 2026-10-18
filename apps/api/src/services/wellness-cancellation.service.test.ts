@@ -5,6 +5,12 @@ vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 vi.mock('../lib/email.js', () => ({ sendEmail: vi.fn().mockResolvedValue({ ok: true }) }));
 vi.mock('../routes/notifications.js', () => ({ notifyUser: vi.fn().mockResolvedValue(1) }));
 
+const refundMock = vi.hoisted(() => vi.fn());
+vi.mock('./refund.service.js', async () => ({
+  callRazorpayRefund: refundMock,
+  appendRefundId: (m: any, id: string) => [...(m?.refundIds ?? []), id],
+}));
+
 import {
   cancelWellnessEnrollment,
   cancelWellnessSessionEnrollments,
@@ -163,5 +169,127 @@ describe('cancelWellnessSessionEnrollments', () => {
   it('an empty session is a clean no-op', async () => {
     prismaMock.wellnessEnrollment.findMany.mockResolvedValue([] as any);
     expect(await cancelWellnessSessionEnrollments({ sessionId: 's1', actorType: 'admin', actorId: 'x' })).toEqual({ released: 0, refunded: 0, refundOwedInr: 0, ledgerManualReview: 0 });
+  });
+});
+
+describe('gateway refund (slice L)', () => {
+  const PAY = { id: 'p1', amount: '100', refundAmount: null, status: 'captured', gatewayPaymentId: 'pay_1', metadata: {} };
+  beforeEach(() => {
+    refundMock.mockReset();
+    prismaMock.payment.findUnique.mockResolvedValue(PAY as any);
+    prismaMock.payment.updateMany.mockResolvedValue({ count: 1 } as any);
+    prismaMock.payment.update.mockResolvedValue({} as any);
+  });
+
+  it('happy path: full refund goes to the gateway once, payment marked refunded, audited', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_1' });
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ refundExecution: 'gateway', refundId: 'rfnd_1', refundOwedInr: 100 });
+    expect(refundMock).toHaveBeenCalledTimes(1);
+    expect(refundMock.mock.calls[0]![0]).toBe('pay_1');
+    expect(refundMock.mock.calls[0]![1]).toBe(10000);
+    expect(prismaMock.payment.update.mock.calls[0]![0].data).toMatchObject({ status: 'refunded', refundAmount: 100 });
+    expect(auditEvents()).toEqual(expect.arrayContaining(['refund.initiated', 'refund.completed']));
+  });
+
+  it('partial tier: 75% is sent as 7500 paise and the payment stays partially_refunded', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_2' });
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }, { scheduledAt: hoursFromNow(30) }) as any);
+    await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(refundMock.mock.calls[0]![1]).toBe(7500);
+    expect(prismaMock.payment.update.mock.calls[0]![0].data).toMatchObject({ status: 'partially_refunded', refundAmount: 75 });
+  });
+
+  it('double refund: a second cancel / lost reservation never reaches the gateway', async () => {
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1', status: 'CANCELLED' }) as any);
+    prismaMock.payment.findUnique.mockResolvedValue({ ...PAY, refundAmount: '100', status: 'refunded', metadata: {} } as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r?.outcome).toBe('already');
+    expect(refundMock).not.toHaveBeenCalled();
+    // racing caller: compare-and-set reservation lost
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    prismaMock.payment.findUnique.mockResolvedValue(PAY as any);
+    prismaMock.payment.updateMany.mockResolvedValue({ count: 0 } as any);
+    await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(refundMock).not.toHaveBeenCalled();
+  });
+
+  it('gateway 500: reservation released, failure audited, then the same cancel retries and sends once', async () => {
+    refundMock.mockResolvedValueOnce({ error: { description: 'down' } });
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ outcome: 'cancelled', refundExecution: 'retry' });
+    const release = prismaMock.payment.updateMany.mock.calls[1]![0];
+    expect(release.data.refundAmount).toBeNull();
+    expect(release.data.metadata.wellnessRefundOwedInr).toBe(100);
+    expect(auditEvents()).toContain('refund.failed');
+    // retry: row now CANCELLED, payment carries the owed marker
+    refundMock.mockResolvedValueOnce({ id: 'rfnd_3' });
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1', status: 'CANCELLED' }) as any);
+    prismaMock.payment.findUnique.mockResolvedValue({ ...PAY, metadata: { wellnessRefundOwedInr: 100 } } as any);
+    prismaMock.payment.updateMany.mockResolvedValue({ count: 1 } as any);
+    const r2 = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'admin', actorId: 'a1', now: NOW });
+    expect(r2).toMatchObject({ outcome: 'already', refundExecution: 'gateway', refundId: 'rfnd_3' });
+    expect(refundMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('crash after reserve: a stale in-flight marker is re-sent exactly once; a fresh one is not', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_9' });
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1', status: 'CANCELLED' }) as any);
+    const mk = (ageMin: number) => ({
+      ...PAY, refundAmount: '100',
+      metadata: { wellnessRefundInflight: { amount: 100, at: new Date(Date.now() - ageMin * 60_000).toISOString() } },
+    });
+    prismaMock.payment.findUnique.mockResolvedValue(mk(1) as any); // fresh: another caller is mid-call
+    await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(refundMock).not.toHaveBeenCalled();
+    prismaMock.payment.findUnique.mockResolvedValue(mk(30) as any); // stale: process died
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ outcome: 'already', refundExecution: 'gateway', refundId: 'rfnd_9' });
+    expect(refundMock).toHaveBeenCalledTimes(1);
+    expect(refundMock.mock.calls[0]![1]).toBe(10000);
+    expect(prismaMock.payment.update.mock.calls[0]![0].data.metadata.wellnessRefundInflight).toBeNull();
+    // double click while the takeover CAS is lost
+    refundMock.mockClear();
+    prismaMock.payment.updateMany.mockResolvedValue({ count: 0 } as any);
+    await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(refundMock).not.toHaveBeenCalled();
+  });
+
+  it('refund sent but payment row update fails: stamps the refund id so a retry never re-sends', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_7' });
+    prismaMock.payment.update.mockRejectedValue(new Error('db down'));
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ refundId: 'rfnd_7' });
+    const stamp = prismaMock.payment.updateMany.mock.calls.at(-1)![0];
+    expect(stamp.data.metadata.wellnessRefundInflight).toMatchObject({ refundId: 'rfnd_7' });
+  });
+
+  it('reservation writes the in-flight marker in the same compare-and-set', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_4' });
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    const reserve = prismaMock.payment.updateMany.mock.calls[0]![0];
+    expect(reserve.where).toMatchObject({ refundAmount: null });
+    expect(reserve.data.metadata.wellnessRefundInflight).toMatchObject({ amount: 100 });
+  });
+
+  it('an audit-write failure does not strand or fail a refund that was sent', async () => {
+    refundMock.mockResolvedValue({ id: 'rfnd_5' });
+    prismaMock.$executeRawUnsafe.mockRejectedValue(new Error('audit down'));
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row({ paymentId: 'p1' }) as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ refundExecution: 'gateway', refundId: 'rfnd_5' });
+    expect(refundMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('old enrolment with no payment id: manual fallback, no gateway call, intent audited', async () => {
+    prismaMock.wellnessEnrollment.findUnique.mockResolvedValue(row() as any);
+    const r = await cancelWellnessEnrollment({ enrollmentId: ENR, actorType: 'devotee', actorId: 'u1', now: NOW });
+    expect(r).toMatchObject({ refundExecution: 'manual', refundOwedInr: 100 });
+    expect(refundMock).not.toHaveBeenCalled();
+    expect(auditEvents()).toContain('refund.initiated');
   });
 });

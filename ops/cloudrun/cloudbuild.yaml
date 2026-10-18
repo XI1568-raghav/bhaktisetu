@@ -1,0 +1,13 @@
+# Builds the API image with the existing apps/api/Dockerfile (repo root is the
+# build context) and pushes it to Artifact Registry. Run from the repo root:
+#   gcloud builds submit --config ops/cloudrun/cloudbuild.yaml \
+#     --substitutions=_IMAGE=us-central1-docker.pkg.dev/$PROJECT/darshya/api:$(git rev-parse --short HEAD) .
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args: ['build', '-f', 'apps/api/Dockerfile', '-t', '${_IMAGE}', '.']
+images:
+  - '${_IMAGE}'
+substitutions:
+  _IMAGE: us-central1-docker.pkg.dev/PROJECT_ID/darshya/api:latest
+options:
+  logging: CLOUD_LOGGING_ONLY

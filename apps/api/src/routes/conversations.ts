@@ -1,4 +1,5 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import { settleBounded } from '../lib/background.js';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
@@ -219,11 +220,11 @@ export async function conversationRoutes(server: FastifyInstance) {
           providerUnread: { increment: 1 },
         },
       });
-      void notifyUser(providerId, {
+      await settleBounded(notifyUser(providerId, {
         title: 'New message',
         body: initialMessage.slice(0, 120),
         url: `/messages/${conv.id}`,
-      }).catch(() => undefined);
+      }), 'conversation');
     }
 
     return reply.send({ conversationId: conv.id, created: !existing });
@@ -345,11 +346,11 @@ export async function conversationRoutes(server: FastifyInstance) {
     });
 
     const otherUserId = side === 'devotee' ? conv.providerId : conv.devoteeId;
-    void notifyUser(otherUserId, {
+    await settleBounded(notifyUser(otherUserId, {
       title: `New message from ${request.currentUser!.fullName}`,
       body: parsed.data.body.slice(0, 120),
       url: `/messages/${id}`,
-    }).catch(() => undefined);
+    }), 'conversation');
 
     return reply.send({
       id: msg.id,
@@ -427,11 +428,11 @@ export async function conversationRoutes(server: FastifyInstance) {
     });
 
     const otherUserId = side === 'devotee' ? conv.providerId : conv.devoteeId;
-    void notifyUser(otherUserId, {
+    await settleBounded(notifyUser(otherUserId, {
       title: 'Incoming video call',
       body: `${request.currentUser!.fullName} is calling you`,
       url: `/messages/${id}?call=${call.id}`,
-    }).catch(() => undefined);
+    }), 'conversation');
 
     return reply.send({ callId: call.id, jitsiUrl, roomName, reused: false });
   });
