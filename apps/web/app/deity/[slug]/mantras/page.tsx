@@ -10,6 +10,11 @@ import { H1 } from '../../../../components/ui/heading-recipe';
 
 export const revalidate = 86400;
 
+export function generateStaticParams() {
+  return deitiesWithMantras().map((slug) => ({ slug }));
+}
+
+
 interface Params {
   params: Promise<{ slug: string }>;
 }

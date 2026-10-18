@@ -2,6 +2,14 @@ import type { Metadata } from 'next';
 
 export const revalidate = 3600;
 
+import { fetchSlugParams } from '../../../lib/static-params';
+
+// Prerender every puja from the live API at build time (Cloudflare Worker CPU cap: no
+// per-request SSR). [] on any API failure -> on-demand rendering, build never fails.
+export async function generateStaticParams() {
+  return fetchSlugParams('/pujas/types?limit=100', (j) => (j as { pujaTypes?: unknown }).pujaTypes);
+}
+
 // SEO-11 (prod sweep 2026-09-08) — an unknown slug renders app/not-found.tsx
 // but still answers HTTP 200. The cause is `app/pujas/loading.tsx`, not this
 // file, not ISR, and not the sibling error.tsx: a parent segment's loading.tsx

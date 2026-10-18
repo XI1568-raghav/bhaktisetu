@@ -18,6 +18,12 @@ import {
 
 export const revalidate = 3600;
 
+import { fetchSlugParams } from '../../../../lib/static-params';
+
+export async function generateStaticParams() {
+  return fetchSlugParams('/pujas/types?limit=100', (j) => (j as { pujaTypes?: unknown }).pujaTypes);
+}
+
 // P0 #202 (cont.): this route used `process.env.API_URL || localhost:4000` —
 // on prod (Render) API_URL is unset, so loadPuja hit localhost and every
 // /pujas/[slug]/temples page 404'd. Use the same base the rest of SSR uses,

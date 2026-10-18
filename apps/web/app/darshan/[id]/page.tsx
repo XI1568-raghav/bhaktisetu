@@ -40,6 +40,8 @@ import {
 } from '../../../lib/api';
 import DarshanPlayer from '../../../components/DarshanPlayer';
 import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
+import DarshanChannelPlayer from '../../../components/DarshanChannelPlayer';
+import { channelIdFromUrl, resolveDarshanSource } from '../../../lib/youtube-darshan';
 import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
 import { buttonClass } from '../../../components/ui/button-recipe';
@@ -94,67 +96,9 @@ const CHANNEL_BY_SLUG: Record<string, string> = {
  'mahakaleshwar-ujjain': 'UC7q12ONY2mvuq066rreluhQ',
  'mahakaleshwar': 'UC7q12ONY2mvuq066rreluhQ',
  'vaishno-devi': 'UCFYQr1l7ereS27SrLJ8bBtw',
+ 'vaishno-devi-katra': 'UCFYQr1l7ereS27SrLJ8bBtw',
  'jagannath-puri': 'UCstacpPsNLSiGcYe7qbF14Q',
 };
-
-/**
- * Server-side resolver: try the channel's live_stream embed; if the channel
- * has no current broadcast (live_stream HEAD returns 200 but the rendered
- * iframe is "video unavailable"), fall back to the latest VOD from the
- * channel's RSS feed. RSS has no auth + no quota cost.
- *
- * Live detection heuristic: parse the public RSS feed and look for a recent
- * entry whose <title> contains "live" / "लाइव" / "लाइव्ह" — temple channels
- * almost always title their broadcasts that way. If found, prefer the live
- * entry videoId over live_stream. Otherwise fall back to latest non-live VOD.
- */
-async function isEmbeddable(videoId: string): Promise<boolean> {
- try {
-   const r = await fetch(
-     `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${videoId}`)}`,
-     { next: { revalidate: 300 }, signal: AbortSignal.timeout(4000) },
-   );
-   return r.ok;
- } catch {
-   return false;
- }
-}
-
-async function resolveLivePlaybackUrl(channelId: string): Promise<string | null> {
- try {
-   const xml = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
-     headers: { 'User-Agent': 'Mozilla/5.0 (Darshya/1.0)' },
-     next: { revalidate: 300 }, // 5-min ISR cache
-   }).then((r) => (r.ok ? r.text() : null));
-   if (!xml) return null;
-
-   // Pick the entry whose title looks live-ish first; else latest entry.
-   const entries = [...xml.matchAll(/<entry>[\s\S]*?<yt:videoId>([^<]+)<\/yt:videoId>[\s\S]*?<title>([^<]+)<\/title>/g)];
-   // Empty feed → channel has no public videos. Don't render a broken iframe.
-   if (entries.length === 0) return null;
-
-   // Live-looking titles first, then newest. A removed/private/non-embeddable
-   // upload still sits in the RSS feed and renders "Video unavailable" inside
-   // the iframe, so each candidate is checked with the public oEmbed endpoint
-   // (200 = playable in an embed) and the first playable one wins.
-   const isLiveTitle = (t: string) => /\b(live|लाइव|थेट|प्रसारण)\b/i.test(t);
-   const ordered = [
-     ...entries.filter(([, , t]) => isLiveTitle(t!)),
-     ...entries.filter(([, , t]) => !isLiveTitle(t!)),
-   ].slice(0, 6);
-   let videoId: string | null = null;
-   for (const [, id] of ordered) {
-     if (await isEmbeddable(id!)) {
-       videoId = id!;
-       break;
-     }
-   }
-   if (!videoId) return null;
-   return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&playsinline=1&rel=0`;
- } catch {
-   return null;
- }
-}
 
 const YOUTUBE_STREAMS: Record<string, string> = {
  'somnath-gujarat': ytEmbed('UCT1egsvA08YcdMLiEu1DTRg'),
@@ -602,12 +546,19 @@ export default async function DarshanDetailPage({
  ? firstImg.url
  : getTempleHero(stream.temple.slug);
 
- // Resolve the playback URL. Tier 1: live_stream (active broadcast).
- // Tier 2: latest VOD via RSS — keeps the player useful 24/7. The
- // resolveLivePlaybackUrl() picks live entry from RSS first, else latest VOD.
- const channelId = CHANNEL_BY_SLUG[stream.temple.slug] ?? CHANNEL_BY_SLUG[id] ?? null;
- const playbackUrl = channelId
- ? await resolveLivePlaybackUrl(channelId)
+ // Channel first: the API's youtubeChannelId (DB row or fallback table), then
+ // the static slug map, then a channel= param inside the stored playbackUrl. A
+ // channel gets the live_stream embed, else its newest upload (never a pinned
+ // video id, which goes dead once that broadcast is withdrawn).
+ const channelId =
+ stream.youtubeChannelId ??
+ CHANNEL_BY_SLUG[stream.temple.slug] ??
+ CHANNEL_BY_SLUG[id] ??
+ channelIdFromUrl(stream.playbackUrl) ??
+ null;
+ const source = channelId ? await resolveDarshanSource(channelId) : null;
+ const playbackUrl = source
+ ? source.liveEmbedUrl
  : (stream.playbackUrl || YOUTUBE_STREAMS[stream.temple.slug] || null);
 
  // Per-temple IST aarti schedule + current-slot resolver. Null when slug not in
@@ -650,7 +601,15 @@ export default async function DarshanDetailPage({
  <div className="lg:col-span-2 space-y-6">
  <AdSlot slotId="DARSHAN_BANNER" format="horizontal" label="Sponsored" />
  {/* Player */}
- {stream.streamProvider === 'YOUTUBE' ? (
+ {source ? (
+ <DarshanChannelPlayer
+ channelId={source.channelId}
+ templeName={stream.temple.name}
+ liveProbe={source.liveProbe}
+ uploads={source.uploads}
+ attribution={stream.attribution}
+ />
+ ) : stream.streamProvider === 'YOUTUBE' ? (
  <YouTubeDarshanPlayer
  videoId={stream.youtubeVideoId}
  channelId={stream.youtubeChannelId}

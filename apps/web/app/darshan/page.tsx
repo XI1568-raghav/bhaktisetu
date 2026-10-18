@@ -45,7 +45,7 @@ const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-1',
  templeId: 't1',
- playbackUrl: 'https://www.youtube.com/embed/RwSHT3yg7MI',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCdMj2twWfMHXrWgX5oVdoyA',
  status: 'live',
  viewerCount: 0,
  peakViewers: 0,
@@ -62,7 +62,7 @@ const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-2',
  templeId: 't2',
- playbackUrl: 'https://www.youtube.com/embed/t5nRpg1j98k',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCS2Y83GD-fc7qqgNW5uj41g',
  status: 'live',
  viewerCount: 0,
  peakViewers: 0,
@@ -79,7 +79,7 @@ const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-3',
  templeId: 't3',
- playbackUrl: 'https://www.youtube.com/embed/MNbnux_0U_E',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCF9FdiMBENIbM6jb44zWmCQ',
  status: 'live',
  viewerCount: 0,
  peakViewers: 0,
@@ -113,7 +113,7 @@ const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-5',
  templeId: 't5',
- playbackUrl: 'https://www.youtube.com/embed/2nUrc1wE6do',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCT1egsvA08YcdMLiEu1DTRg',
  status: 'live',
  viewerCount: 0,
  peakViewers: 0,
@@ -130,7 +130,7 @@ const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-6',
  templeId: 't6',
- playbackUrl: 'https://www.youtube.com/embed/iVbl-AzlnOQ',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCYn6UEtQ771a_OWSiNBoG8w',
  status: 'live',
  viewerCount: 0,
  peakViewers: 0,
@@ -164,7 +164,7 @@ const fallbackLiveStreams: DarshanStream[] = [
  {
  id: 'live-8',
  templeId: 't8',
- playbackUrl: 'https://www.youtube.com/embed/aZf664dsd9k',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCFYQr1l7ereS27SrLJ8bBtw',
  status: 'live',
  viewerCount: 0,
  peakViewers: 0,
@@ -184,7 +184,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
  {
  id: 'sched-1',
  templeId: 's1',
- playbackUrl: 'https://www.youtube.com/embed/xwjC9u9Yn5E',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCstacpPsNLSiGcYe7qbF14Q',
  status: 'scheduled',
  viewerCount: 0,
  peakViewers: 0,
@@ -218,7 +218,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
  {
  id: 'sched-3',
  templeId: 's3',
- playbackUrl: 'https://www.youtube.com/embed/t5nRpg1j98k',
+ playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCS2Y83GD-fc7qqgNW5uj41g',
  status: 'scheduled',
  viewerCount: 0,
  peakViewers: 0,

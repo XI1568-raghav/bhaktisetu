@@ -7,8 +7,14 @@ import { Calendar, Users, Check, X, MapPin, Clock, ArrowRight } from 'lucide-rea
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { HAS_PACKAGE_INCLUSIONS, INCLUSIONS_ON_ENQUIRY } from '../../../lib/launch-gates';
+import { fetchSlugParams } from '../../../lib/static-params';
 // Public, non-personalised: matches the fetch below so the page can be edge-cached.
 export const revalidate = 300;
+
+export async function generateStaticParams() {
+  return fetchSlugParams('/yatra-packages', (j) => (j as { packages?: unknown }).packages);
+}
+
 
 interface YatraPackage {
   id: string;

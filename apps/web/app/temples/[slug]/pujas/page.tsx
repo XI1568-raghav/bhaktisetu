@@ -17,6 +17,12 @@ import { RECEIPT_NOUN, withEightyG } from '../../../../lib/eighty-g';
 
 export const revalidate = 3600;
 
+import { fetchSlugParams } from '../../../../lib/static-params';
+
+export async function generateStaticParams() {
+  return fetchSlugParams('/temples?limit=200', (j) => (j as { temples?: unknown }).temples);
+}
+
 interface Params {
   params: Promise<{ slug: string }>;
 }
