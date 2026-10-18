@@ -66,9 +66,11 @@ describe('temple portal dashboard', () => {
       recentBookings: [],
     });
     render(<TempleDashboard />);
-    const released = await screen.findByTestId('temple-share-released');
+    // The tiles render a placeholder first; wait for the loaded value so a slow runner cannot
+    // read them mid-load.
+    await waitFor(() => expect(screen.getByTestId('temple-share-released').textContent).toMatch(/60/), { timeout: 5000 });
+    const released = screen.getByTestId('temple-share-released');
     const upcoming = screen.getByTestId('temple-share-upcoming');
-    expect(released.textContent).toMatch(/60/);
     expect(released.textContent).not.toMatch(/1,234/);
     expect(upcoming.textContent).toMatch(/1,234/);
     expect(upcoming.textContent).toMatch(/after the puja is performed and proved/i);
