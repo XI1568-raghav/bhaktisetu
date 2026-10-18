@@ -158,17 +158,26 @@ type PujaLookup =
  | { status: 'not-found' }
  | { status: 'unavailable' };
 
+// Transient failures (network error, 429, 5xx) are retried a few times with a short
+// backoff: a build prerenders hundreds of puja pages at once against a small API, and one
+// dropped request must not fail the whole build. A 404 is never retried, and an API that
+// stays down still resolves to 'unavailable' (no invented data).
 async function getPujaBySlug(slug: string): Promise<PujaLookup> {
+ const delaysMs = [0, 600, 1800];
+ for (let attempt = 0; attempt < delaysMs.length; attempt++) {
+ if (delaysMs[attempt]) await new Promise((r) => setTimeout(r, delaysMs[attempt]));
  try {
  const res = await fetch(`${API_BASE}/pujas/types/${slug}`, {
  next: { revalidate: 300, tags: [`puja-${slug}`] },
  });
  if (res.status === 404) return { status: 'not-found' };
- if (!res.ok) throw new Error(`API error ${res.status}`);
- return { status: 'ok', puja: normalizePuja(await res.json()) };
+ if (res.ok) return { status: 'ok', puja: normalizePuja(await res.json()) };
+ if (res.status < 500 && res.status !== 429) return { status: 'unavailable' };
  } catch {
- return { status: 'unavailable' };
+ // network error: fall through to the next attempt
  }
+ }
+ return { status: 'unavailable' };
 }
 
 export async function generateMetadata({
