@@ -65,7 +65,7 @@ export default function DarshanChannelPlayer({ channelId, templeName, liveProbe,
       <div className="aspect-video w-full rounded-2xl bg-surface-900 flex flex-col items-center justify-center text-center px-6" role="status">
         <Video className="w-10 h-10 text-saffron-400 mb-3" />
         <p className="text-white font-semibold">No live stream right now</p>
-        <p className="text-surface-400 text-sm mt-1 max-w-sm">
+        <p className="text-surface-400 prose-meta mt-1 max-w-sm">
           {templeName} is not broadcasting and we could not load a recent darshan. Please try again shortly.
         </p>
         <a
@@ -95,7 +95,7 @@ export default function DarshanChannelPlayer({ channelId, templeName, liveProbe,
         />
       </div>
       {current.kind === 'recent' && current.upload && (
-        <p className="text-sm text-surface-300" data-testid="darshan-recent-note">
+        <p className="prose-meta text-surface-300" data-testid="darshan-recent-note">
           No live stream right now. Watch the latest darshan
           {current.upload.publishedAt && formatPublished(current.upload.publishedAt)
             ? `, published ${formatPublished(current.upload.publishedAt)}`
