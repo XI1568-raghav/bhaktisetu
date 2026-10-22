@@ -193,3 +193,141 @@ export function verifySupabaseJwt(
   const result = inspectSupabaseJwt(token, secret, nowMs);
   return result.ok ? result.token : null;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Asymmetric (ES256 / RS256) project keys.
+//
+// Supabase projects on "JWT signing keys" sign access tokens with an asymmetric key and publish
+// the PUBLIC half at `<SUPABASE_URL>/auth/v1/.well-known/jwks.json`. The HS256 path above never
+// sees those tokens, so every request fell through to `supabaseAdmin.auth.getUser`, whose result
+// depends on the API's admin key and on Supabase being reachable. When that call is refused,
+// every signed-in user gets a 401 (QA report 2026-10-21: dashboard "could not verify your
+// sign-in", profile Save disabled, support ticket POST 401, all while the Supabase sign-in
+// itself succeeded).
+//
+// This verifies the token against the published PUBLIC key only: no secret is needed, nothing
+// is trusted from the token header beyond `kid` (to pick the key) and an `alg` that must match an
+// allow-list AND the key's own `alg`/`kty`, so alg-confusion (an HS256 MAC "signed" with the
+// public key, or alg:none) is refused. Anything refused here still falls back to the remote check.
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface Jwk {
+  kty?: string;
+  alg?: string;
+  kid?: string;
+  crv?: string;
+  use?: string;
+  [k: string]: unknown;
+}
+
+const JWKS_TTL_MS = 10 * 60_000;
+const JWKS_MIN_REFETCH_MS = 60_000;
+let jwksCache: { keys: Jwk[]; fetchedAt: number; url: string } | null = null;
+let jwksLastAttemptAt = 0;
+
+/** Test hook: forget the cached keys. */
+export function resetSupabaseJwksCache(): void {
+  jwksCache = null;
+  jwksLastAttemptAt = 0;
+}
+
+function jwksUrl(): string | null {
+  const base = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
+  return base ? `${base}/auth/v1/.well-known/jwks.json` : null;
+}
+
+async function loadJwks(forceRefresh: boolean, nowMs: number): Promise<Jwk[] | null> {
+  const url = jwksUrl();
+  if (!url) return null;
+  if (jwksCache && jwksCache.url === url && !forceRefresh && nowMs - jwksCache.fetchedAt < JWKS_TTL_MS) {
+    return jwksCache.keys;
+  }
+  // Never hammer the Auth server: at most one network attempt a minute, otherwise use what we have.
+  if (nowMs - jwksLastAttemptAt < JWKS_MIN_REFETCH_MS) return jwksCache && jwksCache.url === url ? jwksCache.keys : null;
+  jwksLastAttemptAt = nowMs;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return jwksCache && jwksCache.url === url ? jwksCache.keys : null;
+    const body = (await res.json()) as { keys?: unknown };
+    const keys = Array.isArray(body.keys) ? (body.keys as Jwk[]) : [];
+    jwksCache = { keys, fetchedAt: nowMs, url };
+    return keys;
+  } catch {
+    return jwksCache && jwksCache.url === url ? jwksCache.keys : null;
+  }
+}
+
+/**
+ * Verify an ES256 / RS256 Supabase access token against the project's published public keys.
+ * Same verdict type as `inspectSupabaseJwt`; `expired` is returned only after the signature and
+ * audience verified. Never throws.
+ */
+export async function inspectSupabaseAsymmetricJwt(
+  token: string,
+  nowMs: number = Date.now(),
+): Promise<SupabaseJwtInspection> {
+  if (!token) return { ok: false, reason: 'malformed' };
+  const parts = token.split('.');
+  if (parts.length !== 3) return { ok: false, reason: 'malformed' };
+  const [headerSeg, payloadSeg, sigSeg] = parts as [string, string, string];
+  if (!headerSeg || !payloadSeg || !sigSeg) return { ok: false, reason: 'malformed' };
+
+  const header = parseJson(fromB64Url(headerSeg));
+  const alg = header?.alg;
+  if (!header || (alg !== 'ES256' && alg !== 'RS256')) return { ok: false, reason: 'unverified' };
+  const kid = typeof header.kid === 'string' ? header.kid : '';
+  if (!kid) return { ok: false, reason: 'unverified' };
+
+  const find = (keys: Jwk[] | null) => keys?.find((k) => k.kid === kid);
+  let jwk = find(await loadJwks(false, nowMs));
+  if (!jwk) jwk = find(await loadJwks(true, nowMs)); // key rotation: look once more (rate limited)
+  if (!jwk) return { ok: false, reason: 'unverified' };
+
+  // The key decides the algorithm family, not the token header.
+  if (alg === 'ES256' && !(jwk.kty === 'EC' && jwk.crv === 'P-256' && (!jwk.alg || jwk.alg === 'ES256'))) {
+    return { ok: false, reason: 'unverified' };
+  }
+  if (alg === 'RS256' && !(jwk.kty === 'RSA' && (!jwk.alg || jwk.alg === 'RS256'))) {
+    return { ok: false, reason: 'unverified' };
+  }
+
+  const signature = fromB64Url(sigSeg);
+  if (!signature) return { ok: false, reason: 'unverified' };
+  let verified = false;
+  try {
+    const publicKey = crypto.createPublicKey({ key: jwk as crypto.JsonWebKey, format: 'jwk' });
+    verified =
+      alg === 'ES256'
+        ? crypto.verify('sha256', Buffer.from(`${headerSeg}.${payloadSeg}`), { key: publicKey, dsaEncoding: 'ieee-p1363' }, signature)
+        : crypto.verify('sha256', Buffer.from(`${headerSeg}.${payloadSeg}`), publicKey, signature);
+  } catch {
+    return { ok: false, reason: 'unverified' };
+  }
+  if (!verified) return { ok: false, reason: 'unverified' };
+
+  const payload = parseJson(fromB64Url(payloadSeg));
+  if (!payload) return { ok: false, reason: 'unverified' };
+  if (!audienceIncludes(payload.aud, 'authenticated')) return { ok: false, reason: 'unverified' };
+
+  // The issuer must be this project's Auth server.
+  const base = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '');
+  if (typeof payload.iss !== 'string' || (base && payload.iss !== `${base}/auth/v1`)) {
+    return { ok: false, reason: 'unverified' };
+  }
+
+  const exp = payload.exp;
+  if (typeof exp !== 'number' || !Number.isFinite(exp)) return { ok: false, reason: 'unverified' };
+  if (exp * 1000 <= nowMs) return { ok: false, reason: 'expired' };
+  const sub = payload.sub;
+  if (typeof sub !== 'string' || sub.length === 0) return { ok: false, reason: 'unverified' };
+
+  return {
+    ok: true,
+    token: {
+      id: sub,
+      email: typeof payload.email === 'string' && payload.email ? payload.email : null,
+      phone: typeof payload.phone === 'string' && payload.phone ? payload.phone : null,
+      expSeconds: exp,
+    },
+  };
+}
