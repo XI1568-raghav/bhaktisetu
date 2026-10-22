@@ -14,7 +14,10 @@
  *            an ended live stream whose recording is withheld, so "alive" for a
  *            pinned video id is necessary, not sufficient.
  *
- * Exit 1 if any channel feed is not 200 or any pinned video is gone.
+ * Exit 1 if any channel feed is not 200, its channel page is missing, a slug/channel
+ * conflict exists across darshan.ts / the SQL / the seed, or any pinned video is gone.
+ * Note: a few networks (the authoring sandbox) get 404 from the RSS feed for every
+ * channel; run this from a normal connection.
  * A "live" probe is a point-in-time reading, not a guarantee.
  */
 import { readFileSync } from 'node:fs';
@@ -37,6 +40,34 @@ export function extractSqlChannels(src) {
   return out;
 }
 
+/**
+ * Cross-check the three places that carry channel ids: a slug must map to ONE
+ * channel everywhere and a channel must not serve two different temples
+ * (the dead seed list once reused a single id for Meenakshi and Lingaraj).
+ */
+export function findChannelConflicts(rows) {
+  const bySlug = new Map();
+  const byChannel = new Map();
+  for (const r of rows) {
+    const slug = r.slug === 'vaishno-devi' ? 'vaishno-devi-katra' : r.slug;
+    (bySlug.get(slug) ?? bySlug.set(slug, new Set()).get(slug)).add(r.channelId);
+    (byChannel.get(r.channelId) ?? byChannel.set(r.channelId, new Set()).get(r.channelId)).add(slug);
+  }
+  const out = [];
+  for (const [slug, ids] of bySlug) if (ids.size > 1) out.push({ kind: 'slug-multiple-channels', key: slug, values: [...ids] });
+  for (const [id, slugs] of byChannel) if (slugs.size > 1) out.push({ kind: 'channel-multiple-temples', key: id, values: [...slugs] });
+  return out;
+}
+
+export function extractSeedChannels(src) {
+  return [...src.matchAll(/templeSlug:\s*'([^']+)',\s*youtubeChannelId:\s*'(UC[\w-]{22})'/g)].map((m) => ({ slug: m[1], channelId: m[2], source: 'seed' }));
+}
+
+/** A real channel page carries a <title>; a made-up UC id returns 200 with none. */
+export function channelPageExists(html) {
+  return /<title>[^<]+ - YouTube<\/title>/.test(html);
+}
+
 export function extractPinnedVideoIds(src) {
   return [...new Set([...src.matchAll(/youtube\.com\/embed\/([\w-]{11})(?![\w-])/g)].map((m) => m[1]).filter((id) => id !== 'live_stream'))];
 }
@@ -51,7 +82,11 @@ const UA = { 'User-Agent': 'Mozilla/5.0 (Darshya validate-darshan-streams)' };
 const get = (url, init = {}) => fetch(url, { ...init, headers: { ...UA, ...(init.headers ?? {}) }, signal: AbortSignal.timeout(15000) });
 
 async function checkChannel(channelId) {
-  const res = { feedStatus: 0, title: null, newest: null, entries: 0, live: 'unknown' };
+  const res = { feedStatus: 0, title: null, newest: null, entries: 0, live: 'unknown', pageExists: false };
+  try {
+    const r = await get(`https://www.youtube.com/channel/${channelId}`, { headers: { 'Accept-Language': 'en' } });
+    res.pageExists = r.ok && channelPageExists(await r.text());
+  } catch { /* leave false */ }
   try {
     const r = await get(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`);
     res.feedStatus = r.status;
@@ -76,10 +111,12 @@ async function main() {
   const read = (p) => readFileSync(path.join(root, p), 'utf8');
   const configured = extractTempleChannels(read('apps/api/src/routes/darshan.ts'));
   const sql = extractSqlChannels(read('ops/sql/darshan-channels-2026-10.sql'));
+  const seed = extractSeedChannels(read('apps/api/prisma/seed/darshan-streams.ts'));
+  const conflicts = findChannelConflicts([...configured, ...sql, ...seed]);
   const videos = extractPinnedVideoIds(read('apps/web/app/darshan/page.tsx'));
 
   const byChannel = new Map();
-  for (const c of [...configured, ...sql]) {
+  for (const c of [...configured, ...sql, ...seed]) {
     const e = byChannel.get(c.channelId) ?? { channelId: c.channelId, slugs: new Set(), sources: new Set() };
     e.slugs.add(c.slug); e.sources.add(c.source);
     byChannel.set(c.channelId, e);
@@ -91,17 +128,18 @@ async function main() {
   for (const id of videos) vids.push({ id, status: await checkVideo(id) });
 
   const json = process.argv.includes('--json');
-  if (json) console.log(JSON.stringify({ channels, videos: vids }, null, 2));
+  if (json) console.log(JSON.stringify({ channels, videos: vids, conflicts }, null, 2));
   else {
     console.log('CHANNELS');
     for (const c of channels) {
       const ok = c.feedStatus === 200;
-      console.log(`${ok ? 'alive' : 'DEAD '}  ${c.channelId}  feed=${c.feedStatus}  live=${c.live}  newest=${c.newest?.slice(0, 10) ?? '-'}  ${c.title ?? ''}  [${c.slugs.join(', ')}]`);
+      console.log(`${ok ? 'alive' : c.pageExists ? 'FEED?' : 'DEAD '}  page=${c.pageExists ? 'yes' : 'NO'}  ${c.channelId}  feed=${c.feedStatus}  live=${c.live}  newest=${c.newest?.slice(0, 10) ?? '-'}  ${c.title ?? ''}  [${c.slugs.join(', ')}]`);
     }
+    for (const x of conflicts) console.log(`CONFLICT ${x.kind} ${x.key}: ${x.values.join(', ')}`);
     console.log('PINNED VIDEO IDS (web fallback)');
     for (const v of vids) console.log(`${v.status === 200 ? 'alive' : 'DEAD '}  ${v.id}  oembed=${v.status}`);
   }
-  const bad = channels.some((c) => c.feedStatus !== 200) || vids.some((v) => v.status !== 200);
+  const bad = conflicts.length > 0 || channels.some((c) => c.feedStatus !== 200 || !c.pageExists) || vids.some((v) => v.status !== 200);
   process.exit(bad ? 1 : 0);
 }
 

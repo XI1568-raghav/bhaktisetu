@@ -1,13 +1,14 @@
 import { CITIES } from './indian-cities';
+import { YATRA_TOWN_COORDS } from './yatra-town-coords';
 import type { SacredSite } from './yatra-data';
 
 /**
  * Straight-line (great-circle) distance hints for the custom yatra planner.
  *
- * Honest by construction: coordinates come only from the town table already in
- * the repo (lib/indian-cities.ts), matched by the site's `location` town. A
- * site whose town is not in that table (Srisailam, Veraval, Kollur ...) simply
- * gets no hint; nothing is guessed. The figure is the distance as the crow
+ * Honest by construction: coordinates come only from cited tables in the repo
+ * (lib/indian-cities.ts, plus lib/yatra-town-coords.ts with a source URL per
+ * town), matched by the site's `location` town. A site whose town is in neither
+ * simply gets no hint; nothing is guessed. The figure is the distance as the crow
  * flies and the UI labels it so; road/rail distance is always longer.
  */
 
@@ -16,7 +17,8 @@ type Pt = { lat: number; lng: number };
 const byName = new Map(CITIES.map((c) => [c.name.toLowerCase(), c]));
 
 export function siteCoords(site: Pick<SacredSite, 'location'>): Pt | null {
-  const c = byName.get(site.location.toLowerCase());
+  const key = site.location.toLowerCase();
+  const c = byName.get(key) ?? YATRA_TOWN_COORDS[key];
   return c ? { lat: c.lat, lng: c.lng } : null;
 }
 

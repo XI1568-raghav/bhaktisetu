@@ -139,6 +139,9 @@ const TEMPLE_LIVE_STREAMS = [
     peakViewers: 0,
     availability: 'Festival & daily darshan',
   },
+  // Badrinath (BKTC channel UCfBDZKKj8GmkCSB7b8zNl_A) is deliberately NOT here: this fallback
+  // table reports every row without an aarti schedule as live, which would be false for a
+  // seasonal shrine. It is served from live_darshan_streams (ops/sql/darshan-channels-2026-10.sql).
 ];
 
 // Real aarti windows per temple in IST (HH:MM-HH:MM). Used to day-sync the

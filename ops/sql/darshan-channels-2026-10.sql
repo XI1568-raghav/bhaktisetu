@@ -29,6 +29,16 @@
 --      on it:  somnath-gujarat, tirumala-tirupati (SVBC TTD), kashi-vishwanath-varanasi,
 --      jagannath-puri
 --
+--   A* channel linked from the temple's official website (2026-10-22), channel page
+--      resolves (title shown), but the RSS feed could not be fetched from the
+--      authoring sandbox (it returned 404 for EVERY channel there, including the
+--      verified ones above). Run `node apps/api/scripts/validate-darshan-streams.mjs`
+--      from a normal network and confirm feed=200 plus recent uploads BEFORE running
+--      this file:  badrinath-uttarakhand (BKTC, linked from badrinath-kedarnath.gov.in).
+--
+-- NOT added 2026-10-22 (no confirmed official channel): see the list under "Unverified
+--   temples" at the bottom of this file.
+--
 -- Verify after: see the SELECT at the bottom (every listed slug has the channel).
 
 BEGIN;
@@ -44,7 +54,8 @@ INSERT INTO _darshan_channels (slug, channel_id, label, provenance) VALUES
   ('somnath-gujarat',             'UCT1egsvA08YcdMLiEu1DTRg', 'Somnath Temple - Official Channel',            'B'),
   ('tirumala-tirupati',           'UCS2Y83GD-fc7qqgNW5uj41g', 'SVBC TTD',                                     'B'),
   ('kashi-vishwanath-varanasi',   'UCdMj2twWfMHXrWgX5oVdoyA', 'Shree Kashi Vishwanath Mandir Trust',          'B'),
-  ('jagannath-puri',              'UCstacpPsNLSiGcYe7qbF14Q', 'Shree Jagannatha Temple Administration, Puri', 'B');
+  ('jagannath-puri',              'UCstacpPsNLSiGcYe7qbF14Q', 'Shree Jagannatha Temple Administration, Puri', 'B'),
+  ('badrinath-uttarakhand',       'UCfBDZKKj8GmkCSB7b8zNl_A', 'Badrinath-Kedarnath Temple Committee (BKTC)',  'A* badrinath-kedarnath.gov.in -> youtube.com/@bktcofficial');
 
 -- 1. Existing stream rows.
 UPDATE live_darshan_streams s
@@ -77,5 +88,25 @@ FROM _darshan_channels c
 JOIN temples t ON t.slug = c.slug
 LEFT JOIN live_darshan_streams s ON s.temple_id = t.id
 ORDER BY t.slug;
+
+-- Unverified temples (checked 2026-10-22; nothing below is in this file on purpose):
+--   mahakaleshwar-ujjain   official site shrimahakaleshwar.mp.gov.in answered 503 / TLS error
+--                          from the sandbox, so its linked channel could not be read. The
+--                          existing code-map channel UC7q12ONY2mvuq066rreluhQ ("Mahakaleshwar
+--                          Jyotirlinga Live Darshan") is real but NOT shown to be the Mandir
+--                          Samiti's.
+--   srisailam              (no seeded temple row) srisailadevasthanam.org links channel
+--                          UCNIzL2dT2gZxQae2LHXvl0A ("Srisaila Tv"); add a temple row first,
+--                          then a line above, after the feed check.
+--   dwarkadhish-dwarka     dwarkadhish.org has a "Live Streaming" heading but no YouTube link.
+--   baidyanath             babadham.org mentions a 24x7 YouTube stream but links none; no seeded row.
+--   govind-dev-ji-jaipur   govinddevji.net / .org link Twitter/Facebook/Instagram only.
+--   somnath-gujarat        listed above as B: somnath.org links no YouTube channel at all.
+--   dakshineswar-kolkata   dakshineswarkalitemple.org (the seeded websiteUrl) now serves a
+--                          gambling/shopping spam page: do not trust it, and replace the URL.
+--   akshardham-delhi, akshardham-gandhinagar   akshardham.com links no YouTube channel.
+--   meenakshi-madurai, ramanathaswamy-rameshwaram, kapaleeshwarar-chennai, lingaraj-bhubaneswar,
+--   birla-mandir-hyderabad   official HRCE / Odisha-gov / trust sites unreachable from the
+--                          sandbox or without a seeded website; nothing confirmed.
 
 COMMIT;

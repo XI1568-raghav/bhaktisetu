@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Send, Loader2, Sparkles } from 'lucide-react';
 import AiChatMessage, { type Citation } from './AiChatMessage';
 import { API_BASE_URL } from '../lib/api-config';
+import { requestAiChat, isServerConversationId } from '../lib/ai-chat-client';
 import { buttonClass } from '../components/ui/button-recipe';
 import {
  getConversation,
@@ -305,6 +306,7 @@ export default function AiChat({
  const messagesScrollRef = useRef<HTMLDivElement>(null);
  const messagesEndRef = useRef<HTMLDivElement>(null);
  const inputRef = useRef<HTMLTextAreaElement>(null);
+ const serverConvIds = useRef<Record<string, string>>({});
 
  // Auto-scroll only the inner messages container; never scroll the page.
  // Use scrollTop so Next.js's window scroll context isn't triggered when
@@ -441,142 +443,86 @@ export default function AiChat({
  setMessages((prev) => [...prev, assistantMsg]);
 
  try {
- const res = await fetch(`${API_BASE_URL}/ai/chat`, {
- method: 'POST',
+ let fullContent = '';
+ let citations: Citation[] = [];
+ let sawDone = false;
+
+ const persistAssistant = (content: string, cites?: Citation[]) => {
+ if (!convId) return;
+ const stored: StoredMessage = {
+ id: assistantMsgId,
+ role: 'assistant',
+ content,
+ citations: cites && cites.length > 0 ? cites : undefined,
+ timestamp: assistantMsg.timestamp,
+ };
+ addMessage(convId, stored);
+ onConversationUpdated?.();
+ };
+ const setContent = (content: string, cites?: Citation[]) =>
+ setMessages((prev) =>
+ prev.map((m) =>
+ m.id === assistantMsgId
+ ? { ...m, content, ...(cites ? { citations: cites } : {}) }
+ : m
+ )
+ );
+
+ // Only a server-issued id may be sent: the local `conv_...` id is not
+ // a UUID and made the API 404/500 for signed-in users (QA finding 17).
+ const serverConvId = isServerConversationId(convId)
+ ? convId
+ : serverConvIds.current[convId ?? ''];
+
+ const result = await requestAiChat({
+ url: `${API_BASE_URL}/ai/chat`,
  headers: {
  'Content-Type': 'application/json',
  ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
  },
- body: JSON.stringify({
+ body: {
  message: trimmed,
- conversationId: convId,
+ ...(serverConvId ? { conversationId: serverConvId } : {}),
  language,
- }),
- });
-
- if (res.status === 402) {
- // Paywall — quota exhausted. Replace the placeholder with an
- // upgrade prompt and bail out of the stream loop.
- const data = await res.json().catch(() => ({}));
- const upgradeContent =
- data.message ||
- 'You have reached your free message limit. Upgrade to continue.';
- setMessages((prev) =>
- prev.map((m) =>
- m.id === assistantMsgId ? { ...m, content: upgradeContent } : m
- )
- );
- setPaywallHit(true);
- setIsStreaming(false);
- return;
- }
-
- if (!res.ok) {
- throw new Error(`HTTP ${res.status}`);
- }
-
- // Parse SSE stream
- const reader = res.body?.getReader();
- if (!reader) throw new Error('No response body');
-
- const decoder = new TextDecoder();
- let buffer = '';
- let fullContent = '';
- let citations: Citation[] = [];
-
- while (true) {
- const { done, value } = await reader.read();
- if (done) break;
-
- buffer += decoder.decode(value, { stream: true });
- const lines = buffer.split('\n');
- buffer = lines.pop() || '';
-
- for (const line of lines) {
- if (!line.startsWith('data: ')) continue;
- const jsonStr = line.substring(6).trim();
- if (!jsonStr) continue;
-
- try {
- const event = JSON.parse(jsonStr);
-
+ },
+ onEvent: (event) => {
  if (event.type === 'text') {
- fullContent += event.content;
- setMessages((prev) =>
- prev.map((m) =>
- m.id === assistantMsgId
- ? { ...m, content: fullContent }
- : m
- )
- );
+ fullContent += String(event.content ?? '');
+ setContent(fullContent);
  } else if (event.type === 'metadata') {
- citations = event.citations || [];
- } else if (event.type === 'done') {
- const finalContent = event.fullContent || fullContent;
- setMessages((prev) =>
- prev.map((m) =>
- m.id === assistantMsgId
- ? { ...m, content: finalContent, citations }
- : m
- )
- );
- // Persist assistant message to localStorage
- if (convId) {
- const storedAssistantMsg: StoredMessage = {
- id: assistantMsgId,
- role: 'assistant',
- content: finalContent,
- citations: citations.length > 0 ? citations : undefined,
- timestamp: assistantMsg.timestamp,
- };
- addMessage(convId, storedAssistantMsg);
- onConversationUpdated?.();
+ citations = (event.citations as Citation[] | undefined) || [];
+ if (convId && isServerConversationId(event.conversationId as string)) {
+ serverConvIds.current[convId] = event.conversationId as string;
  }
- } else if (event.type === 'error') {
+ } else if (event.type === 'done') {
+ sawDone = true;
+ const finalContent = (event.fullContent as string) || fullContent;
+ fullContent = finalContent;
+ setContent(finalContent, citations);
+ persistAssistant(finalContent, citations);
+ } else if (event.type === 'error' && !fullContent) {
  const errorContent =
  'I apologize, but I encountered an issue. Please try asking your question again.';
- setMessages((prev) =>
- prev.map((m) =>
- m.id === assistantMsgId
- ? { ...m, content: errorContent }
- : m
- )
- );
- if (convId) {
- const storedErrMsg: StoredMessage = {
- id: assistantMsgId,
- role: 'assistant',
- content: errorContent,
- timestamp: assistantMsg.timestamp,
- };
- addMessage(convId, storedErrMsg);
- onConversationUpdated?.();
+ setContent(errorContent);
+ persistAssistant(errorContent);
+ sawDone = true;
  }
- }
- } catch {
- // Skip malformed JSON
- }
- }
- }
+ },
+ });
 
- // If stream ended without a 'done' event, persist what we have
- if (fullContent && convId) {
- const existingConv = getConversation(convId);
- const alreadySaved = existingConv?.messages.some((m) => m.id === assistantMsgId);
- if (!alreadySaved) {
- const storedAssistantMsg: StoredMessage = {
- id: assistantMsgId,
- role: 'assistant',
- content: fullContent,
- citations: citations.length > 0 ? citations : undefined,
- timestamp: assistantMsg.timestamp,
- };
- addMessage(convId, storedAssistantMsg);
- onConversationUpdated?.();
- }
+ if (result.kind === 'paywall') {
+ // Quota exhausted: replace the placeholder with an upgrade prompt.
+ setContent(
+ result.message ||
+ 'You have reached your free message limit. Upgrade to continue.'
+ );
+ setPaywallHit(true);
+ } else if (!sawDone && fullContent) {
+ // Stream ended (or was cut) after real text: keep what we have.
+ persistAssistant(fullContent, citations);
  }
  } catch {
- // Network error or auth failure — use LOCAL demo responses
+ // Request failed twice with no answer text — use LOCAL demo responses
  const demoContent = `${FALLBACK_NOTICE}\n\n${getLocalDemoResponse(trimmed)}`;
 
  // Simulate typing effect for local demo
