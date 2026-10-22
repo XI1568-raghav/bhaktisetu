@@ -158,26 +158,45 @@ type PujaLookup =
  | { status: 'not-found' }
  | { status: 'unavailable' };
 
-// Transient failures (network error, 429, 5xx) are retried a few times with a short
-// backoff: a build prerenders hundreds of puja pages at once against a small API, and one
-// dropped request must not fail the whole build. A 404 is never retried, and an API that
+// Transient failures are retried so one dropped request cannot fail a build that prerenders
+// hundreds of puja pages against a small API. During `next build` the fetches are also limited
+// to a few at a time (the API sits behind Cloudflare and a burst from one CI machine gets
+// rate-limited) and every non-404 failure is retried with a longer backoff. At runtime the
+// retry stays short so a visitor never waits long. A 404 is never retried, and an API that
 // stays down still resolves to 'unavailable' (no invented data).
+const IS_BUILD = process.env.NEXT_PHASE === 'phase-production-build';
+const RETRY_DELAYS_MS = IS_BUILD ? [0, 800, 2500, 6000, 12000] : [0, 600, 1800];
+const MAX_PARALLEL_FETCHES = IS_BUILD ? 4 : 1000;
+let activeFetches = 0;
+const fetchQueue: Array<() => void> = [];
+async function withFetchSlot<T>(fn: () => Promise<T>): Promise<T> {
+ if (activeFetches >= MAX_PARALLEL_FETCHES) await new Promise<void>((resolve) => fetchQueue.push(resolve));
+ activeFetches++;
+ try {
+ return await fn();
+ } finally {
+ activeFetches--;
+ fetchQueue.shift()?.();
+ }
+}
+
 async function getPujaBySlug(slug: string): Promise<PujaLookup> {
- const delaysMs = [0, 600, 1800];
- for (let attempt = 0; attempt < delaysMs.length; attempt++) {
- if (delaysMs[attempt]) await new Promise((r) => setTimeout(r, delaysMs[attempt]));
+ return withFetchSlot(async () => {
+ for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt++) {
+ if (RETRY_DELAYS_MS[attempt]) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
  try {
  const res = await fetch(`${API_BASE}/pujas/types/${slug}`, {
  next: { revalidate: 300, tags: [`puja-${slug}`] },
  });
- if (res.status === 404) return { status: 'not-found' };
- if (res.ok) return { status: 'ok', puja: normalizePuja(await res.json()) };
- if (res.status < 500 && res.status !== 429) return { status: 'unavailable' };
+ if (res.status === 404) return { status: 'not-found' } as PujaLookup;
+ if (res.ok) return { status: 'ok', puja: normalizePuja(await res.json()) } as PujaLookup;
+ if (!IS_BUILD && res.status < 500 && res.status !== 429) return { status: 'unavailable' } as PujaLookup;
  } catch {
  // network error: fall through to the next attempt
  }
  }
- return { status: 'unavailable' };
+ return { status: 'unavailable' } as PujaLookup;
+ });
 }
 
 export async function generateMetadata({
