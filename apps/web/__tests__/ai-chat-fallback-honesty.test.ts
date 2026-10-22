@@ -20,3 +20,11 @@ describe('Ask Pandit fallback is labelled', () => {
     expect(src).toMatch(/getLocalDemoResponse\(trimmed\)/);
   });
 });
+
+describe('Ask Pandit transport (QA 17 reopened)', () => {
+  it('goes through the retrying client and never sends the local conv_ id', () => {
+    expect(src).toMatch(/requestAiChat\(/);
+    expect(src).toMatch(/isServerConversationId\(convId\)/);
+    expect(src).not.toMatch(/conversationId: convId/);
+  });
+});
