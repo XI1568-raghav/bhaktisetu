@@ -1,0 +1,29 @@
+name: api-reachability
+
+# Diagnostic: how does the live API answer a burst of requests from a GitHub runner?
+# Prints only status codes and a few response headers, never secrets. Runs on a pull request
+# that edits this file, or by hand.
+on:
+  pull_request:
+    paths: ['.github/workflows/api-reachability.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Probe api.darshya.online and the Render origin
+        run: |
+          for base in https://api.darshya.online https://bhaktisetu.onrender.com; do
+            echo "=== $base"
+            for slug in ganesh-puja satyanarayan-katha lakshmi-puja rudrabhishek; do
+              curl -s -o /dev/null -D /tmp/h.txt -w "$slug %{http_code} %{time_total}s\n" -A "node" "$base/api/v1/pujas/types/$slug"
+              grep -iE "^(cf-mitigated|server|cf-ray|retry-after|x-render-routing)" /tmp/h.txt | tr '\r\n' '  '; echo
+            done
+            echo "--- burst: 40 requests, 8 parallel"
+            seq 1 40 | xargs -P 8 -I{} curl -s -o /dev/null -w "%{http_code}\n" -A "node" "$base/api/v1/pujas/types/ganesh-puja" | sort | uniq -c
+          done
