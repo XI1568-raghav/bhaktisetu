@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { supabaseAdmin, isDemoMode } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
-import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
+import { inspectSupabaseJwt, inspectSupabaseAsymmetricJwt } from '../lib/supabase-jwt.js';
 import { stopWhenAnswered } from '../lib/stop-when-answered.js';
 import {
   AUTH_REASON_HEADER,
@@ -420,7 +420,13 @@ async function authenticateUserInner(
     // by testing Supabase's `error` for truthiness and discarding its code — so
     // an expired session and a forged token were indistinguishable by the time
     // the 401 was written, and apps/web asserted "expired" for both.
-    const inspection = inspectSupabaseJwt(token, process.env.SUPABASE_JWT_SECRET);
+    let inspection = inspectSupabaseJwt(token, process.env.SUPABASE_JWT_SECRET);
+    if (!inspection.ok) {
+      // Projects on asymmetric JWT signing keys (ES256/RS256) are verified against the published public
+      // keys. The shared-secret path above can never accept those tokens.
+      const asymmetric = await inspectSupabaseAsymmetricJwt(token);
+      if (asymmetric.ok || asymmetric.reason === 'expired') inspection = asymmetric;
+    }
     const locallyVerified = inspection.ok ? inspection.token : null;
 
     let supabaseUser: { id: string; email?: string | null; phone?: string | null };
