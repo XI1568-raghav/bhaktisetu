@@ -100,10 +100,23 @@ describe('no hidden entry point remains', () => {
     .map((f) => path.relative(WEB, f))
     .filter((f) => !GATED.has(f));
 
-  it('nothing links to /refer', () => {
+  it('nothing links to /refer except the signed-in account menus', () => {
     const offenders = files.filter((f) => /["'`]\/refer(["'`?#/])/.test(read(f)));
     // sitemap.ts mentions it only inside the flag guard; asserted separately above.
-    expect(offenders.filter((f) => f !== 'app/sitemap.ts')).toEqual([]);
+    //
+    // Devotee QA 2026-10-22: the tester could not find /refer at all. The page
+    // stays honest (the first test above pins "coming soon", no credit promise,
+    // no API call), so the signed-in ACCOUNT surfaces may point at it, labelled
+    // "(coming soon)". Public pages, the footer, search and the sitemap still
+    // must not advertise it, and the no-promise copy test below covers these
+    // files too.
+    const ACCOUNT_SURFACES = new Set([
+      'components/NavAuthButton.tsx',
+      'components/MobileNavV2.tsx',
+      'app/profile/page.tsx',
+    ]);
+    expect(offenders.filter((f) => f !== 'app/sitemap.ts' && !ACCOUNT_SURFACES.has(f))).toEqual([]);
+    for (const f of ACCOUNT_SURFACES) expect(read(f)).toMatch(/coming soon/i);
   });
 
   it('no page copy promises referral credit', () => {

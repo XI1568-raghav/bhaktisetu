@@ -57,14 +57,11 @@ function statusCopy(status: number, fallback: string): string {
 }
 
 import { buttonClass } from '../../../components/ui/button-recipe';
-interface MySubscription {
-  id: string;
-  plan: string;
-  role: string;
-  startDate: string;
-  endDate: string;
-  amount: number;
-  status: string;
+import { normalizeSubscription, type MySubscription } from '../../../lib/subscription-normalize';
+
+function formatDate(value: string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '-' : d.toLocaleDateString('en-IN');
 }
 
 export default function AccountSubscriptionsPage() {
@@ -105,7 +102,8 @@ function AccountSubscriptionsInner() {
 
   useEffect(() => {
     if (!isAuthenticated || !session?.accessToken) {
-      router.push(`/auth?redirect=${encodeURIComponent('/account/subscriptions')}`);
+      // /auth has no page (404); the sign-in screen is /auth/login.
+      router.push(`/auth/login?redirect=${encodeURIComponent('/account/subscriptions')}`);
       return;
     }
     void fetchSubscription();
@@ -127,8 +125,8 @@ function AccountSubscriptionsInner() {
           serverErrorText(body, statusCopy(res.status, LOAD_FALLBACK)),
         );
       }
-      const data = (await res.json()) as { subscription: MySubscription | null };
-      setSubscription(data.subscription);
+      const data = await res.json().catch(() => null);
+      setSubscription(normalizeSubscription(data));
       setError(null);
       setReauth(false);
     } catch (err) {
@@ -281,9 +279,9 @@ function AccountSubscriptionsInner() {
               <dt className="text-surface-500">Amount</dt>
               <dd className="text-surface-800 font-medium">₹{subscription.amount}</dd>
               <dt className="text-surface-500">Started</dt>
-              <dd className="text-surface-800 font-medium">{new Date(subscription.startDate).toLocaleDateString('en-IN')}</dd>
+              <dd className="text-surface-800 font-medium">{formatDate(subscription.startDate)}</dd>
               <dt className="text-surface-500">Renews / Ends</dt>
-              <dd className="text-surface-800 font-medium">{new Date(subscription.endDate).toLocaleDateString('en-IN')}</dd>
+              <dd className="text-surface-800 font-medium">{formatDate(subscription.endDate)}</dd>
             </dl>
 
             {subscription.status === 'ACTIVE' && (

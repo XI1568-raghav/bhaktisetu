@@ -23,6 +23,10 @@ const ACCOUNT_LINKS_AUTHED = [
   { href: '/dashboard', label: 'My Dashboard' },
   { href: '/bookings', label: 'My Bookings' },
   { href: '/profile', label: 'Profile' },
+  { href: '/profile/consultations', label: 'My Consultations' },
+  { href: '/account/subscriptions', label: 'Subscriptions' },
+  { href: '/refer', label: 'Refer a Friend (coming soon)' },
+  { href: '/profile#settings', label: 'Settings' },
 ];
 
 const ACCOUNT_LINKS_GUEST = [

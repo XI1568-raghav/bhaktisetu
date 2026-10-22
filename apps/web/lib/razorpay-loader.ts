@@ -47,16 +47,32 @@ export const RAZORPAY_SCRIPT_SRC = 'https://checkout.razorpay.com/v1/checkout.js
  */
 export const RAZORPAY_LOAD_TIMEOUT_MS = 10_000;
 
+let inflight: Promise<RazorpayConstructor | undefined> | null = null;
+
+/**
+ * Start fetching checkout.js now, without waiting for the user to press Pay.
+ *
+ * Payments felt slow because the script was requested only AFTER
+ * create-order returned: API round-trip + script download + parse ran strictly
+ * in series, and on a cold connection to checkout.razorpay.com the second leg
+ * alone was seconds. Call this from a mount effect on any page that ends in a
+ * Razorpay popup; by the time the donor has filled the form the script is in
+ * cache and `loadRazorpayCheckout()` resolves immediately. A failed attempt is
+ * not cached, so the Pay press retries.
+ */
+export function preloadRazorpayCheckout(): void {
+  if (typeof window === 'undefined') return;
+  void loadRazorpayCheckout();
+}
+
 export function loadRazorpayCheckout(
   timeoutMs: number = RAZORPAY_LOAD_TIMEOUT_MS,
 ): Promise<RazorpayConstructor | undefined> {
-  return new Promise((resolve) => {
-    const w = window as RazorpayWindow;
-    if (w.Razorpay) {
-      resolve(w.Razorpay);
-      return;
-    }
-
+  if (typeof window === 'undefined') return Promise.resolve(undefined);
+  const w = window as RazorpayWindow;
+  if (w.Razorpay) return Promise.resolve(w.Razorpay);
+  if (inflight) return inflight;
+  const attempt = new Promise<RazorpayConstructor | undefined>((resolve) => {
     let settled = false;
     const finish = (value: RazorpayConstructor | undefined) => {
       if (settled) return;
@@ -67,10 +83,25 @@ export function loadRazorpayCheckout(
 
     const timer = setTimeout(() => finish(undefined), timeoutMs);
 
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${RAZORPAY_SCRIPT_SRC}"]`);
+    if (existing) {
+      existing.addEventListener('load', () => finish((window as RazorpayWindow).Razorpay), { once: true });
+      existing.addEventListener('error', () => finish(undefined), { once: true });
+      return;
+    }
     const script = document.createElement('script');
     script.src = RAZORPAY_SCRIPT_SRC;
+    script.async = true;
     script.onload = () => finish((window as RazorpayWindow).Razorpay);
-    script.onerror = () => finish(undefined);
+    script.onerror = () => {
+      script.remove();
+      finish(undefined);
+    };
     document.body.appendChild(script);
   });
+  inflight = attempt;
+  void attempt.then(() => {
+    if (inflight === attempt) inflight = null;
+  });
+  return attempt;
 }

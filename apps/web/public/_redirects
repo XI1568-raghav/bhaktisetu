@@ -6,3 +6,15 @@
 # to the old ?id= "view" pages would swallow their siblings and are removed.
 # /og/puja/*, /og/temple/* and /og/shloka are real routes plus prerendered PNGs: not redirected.
 /og/default          /logo.svg     302
+# Legal/support URL aliases testers and old links use. The real routes are /refunds (footer + sitemap),
+# /privacy, /terms, /shipping, /legal/cookies and /support/ticket/new. Answered by assets: no Worker CPU.
+/refund-policy        /refunds              301
+/refunds-policy       /refunds              301
+/cancellation-policy  /refunds              301
+/privacy-policy       /privacy              301
+/terms-of-service     /terms                301
+/terms-and-conditions /terms                301
+/terms-conditions     /terms                301
+/shipping-policy      /shipping             301
+/cookie-policy        /legal/cookies        301
+/support/tickets/new  /support/ticket/new   301

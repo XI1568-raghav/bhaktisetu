@@ -21,6 +21,7 @@ import { useAuth, getRoleDashboardPath } from '../../../lib/auth-context';
 import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { userFacingMessage } from '../../../lib/friendly-error';
 import { suspendedLoginMessage } from '../../../lib/suspended-notice';
+import { useSoftNavigate } from '../../../lib/use-soft-navigate';
 
 // P0-1 (2026-07-17): open-redirect guard. /auth/callback already validated
 // ?redirect= (root-relative or same-origin only) but /auth/login did not — a
@@ -113,6 +114,7 @@ export default function LoginPage() {
   // redirect effect below can send a brand-new account to /profile. A ref, not
   // state, so reading it can't reintroduce a stale closure.
   const isNewAccountRef = useRef(false);
+  const navigate = useSoftNavigate();
 
   // A-012 (2026-08-10): SINGLE owner of post-login navigation. handleVerifyOtp
   // used to redirect directly as well, computing the target from a `user` it
@@ -126,9 +128,12 @@ export default function LoginPage() {
       const redirect = isNewAccountRef.current
         ? '/profile'
         : safeRedirect(params.get('redirect'), getRoleDashboardPath(user.role));
-      window.location.href = redirect;
+      // Soft navigation: a full page load would discard the in-memory session
+      // sign-in just returned and force a second /auth/refresh round trip
+      // (lib/use-soft-navigate.ts).
+      navigate(redirect);
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, navigate]);
 
   // Focus appropriate input on tab change
   useEffect(() => {

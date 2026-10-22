@@ -23,6 +23,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 import { sacredSites, formatINR } from '../../../lib/yatra-data';
 import { DateInput } from '../../../components/ui/DateInput';
+import { distanceHints } from '../../../lib/yatra-distance';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -68,6 +69,7 @@ export default function CustomPlanPage() {
  specialNeeds: [],
  notes: '',
  });
+ const [lastAdded, setLastAdded] = useState<string | null>(null);
  const [generating, setGenerating] = useState(false);
  const [generated, setGenerated] = useState<{ days: { day: number; title: string; description: string; stops: string[] }[]; estimate: number } | null>(null);
 
@@ -80,11 +82,23 @@ export default function CustomPlanPage() {
  }, [data.startDate, data.endDate]);
 
  function toggleDest(id: string) {
+ setLastAdded(data.destinations.includes(id) ? null : id);
  setData((d) => ({
  ...d,
  destinations: d.destinations.includes(id) ? d.destinations.filter((x) => x !== id) : [...d.destinations, id],
  }));
  }
+
+ // Straight-line hint for the site just added, against the ones already chosen.
+ // Only for towns whose coordinates the repo really has; otherwise no hint.
+ const distanceNote = useMemo(() => {
+ const added = lastAdded ? siteById.get(lastAdded) : null;
+ if (!added || !data.destinations.includes(added.id)) return '';
+ const others = data.destinations.map((id) => siteById.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
+ const hints = distanceHints(added, others);
+ if (hints.length === 0) return '';
+ return `${added.name}: ` + hints.map((h) => (h.km < 10 ? `same town as ${h.fromName}` : `about ${h.km} km from ${h.fromName}`)).join(', ') + ' (straight-line; by road it is longer).';
+ }, [lastAdded, data.destinations, siteById]);
 
  function toggleNeed(n: string) {
  setData((d) => ({
@@ -93,9 +107,12 @@ export default function CustomPlanPage() {
  }));
  }
 
+ // The itinerary and estimate are computed in the browser from the answers
+ // above, so there is nothing to wait for. The old 1.8 s setTimeout was a
+ // fake "AI is thinking" delay that made the quote feel like it lagged.
  function handleGenerate() {
  setGenerating(true);
- setTimeout(() => {
+ {
  const dests = data.destinations.map((id) => siteById.get(id)).filter(Boolean);
  const sitesPerDay = data.pace === 'relaxed' ? 0.5 : data.pace === 'moderate' ? 0.8 : 1.2;
  const days = Math.max(durationDays || Math.ceil(dests.length / sitesPerDay) + 2, 3);
@@ -127,12 +144,13 @@ export default function CustomPlanPage() {
  setGenerated({ days: itinerary.slice(0, days), estimate: base });
  setGenerating(false);
  setStep(7);
- }, 1800);
+ if (typeof window !== 'undefined') window.scrollTo({ top: 0 });
+ }
  }
 
  const canContinue = (() => {
  if (step === 1) return data.destinations.length >= 1;
- if (step === 2) return data.startDate.length > 0 && data.endDate.length > 0 && durationDays > 0;
+ if (step === 2) return data.startDate.length > 0 && data.endDate.length > 0 && data.endDate >= data.startDate;
  if (step === 3) return data.adults + data.seniors > 0;
  return true;
  })();
@@ -215,6 +233,12 @@ export default function CustomPlanPage() {
  );
  })}
  </div>
+ {distanceNote && (
+ <p className="text-xs mt-4 inline-flex items-center gap-1.5" style={{ color: 'var(--color-text)' }} aria-live="polite">
+ <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
+ {distanceNote}
+ </p>
+ )}
  <p className="text-xs mt-4" style={{ color: 'var(--color-text-muted)' }}>
  Selected: <span className="font-semibold" style={{ color: 'var(--color-primary)' }}>{data.destinations.length}</span> sites
  </p>

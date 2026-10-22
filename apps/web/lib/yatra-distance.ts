@@ -1,0 +1,56 @@
+import { CITIES } from './indian-cities';
+import type { SacredSite } from './yatra-data';
+
+/**
+ * Straight-line (great-circle) distance hints for the custom yatra planner.
+ *
+ * Honest by construction: coordinates come only from the town table already in
+ * the repo (lib/indian-cities.ts), matched by the site's `location` town. A
+ * site whose town is not in that table (Srisailam, Veraval, Kollur ...) simply
+ * gets no hint; nothing is guessed. The figure is the distance as the crow
+ * flies and the UI labels it so; road/rail distance is always longer.
+ */
+
+type Pt = { lat: number; lng: number };
+
+const byName = new Map(CITIES.map((c) => [c.name.toLowerCase(), c]));
+
+export function siteCoords(site: Pick<SacredSite, 'location'>): Pt | null {
+  const c = byName.get(site.location.toLowerCase());
+  return c ? { lat: c.lat, lng: c.lng } : null;
+}
+
+export function haversineKm(a: Pt, b: Pt): number {
+  const R = 6371;
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+export interface DistanceHint {
+  fromId: string;
+  fromName: string;
+  km: number;
+}
+
+/** The `max` nearest already-chosen sites to `added`, nearest first. */
+export function distanceHints(
+  added: Pick<SacredSite, 'id' | 'location'>,
+  others: Pick<SacredSite, 'id' | 'name' | 'location'>[],
+  max = 2,
+): DistanceHint[] {
+  const a = siteCoords(added);
+  if (!a) return [];
+  const out: DistanceHint[] = [];
+  for (const o of others) {
+    if (o.id === added.id) continue;
+    const b = siteCoords(o);
+    if (!b) continue;
+    const km = Math.round(haversineKm(a, b) / 10) * 10;
+    // Two sites in the same town (Mathura/Vrindavan) are ~0 km apart: say so as "same town" in the UI.
+    out.push({ fromId: o.id, fromName: o.name, km });
+  }
+  return out.sort((x, y) => x.km - y.km).slice(0, max);
+}

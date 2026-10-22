@@ -1,0 +1,6 @@
+{
+  "_why": "Routes whose prerendered HTML build-cf.mjs copies into .open-next/assets so Cloudflare serves them WITHOUT starting the Worker. The OpenNext Worker imports its 45 MB server bundle on the first request of every cold isolate (measured ~0.9 s CPU locally); the free plan allows 10 ms, so any request that reaches the Worker can fail with error 1102. Files in assets cost no CPU. Only add a route here if it is fully static (initialRevalidateSeconds false): the build fails otherwise. Trade-offs: no ?lang= / locale-cookie handling and no Content-Language header on these paths, and a client-side link to them does a full page load instead of an RSC soft navigation.",
+  "legal": ["/privacy", "/privacy/v2", "/terms", "/refund", "/refunds", "/shipping", "/legal/cookies", "/legal/privacy-uk", "/data-deletion"],
+  "exact": ["/support", "/support/faq", "/support/tickets", "/support/tickets/view", "/support/ticket/new", "/pujas/book"],
+  "prefixes": ["/darshan"]
+}

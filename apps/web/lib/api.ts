@@ -68,27 +68,39 @@ interface FetchOptions {
  revalidate?: number | false;
  tags?: string[];
  cache?: RequestCache;
+ /**
+  * Build-time only data: fetched once (`force-cache`, no `next.revalidate`) so the page
+  * stays fully prerendered. A `revalidate` here would stamp an expiry on the page, and the
+  * Cloudflare Worker's read-only asset cache then re-renders it on every request past that
+  * expiry (free plan: 10 ms CPU, error 1102). Live values belong in a client component.
+  */
+ buildTime?: boolean;
 }
 
 async function serverFetch<T>(
  path: string,
  options: FetchOptions = {},
 ): Promise<T> {
- const { revalidate = 60, tags, cache } = options;
+ const { revalidate = 60, tags, cache, buildTime } = options;
 
  const controller = new AbortController();
  const timeoutId = setTimeout(() => controller.abort(), 4000);
 
  let res: Response;
  try {
- res = await fetch(`${API_BASE}${path}`, {
+ res = await fetch(
+ `${API_BASE}${path}`,
+ buildTime
+ ? { cache: 'force-cache', signal: controller.signal }
+ : {
  next: {
  revalidate: revalidate === false ? undefined : revalidate,
  tags,
  },
  cache: cache ?? (revalidate === false ? 'no-store' : undefined),
  signal: controller.signal,
- });
+ },
+ );
  } finally {
  clearTimeout(timeoutId);
  }
@@ -470,12 +482,12 @@ export interface UpcomingDarshanNote {
  startsInMin: number;
 }
 
-export async function getLiveDarshan(): Promise<{ streams: DarshanStream[]; upcoming?: UpcomingDarshanNote[] }> {
- return serverFetch('/darshan/live', { revalidate: 30, tags: ['darshan'] });
+export async function getLiveDarshan(opts: { buildTime?: boolean } = {}): Promise<{ streams: DarshanStream[]; upcoming?: UpcomingDarshanNote[] }> {
+ return serverFetch('/darshan/live', { revalidate: 30, tags: ['darshan'], buildTime: opts.buildTime });
 }
 
-export async function getScheduledDarshan(): Promise<{ streams: DarshanStream[] }> {
- return serverFetch('/darshan/scheduled', { revalidate: 60, tags: ['darshan-scheduled'] });
+export async function getScheduledDarshan(opts: { buildTime?: boolean } = {}): Promise<{ streams: DarshanStream[] }> {
+ return serverFetch('/darshan/scheduled', { revalidate: 60, tags: ['darshan-scheduled'], buildTime: opts.buildTime });
 }
 
 // ─── Approved Providers (public listings) ─────────────────────────

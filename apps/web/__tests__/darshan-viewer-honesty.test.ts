@@ -59,9 +59,14 @@ describe('DF-10 — the player renders a count only when it is given a real one'
 });
 
 describe('DF-10 — the schedule status is clock-derived (already closed by TD-02)', () => {
-  it('the list page grades rows at render time, not at build time', () => {
+  it('the list page grades rows in the browser, not at build time', () => {
+    // The page is prerendered with no revalidate (Cloudflare Worker free plan, 10 ms CPU),
+    // so a build-time status would be wrong for 23 h a day. The client table re-grades.
     const list = src('app/darshan/page.tsx');
     expect(list).toMatch(/darshanScheduleRows\(\)/);
-    expect(list).toMatch(/export const revalidate = \d+/);
+    expect(list).not.toMatch(/export const revalidate/);
+    const table = src('components/DarshanScheduleTable.tsx');
+    expect(table).toMatch(/^'use client'/m);
+    expect(table).toMatch(/setRows\(darshanScheduleRows\(\)\)/);
   });
 });

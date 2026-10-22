@@ -14,6 +14,7 @@ import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { userFacingMessage, UserFacingError, serverErrorText } from '../../../../lib/friendly-error';
 
+import { preloadRazorpayCheckout } from '../../../../lib/razorpay-loader';
 type Astrologer = {
   id: string;
   name: string;
@@ -74,6 +75,9 @@ function BookContent() {
   const [scheduledAt, setScheduledAt] = useState<string>('');
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
+
+  // Fetch checkout.js while the user fills the form, not after create-order returns.
+  useEffect(() => { preloadRazorpayCheckout(); }, []);
 
   useEffect(() => {
     let cancelled = false;

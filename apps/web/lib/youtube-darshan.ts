@@ -86,3 +86,26 @@ export async function resolveDarshanSource(channelId: string): Promise<DarshanSo
   ]);
   return { channelId, liveProbe, liveEmbedUrl: liveEmbedUrl(channelId), uploads: uploads.slice(0, 5) };
 }
+
+/**
+ * Build-time list of a channel's newest uploads, for the prerendered /darshan/[id] page.
+ *
+ * Deliberately one cached fetch and no live probe: scraping youtube.com/channel/<id>/live
+ * (a ~1 MB HTML page) per request is what exceeded the Cloudflare Worker's CPU limit, and
+ * `next.revalidate` here would stamp an expiry on the page that the Worker's read-only
+ * asset cache cannot honour. Whether the channel is on air right now is answered in the
+ * browser (components/DarshanChannelPlayerLive.tsx); this list is only the fallback.
+ */
+export async function resolveDarshanUploads(channelId: string): Promise<ChannelUpload[]> {
+  try {
+    const res = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Darshya/1.0)' },
+      cache: 'force-cache',
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok) return [];
+    return parseFeedEntries(await res.text()).slice(0, 5);
+  } catch {
+    return [];
+  }
+}

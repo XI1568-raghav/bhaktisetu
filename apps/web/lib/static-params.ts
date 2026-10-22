@@ -17,6 +17,8 @@ export async function fetchSlugParams(
   pickList: (json: unknown) => unknown,
   key = 'slug',
 ): Promise<{ slug: string }[]> {
+  // CI builds only prove the code compiles; they must not depend on (or hammer) the live API.
+  if (process.env.SKIP_API_PRERENDER === '1') return [];
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);

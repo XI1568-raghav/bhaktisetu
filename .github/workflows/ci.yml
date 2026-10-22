@@ -37,6 +37,10 @@ concurrency:
 jobs:
   verify:
     name: Lint + Type + Test + Build
+    env:
+      # CI only proves the build compiles. Prerendering from the live API makes ~2,000 calls from one IP and
+      # trips the API's own rate limit (100/min), so skip API-backed prerender here. Deploys do not set this.
+      SKIP_API_PRERENDER: '1'
     runs-on: ubuntu-latest
     # Raised 12 -> 25 on 2026-09-04. MEASURED, not guessed, from the Actions API:
     #

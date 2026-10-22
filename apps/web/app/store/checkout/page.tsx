@@ -27,6 +27,8 @@ import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 
+import { preloadRazorpayCheckout } from '../../../lib/razorpay-loader';
+
 function formatPrice(amount: number): string {
  return new Intl.NumberFormat('en-IN', {
  style: 'currency',
@@ -116,6 +118,9 @@ function CheckoutContent() {
  // and regenerated for each fresh attempt. crypto.randomUUID is available in
  // all evergreen browsers + secure contexts.
  const idempotencyKeyRef = useRef<string | null>(null);
+
+ // Fetch checkout.js while the user fills the form, not after create-order returns.
+ useEffect(() => { preloadRazorpayCheckout(); }, []);
 
  // Load the devotee's real saved addresses (was hardcoded fake rows).
  useEffect(() => {
