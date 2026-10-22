@@ -1,27 +1,22 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
+// Only channels whose page resolves and that are the temple's own (see
+// ops/sql/darshan-channels-2026-10.sql for provenance). The previous 19-row list
+// carried ids that do not exist on YouTube (channel page has no title, RSS 404)
+// and one id reused for two temples; they were removed 2026-10-22, not replaced
+// with guesses. Add a row only after the validator reports feed=200.
 const STREAMS = [
-  { templeSlug: 'kashi-vishwanath-varanasi', youtubeChannelId: 'UCkPpdkF8L1xS6Y6FsEX_5xQ', attribution: 'Shri Kashi Vishwanath Temple Official' },
-  { templeSlug: 'tirumala-tirupati', youtubeChannelId: 'UCxA_AmpErYRZqvKy3bEZeUw', attribution: 'TTD Devasthanams Official' },
-  { templeSlug: 'shirdi-sai-baba', youtubeChannelId: 'UC9UzS2vAQwOzCeMvJzvKB-A', attribution: 'Shri Saibaba Sansthan Trust Shirdi' },
-  { templeSlug: 'vaishno-devi-katra', youtubeChannelId: 'UCJq4OJ-AaH0mFC-8AQiqMOg', attribution: 'Shri Mata Vaishno Devi Shrine Board' },
-  { templeSlug: 'somnath-gujarat', youtubeChannelId: 'UCZQNL-9F6c7m-XS8bjWl_fA', attribution: 'Somnath Temple Trust' },
-  { templeSlug: 'dwarkadhish-dwarka', youtubeChannelId: 'UCJSFLCGdjIb1zDYaGlGm3yQ', attribution: 'Dwarkadhish Temple Official' },
-  { templeSlug: 'jagannath-puri', youtubeChannelId: 'UCXmADd1g2GJyGKfMkhwS4Aw', attribution: 'Shree Jagannath Temple Administration' },
-  { templeSlug: 'meenakshi-madurai', youtubeChannelId: 'UC0d3I4cFW-x4QKjzMt79kdw', attribution: 'Arulmigu Meenakshi Sundareswarar Temple' },
-  { templeSlug: 'iskcon-bangalore', youtubeChannelId: 'UC5JbF9OVVXSO-V-IjnmHqug', attribution: 'ISKCON Bangalore' },
-  { templeSlug: 'akshardham-delhi', youtubeChannelId: 'UCNnpWVS0v6cTXGJEKB1qLqg', attribution: 'Swaminarayan Akshardham Delhi' },
-  { templeSlug: 'badrinath-uttarakhand', youtubeChannelId: 'UC9bZQ-VtWQ97ABNHcZ3X7zQ', attribution: 'Badrinath-Kedarnath Temples Committee' },
-  { templeSlug: 'siddhivinayak-mumbai', youtubeChannelId: 'UCsZ0VtdJxjVKOXDxQjrDOdQ', attribution: 'Shree Siddhivinayak Ganapati Mandir Trust' },
-  { templeSlug: 'kapaleeshwarar-chennai', youtubeChannelId: 'UC9I3OlFiEf3nrAyhFnPwGRg', attribution: 'Arulmigu Kapaleeshwarar Temple' },
-  { templeSlug: 'dakshineswar-kolkata', youtubeChannelId: 'UCk6_TuiHQ-mAfP9_OeHvQ_w', attribution: 'Dakshineswar Kali Temple' },
-  { templeSlug: 'birla-mandir-hyderabad', youtubeChannelId: 'UCFBzGUOY1l0LM5JoUnFAuhg', attribution: 'Birla Mandir Hyderabad' },
-  { templeSlug: 'dagdusheth-pune', youtubeChannelId: 'UCkXvI3fVc_6ZqY9-1uEojZQ', attribution: 'Dagdusheth Halwai Ganpati Trust' },
-  { templeSlug: 'akshardham-gandhinagar', youtubeChannelId: 'UCxJyLyqqpkY4pFvJQQ-pGuw', attribution: 'Akshardham Gandhinagar' },
-  { templeSlug: 'govind-dev-ji-jaipur', youtubeChannelId: 'UCQkjcMTsmkF_IzZkDRy4XnQ', attribution: 'Govind Dev Ji Mandir Jaipur' },
-  { templeSlug: 'ramanathaswamy-rameshwaram', youtubeChannelId: 'UCWX8Q2iXNyIQRl_zkW1eqzQ', attribution: 'Sri Ramanathaswamy Temple' },
-  { templeSlug: 'lingaraj-bhubaneswar', youtubeChannelId: 'UC0d3I4cFW-x4QKjzMt79kdw', attribution: 'Lingaraj Temple Bhubaneswar' },
+  { templeSlug: 'golden-temple-amritsar', youtubeChannelId: 'UCYn6UEtQ771a_OWSiNBoG8w', attribution: 'SGPC, Sri Amritsar' },
+  { templeSlug: 'shirdi-sai-baba', youtubeChannelId: 'UCKGvJDh7g_Kzocbwy7aKicA', attribution: 'Shree Saibaba Sansthan Trust' },
+  { templeSlug: 'siddhivinayak-mumbai', youtubeChannelId: 'UCF9FdiMBENIbM6jb44zWmCQ', attribution: 'Shree Siddhivinayak Ganapati Temple Trust' },
+  { templeSlug: 'vaishno-devi-katra', youtubeChannelId: 'UCFYQr1l7ereS27SrLJ8bBtw', attribution: 'Shri Mata Vaishno Devi Shrine Board' },
+  { templeSlug: 'dagdusheth-pune', youtubeChannelId: 'UCFUYpQptYcTT_IKWf2GlESg', attribution: 'Shrimant Dagdusheth Halwai Ganpati Trust' },
+  { templeSlug: 'iskcon-bangalore', youtubeChannelId: 'UCPXnayBvF7ynbG_I3VOTgIg', attribution: 'ISKCON Bangalore' },
+  { templeSlug: 'somnath-gujarat', youtubeChannelId: 'UCT1egsvA08YcdMLiEu1DTRg', attribution: 'Somnath Temple - Official Channel' },
+  { templeSlug: 'tirumala-tirupati', youtubeChannelId: 'UCS2Y83GD-fc7qqgNW5uj41g', attribution: 'SVBC TTD' },
+  { templeSlug: 'kashi-vishwanath-varanasi', youtubeChannelId: 'UCdMj2twWfMHXrWgX5oVdoyA', attribution: 'Shree Kashi Vishwanath Mandir Trust' },
+  { templeSlug: 'jagannath-puri', youtubeChannelId: 'UCstacpPsNLSiGcYe7qbF14Q', attribution: 'Shree Jagannatha Temple Administration, Puri' },
 ];
 
 async function main() {
