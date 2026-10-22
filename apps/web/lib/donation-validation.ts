@@ -42,7 +42,7 @@ export interface DonationFormValues {
   phone: string;
   pan: string;
   /** donationLegal.HAS_80G_VERIFIED: PAN is only mandatory when an 80G receipt can be issued. */
-  has80G: boolean;
+  hasTaxReceipt: boolean;
 }
 
 export function validateDonation(v: DonationFormValues): Record<string, string> {
@@ -56,7 +56,7 @@ export function validateDonation(v: DonationFormValues): Record<string, string> 
   }
 
   if (!v.name.trim()) {
-    errs.donorName = v.has80G ? 'Name is required for the 80G receipt' : 'Name is required for your receipt';
+    errs.donorName = v.hasTaxReceipt ? 'Name is required for the 80G receipt' : 'Name is required for your receipt';
   }
 
   if (!v.email.trim()) errs.donorEmail = 'Email is required to send the receipt';
@@ -73,7 +73,7 @@ export function validateDonation(v: DonationFormValues): Record<string, string> 
   const pan = v.pan.trim().toUpperCase();
   if (pan) {
     if (!PAN_REGEX.test(pan)) errs.donorPan = 'Invalid PAN format (e.g. ABCDE1234F)';
-  } else if (v.has80G && amount >= PAN_THRESHOLD_INR) {
+  } else if (v.hasTaxReceipt && amount >= PAN_THRESHOLD_INR) {
     errs.donorPan = 'PAN is required for 80G receipt on donations ≥ ₹2,000';
   }
 
