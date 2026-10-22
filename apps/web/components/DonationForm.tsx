@@ -174,7 +174,7 @@ export default function DonationForm({
       email: donorEmail,
       phone: donorPhone,
       pan: donorPan,
-      has80G: HAS_80G,
+      hasTaxReceipt: HAS_80G,
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
