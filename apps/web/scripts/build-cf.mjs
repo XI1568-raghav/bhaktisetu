@@ -23,4 +23,5 @@ function run(cmd, args, env = {}) {
 }
 run(findBin('tsx'), ['--tsconfig', 'scripts/tsconfig.prerender.json', 'scripts/prerender-og.mjs']);
 if (process.argv.includes('--og-only')) process.exit(0);
-run(findBin('opennextjs-cloudflare'), ['build'], { NEXT_PUBLIC_OG_STATIC: '1' });
+// Next 15 reached its 2-year support cutoff (Oct 2026); OpenNext refuses to build without this flag.
+run(findBin('opennextjs-cloudflare'), ['build', '--dangerouslyUseUnsupportedNextVersion'], { NEXT_PUBLIC_OG_STATIC: '1' });

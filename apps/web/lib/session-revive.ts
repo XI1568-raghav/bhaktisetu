@@ -227,7 +227,25 @@ export interface ReviveResult {
   apiAnswered: boolean;
 }
 
-export async function reviveSessionFromCookieResult(): Promise<ReviveResult> {
+/**
+ * Single flight. Two callers in one tab (the mount-time revive and a page that
+ * renews after a 401) must not each spend the same one-shot refresh cookie:
+ * Supabase rotates it on use, so the loser presents an already-rotated token
+ * and, outside GoTrue's reuse window, the API treats that as theft and revokes
+ * the whole family. They share one request instead.
+ */
+let inFlightRevive: Promise<ReviveResult> | null = null;
+
+export function reviveSessionFromCookieResult(): Promise<ReviveResult> {
+  if (!inFlightRevive) {
+    inFlightRevive = reviveSessionFromCookieUncached().finally(() => {
+      inFlightRevive = null;
+    });
+  }
+  return inFlightRevive;
+}
+
+async function reviveSessionFromCookieUncached(): Promise<ReviveResult> {
   const supabase = await reviveSupabaseSessionFromCookie();
   if (supabase.session) return supabase;
   if (supabase.suspendedBody !== undefined) return supabase;

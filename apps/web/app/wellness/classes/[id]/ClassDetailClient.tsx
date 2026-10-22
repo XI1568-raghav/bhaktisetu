@@ -39,6 +39,7 @@ import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { userFacingMessage, UserFacingError, serverErrorMessage } from '../../../../lib/friendly-error';
 import CancelEnrolment from '../../../../components/wellness/CancelEnrolment';
+import { preloadRazorpayCheckout } from '../../../../lib/razorpay-loader';
 type ClassDetail = WellnessClass & { roomUrl?: string | null };
 
 let razorpayScriptPromise: Promise<void> | null = null;
@@ -115,6 +116,9 @@ export default function ClassDetailClient() {
     const json = (await res.json()) as { data?: ClassDetail };
     return json.data ?? null;
   }, [sessionId, authHeaders]);
+
+  // Fetch checkout.js while the user fills the form, not after create-order returns.
+  useEffect(() => { preloadRazorpayCheckout(); }, []);
 
   useEffect(() => {
     if (!token || !sessionId) return;

@@ -457,10 +457,16 @@ const createOrderSchema = z.object({
   causeKind: z.enum(['gaushala', 'temple']).optional(),
   gaushalaId: z.string().min(1).optional(),
   templeId: z.string().uuid().optional(),
-  amountInr: z.number({ invalid_type_error: 'amountInr must be a number' })
-    .int('amountInr must be a whole number of rupees')
-    .min(101, 'Minimum donation is ₹101')
-    .max(1000000, 'Maximum single donation via this endpoint is ₹10,00,000'),
+  // A numeric string ("1100", "1,100") is accepted as the number it spells, so a
+  // client that serialises the amount from an <input> and the web form agree on
+  // what is valid. Non-numeric input still fails as before.
+  amountInr: z.preprocess(
+    (v) => (typeof v === 'string' && /^\s*[\d,]+\s*$/.test(v) ? Number(v.replace(/[,\s]/g, '')) : v),
+    z.number({ invalid_type_error: 'amountInr must be a number' })
+      .int('amountInr must be a whole number of rupees')
+      .min(101, 'Minimum donation is ₹101')
+      .max(1000000, 'Maximum single donation via this endpoint is ₹10,00,000'),
+  ),
   planId: z.string().optional(),
   // P0 #PBO-14 (2026-07-09): persist donor PAN (required ≥ ₹2,000 for 80G) +
   // the optional dedication. Previously accepted by the form but dropped here.
@@ -470,7 +476,11 @@ const createOrderSchema = z.object({
   // recipient's portal shows these; the account name / email remain the fallback.
   donorName: z.string().trim().min(1).max(120).optional(),
   donorEmail: z.string().trim().email().max(200).optional(),
-  donorPhone: z.string().trim().regex(/^\+?[0-9]{10,13}$/, 'Invalid phone number').optional(),
+  // Spaces/dashes are ignored ("+91 88689 12697"), matching the web form's normaliser.
+  donorPhone: z.preprocess(
+    (v) => (typeof v === 'string' ? v.replace(/[\s-]/g, '') : v),
+    z.string().regex(/^\+?[0-9]{10,13}$/, 'Invalid phone number'),
+  ).optional(),
 }).refine(
   (d) => {
     const kind = d.causeKind ?? 'gaushala';

@@ -1,14 +1,14 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
-import { Play, Radio } from 'lucide-react';
+import { Radio } from 'lucide-react';
 import { getTranslations } from '../../lib/t';
 import {
  getLiveDarshan,
  getScheduledDarshan,
  type DarshanStream,
 } from '../../lib/api';
-import DarshanBrowser from '../../components/DarshanBrowser';
-import DarshanScheduleRemindButton from '../../components/DarshanScheduleRemindButton';
+import DarshanBrowserLive from '../../components/DarshanBrowserLive';
+import DarshanScheduleTable from '../../components/DarshanScheduleTable';
 // NOTIF-15: the real, server-registered reminder. See the section below.
 import AartiOptIn from '../../components/AartiOptIn';
 import { darshanScheduleRows } from '../../lib/darshan-schedule';
@@ -21,9 +21,11 @@ export const metadata: Metadata = {
  'Watch live darshan from India’s most sacred temples. Temple aarti and ceremony streams, free, following each temple’s own schedule.',
 };
 
-// Day-sync ISR: regenerate every 5 min so the live-now list reflects current
-// aarti windows (matches /darshan/[id] detail page revalidate cadence).
-export const revalidate = 300;
+// Fully prerendered, NO `revalidate`. On the Cloudflare Worker free plan (10 ms CPU, asset
+// cache that cannot revalidate) an expiring ISR page is re-rendered on every request past its
+// expiry, which is the error 1102 the tester saw. The live-now list and the IST-graded
+// schedule are refreshed in the browser instead (DarshanBrowserLive, DarshanScheduleTable);
+// the HTML below is the build-time snapshot they start from.
 
 // ─── Fallback data ────────────────────────────────────────────────────────────
 
@@ -267,7 +269,7 @@ const fallbackScheduledStreams: DarshanStream[] = [
 // other.
 async function fetchLiveStreams(): Promise<{ streams: DarshanStream[]; upcoming: { templeSlug: string; nextSlot: string; startsInMin: number }[] }> {
  try {
- const res = await getLiveDarshan();
+ const res = await getLiveDarshan({ buildTime: true });
  if (!res || !Array.isArray(res.streams)) return { streams: fallbackLiveStreams, upcoming: [] };
  return {
    streams: res.streams.length > 0 ? res.streams : fallbackLiveStreams,
@@ -280,7 +282,7 @@ async function fetchLiveStreams(): Promise<{ streams: DarshanStream[]; upcoming:
 
 async function fetchScheduledStreams(): Promise<DarshanStream[]> {
  try {
- const res = await getScheduledDarshan();
+ const res = await getScheduledDarshan({ buildTime: true });
  if (!res || !Array.isArray(res.streams)) return fallbackScheduledStreams;
  return res.streams.length > 0 ? res.streams : fallbackScheduledStreams;
  } catch {
@@ -290,7 +292,15 @@ async function fetchScheduledStreams(): Promise<DarshanStream[]> {
 
 async function StreamsBrowserSection() {
  const [live, scheduled] = await Promise.all([fetchLiveStreams(), fetchScheduledStreams()]);
- return <DarshanBrowser liveStreams={live.streams} upcomingNotes={live.upcoming} scheduledStreams={scheduled} />;
+ return (
+ <DarshanBrowserLive
+ initialLive={live.streams}
+ initialUpcoming={live.upcoming}
+ initialScheduled={scheduled}
+ fallbackLive={fallbackLiveStreams}
+ fallbackScheduled={fallbackScheduledStreams}
+ />
+ );
 }
 
 // ─── Page Component ───────────────────────────────────────────────────────────
@@ -298,9 +308,10 @@ async function StreamsBrowserSection() {
 export default async function DarshanPage() {
  const t = await getTranslations('darshan');
  const tCommon = await getTranslations('common');
- // TD-02: rows come from the real per-temple aarti data and are graded against
- // the IST clock at render time (page revalidates every 5 min), so LIVE means
- // live and every row links at the temple's own stream.
+ // TD-02: rows come from the real per-temple aarti data and every row links at the
+ // temple's own stream. The page is prerendered, so the LIVE / Completed grading against
+ // the IST clock happens in the browser (DarshanScheduleTable re-runs
+ // darshanScheduleRows() on mount and every minute); this call only supplies the rows.
  const scheduleRows = darshanScheduleRows();
  return (
  <div className="min-h-[100dvh] bg-surface-50">
@@ -371,66 +382,7 @@ export default async function DarshanPage() {
  <AartiOptIn />
  </div>
 
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] overflow-hidden">
- <div className="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-[var(--color-border)] text-sm font-semibold text-surface-400">
- <div className="col-span-2">Time</div>
- <div className="col-span-4">Temple</div>
- <div className="col-span-3">Event</div>
- <div className="col-span-2">Status</div>
- <div className="col-span-1"></div>
- </div>
-
- {scheduleRows.map((row, i) => {
- const reminderId = `schedule:${row.time}:${row.temple}:${row.event}`;
- return (
- <div
- key={i}
- className="grid grid-cols-1 md:grid-cols-12 gap-2 md:gap-4 p-4 border-b border-[var(--color-border)]/50 last:border-0 text-sm items-center hover:bg-surface-200/30 transition-colors"
- >
- <div className="md:col-span-2 text-surface-500 font-medium">
- <span className="md:hidden text-surface-500 text-xs mr-2">Time:</span>
- {row.time}
- </div>
- <div className="md:col-span-4 text-surface-800 font-medium">
- <span className="md:hidden text-surface-500 text-xs mr-2">Temple:</span>
- {row.temple}
- </div>
- <div className="md:col-span-3 text-surface-400">
- <span className="md:hidden text-surface-500 text-xs mr-2">Event:</span>
- {row.event}
- </div>
- <div className="md:col-span-2">
- {row.status === 'live' ? (
- <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full">
- <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
- LIVE
- </span>
- ) : row.status === 'completed' ? (
- <span className="text-xs text-surface-600">Completed</span>
- ) : (
- <span className="text-xs text-surface-500">Upcoming</span>
- )}
- </div>
- <div className="md:col-span-1 md:text-right">
- {row.status === 'live' ? (
- <a
- href={row.href}
- className="text-saffron-400 hover:text-saffron-300 inline-flex"
- aria-label={`Watch ${row.temple} ${row.event} now`}
- >
- <Play className="w-4 h-4" />
- </a>
- ) : row.status === 'upcoming' ? (
- <DarshanScheduleRemindButton
- reminderId={reminderId}
- label={`${row.temple} ${row.event}`}
- />
- ) : null}
- </div>
- </div>
- );
- })}
- </div>
+ <DarshanScheduleTable initialRows={scheduleRows} />
  </div>
  </section>
  </div>

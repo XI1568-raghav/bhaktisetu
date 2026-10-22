@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
  Flame,
  Calendar,
@@ -80,7 +80,9 @@ const statusLabels: Record<string, string> = {
 };
 
 function DashboardContent() {
- const { user, session } = useAuth();
+ const { user, session, renewSession } = useAuth();
+ // One silent re-mint per mount: see the 401 branch in fetchDashboardData.
+ const renewedRef = useRef(false);
  const [bookings, setBookings] = useState<Booking[]>([]);
  const [bookingsCount, setBookingsCount] = useState(0);
  const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
@@ -109,6 +111,18 @@ function DashboardContent() {
  fetchWithTimeout(`${API_BASE_URL}/users/me/subscription`, { headers }, DATA_FETCH_TIMEOUT_MS),
  ]);
 
+ // QA 2026-10-22: a 401 here while the client holds a session means the
+ // token in memory is one the API no longer accepts (rotated or revoked
+ // elsewhere, or minted before a refresh landed) - not that the person is
+ // signed out. Re-mint from the httpOnly refresh cookie once and let the
+ // new token re-run this load, instead of telling someone who signed in
+ // seconds ago that we "could not verify" them. If the renew fails the
+ // honest banner below still shows.
+ if (bookingsRes.status === 401 && !renewedRef.current && typeof renewSession === 'function') {
+ renewedRef.current = true;
+ if (await renewSession()) return;
+ }
+
  if (bookingsRes.ok) {
  const bookingsData = await bookingsRes.json();
  setBookings(bookingsData.bookings || []);
@@ -128,7 +142,7 @@ function DashboardContent() {
  } finally {
  setIsLoadingData(false);
  }
- }, [session?.accessToken]);
+ }, [session?.accessToken, renewSession]);
 
  useEffect(() => {
  fetchDashboardData();

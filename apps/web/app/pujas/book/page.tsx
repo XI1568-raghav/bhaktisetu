@@ -42,7 +42,7 @@ import {
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { apiErrorCode, serverErrorMessage } from '../../../lib/friendly-error';
-import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
+import { loadRazorpayCheckout, preloadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { DateInput } from '../../../components/ui/DateInput';
 import { IST_TIME_NOTE, localEquivalent, withIst } from '../../../lib/slot-zone';
 import { MuhuratGuidance, useMuhuratGuidance } from '../../../components/booking/MuhuratGuidance';
@@ -470,6 +470,9 @@ function PujaBookingInner() {
  // stealing focus on load would fight the browser's own restore.
  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
  const stepMountedRef = useRef(false);
+ // Fetch checkout.js while the user fills the form, not after create-order returns.
+ useEffect(() => { preloadRazorpayCheckout(); }, []);
+
  useEffect(() => {
  if (!stepMountedRef.current) {
  stepMountedRef.current = true;

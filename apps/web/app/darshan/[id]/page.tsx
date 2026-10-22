@@ -3,7 +3,11 @@
 // renders an honest "Coming soon" panel rather than silently falling back
 // to Kashi Vishwanath content.
 export const dynamicParams = true;
-export const revalidate = 300;
+// No `revalidate`: this page is prerendered once and never re-rendered by the Cloudflare
+// Worker (free plan: 10 ms CPU, and its asset cache cannot revalidate, so an expiring page
+// is rendered per request, error 1102). Anything clock- or broadcast-dependent (current
+// aarti slot, on-air probe) is resolved in the browser by DarshanAartiSchedule and
+// DarshanChannelPlayerLive. Stream lists are read once at build time.
 export function generateStaticParams() {
   return [
     'somnath-gujarat', 'somnath', 'tirumala-tirupati', 'tirupati',
@@ -23,12 +27,10 @@ import type { Metadata } from 'next';
 import {
  MapPin,
  Clock,
- Calendar,
  Users,
  ChevronRight,
  Home,
  MessageCircle,
- Bell,
  ExternalLink,
  Star,
  Video,
@@ -40,34 +42,14 @@ import {
 } from '../../../lib/api';
 import DarshanPlayer from '../../../components/DarshanPlayer';
 import YouTubeDarshanPlayer from '../../../components/YouTubeDarshanPlayer';
-import DarshanChannelPlayer from '../../../components/DarshanChannelPlayer';
-import { channelIdFromUrl, resolveDarshanSource } from '../../../lib/youtube-darshan';
+import DarshanChannelPlayerLive from '../../../components/DarshanChannelPlayerLive';
+import DarshanAartiSchedule from '../../../components/DarshanAartiSchedule';
+import { channelIdFromUrl, liveEmbedUrl, resolveDarshanUploads } from '../../../lib/youtube-darshan';
 import AdSlot from '../../../components/AdSlot';
 import { getTempleHero } from '../../../lib/images';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { canonicalTempleSlug } from '../../../lib/temple-slug';
-import {
- currentAartiState,
- getScheduleForTemple,
- nextAartiLabel,
- nowMinutesIST,
- type AartiSlot,
-} from '../../../lib/aarti-schedules';
-
-function formatTime12h(time24: string): string {
- const [hStr, m] = time24.split(':');
- const h = parseInt(hStr ?? '0', 10);
- const ampm = h < 12 ? 'AM' : 'PM';
- const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
- return `${h12}:${m ?? '00'} ${ampm}`;
-}
-
-function classifySlot(slot: AartiSlot, nowMin: number): 'live' | 'completed' | 'upcoming' {
- if (nowMin >= slot.minutes && nowMin < slot.minutes + slot.durationMin) return 'live';
- if (nowMin >= slot.minutes + slot.durationMin) return 'completed';
- return 'upcoming';
-}
 
 // ─── YouTube stream URL lookup for fallback ──────────────────────────────────
 // Channel IDs verified 2026-05-02 against YouTube RSS feed (200 = real, 404 = dead).
@@ -358,8 +340,8 @@ const fallbackRelatedTemples = [
 async function getStreamById(idOrSlug: string): Promise<DarshanStream | null> {
  try {
  const [liveRes, scheduledRes] = await Promise.all([
- getLiveDarshan(),
- getScheduledDarshan(),
+ getLiveDarshan({ buildTime: true }),
+ getScheduledDarshan({ buildTime: true }),
  ]);
  const allStreams = [...liveRes.streams, ...scheduledRes.streams];
  const found =
@@ -388,7 +370,7 @@ async function getRelatedStreams(
  currentId: string
 ): Promise<DarshanStream[]> {
  try {
- const res = await getLiveDarshan();
+ const res = await getLiveDarshan({ buildTime: true });
  return res.streams.filter((s) => s.id !== currentId).slice(0, 4);
  } catch {
  return [];
@@ -556,16 +538,10 @@ export default async function DarshanDetailPage({
  CHANNEL_BY_SLUG[id] ??
  channelIdFromUrl(stream.playbackUrl) ??
  null;
- const source = channelId ? await resolveDarshanSource(channelId) : null;
- const playbackUrl = source
- ? source.liveEmbedUrl
+ const uploads = channelId ? await resolveDarshanUploads(channelId) : null;
+ const playbackUrl = channelId
+ ? liveEmbedUrl(channelId)
  : (stream.playbackUrl || YOUTUBE_STREAMS[stream.temple.slug] || null);
-
- // Per-temple IST aarti schedule + current-slot resolver. Null when slug not in
- // aarti-schedules registry → page falls back to the legacy generic schedule.
- const aartiSchedule = getScheduleForTemple(stream.temple.slug) ?? getScheduleForTemple(id);
- const aartiNow = aartiSchedule ? currentAartiState(aartiSchedule.templeSlug) : null;
- const nowMinIST = nowMinutesIST();
 
  return (
  <div className="min-h-[100dvh] bg-[#2a2520]">
@@ -601,12 +577,12 @@ export default async function DarshanDetailPage({
  <div className="lg:col-span-2 space-y-6">
  <AdSlot slotId="DARSHAN_BANNER" format="horizontal" label="Sponsored" />
  {/* Player */}
- {source ? (
- <DarshanChannelPlayer
- channelId={source.channelId}
+ {channelId ? (
+ <DarshanChannelPlayerLive
+ channelId={channelId}
  templeName={stream.temple.name}
- liveProbe={source.liveProbe}
- uploads={source.uploads}
+ streamKey={stream.temple.slug}
+ initialUploads={uploads ?? []}
  attribution={stream.attribution}
  />
  ) : stream.streamProvider === 'YOUTUBE' ? (
@@ -710,92 +686,11 @@ export default async function DarshanDetailPage({
  </div>
  </div>
 
- {/* Today's Schedule — IST aarti slots per temple (real time aware) */}
- <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">
- <div className="flex items-start justify-between mb-4 gap-3">
- <h2 className="text-lg font-bold text-white flex items-center gap-2">
- <Calendar className="w-5 h-5 text-saffron-400" />
- Today&rsquo;s Aarti Schedule
- </h2>
- {aartiNow && (
- <span
- className={`inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-1 rounded-full shrink-0 ${
- aartiNow.current
- ? 'text-red-400 bg-red-400/10 border border-red-400/30'
- : 'text-saffron-300 bg-saffron-400/10 border border-saffron-400/30'
- }`}
- >
- {aartiNow.current && <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />}
- {nextAartiLabel(aartiNow)}
- </span>
- )}
- </div>
- <div className="space-y-0">
- {aartiSchedule
- ? aartiSchedule.slots.map((slot) => {
- const status = classifySlot(slot, nowMinIST);
- return (
- <div
- key={slot.time}
- className={`flex items-center gap-4 py-3 border-b border-surface-700/50 last:border-0 ${
- status === 'live' ? 'bg-red-500/5 -mx-3 px-3 rounded' : ''
- }`}
- >
- <span className="text-sm text-surface-400 font-medium w-24 shrink-0">
- {formatTime12h(slot.time)}
- </span>
- <span className="text-sm text-white flex-1">{slot.event}</span>
- <div>
- {status === 'live' ? (
- <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full">
- <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
- LIVE
- </span>
- ) : status === 'completed' ? (
- <span className="text-xs text-surface-600">Completed</span>
- ) : (
- <button className="inline-flex items-center gap-1 text-xs text-surface-500 hover:text-saffron-400 transition-colors">
- <Bell className="w-3.5 h-3.5" />
- Remind
- </button>
- )}
- </div>
- </div>
- );
- })
- : fallbackSchedule.map((item, i) => (
- <div
- key={i}
- className="flex items-center gap-4 py-3 border-b border-surface-700/50 last:border-0"
- >
- <span className="text-sm text-surface-400 font-medium w-20 shrink-0">
- {item.time}
- </span>
- <span className="text-sm text-white flex-1">{item.event}</span>
- <div>
- {item.status === 'live' ? (
- <span className="inline-flex items-center gap-1 text-xs font-bold text-red-400 bg-red-400/10 px-2 py-1 rounded-full">
- <span className="w-1.5 h-1.5 bg-red-400 rounded-full animate-pulse" />
- LIVE
- </span>
- ) : item.status === 'completed' ? (
- <span className="text-xs text-surface-600">Completed</span>
- ) : (
- <button className="inline-flex items-center gap-1 text-xs text-surface-500 hover:text-saffron-400 transition-colors">
- <Bell className="w-3.5 h-3.5" />
- Remind
- </button>
- )}
- </div>
- </div>
- ))}
- </div>
- {aartiSchedule && (
- <p className="mt-3 text-xs text-surface-500">
- Schedule shown in IST. Slots auto-classify based on current Indian Standard Time.
- </p>
- )}
- </div>
+ {/* Today's Schedule — IST aarti slots per temple, graded against the clock in the browser */}
+ <DarshanAartiSchedule
+ templeSlugs={[stream.temple.slug, id]}
+ fallbackSchedule={fallbackSchedule}
+ />
 
  {/* Chat / Prayer request placeholder */}
  <div className="bg-surface-800 rounded-xl p-6 border border-surface-700">

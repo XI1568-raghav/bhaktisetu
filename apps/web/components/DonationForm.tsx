@@ -19,6 +19,16 @@ import { API_BASE_URL } from '../lib/api-config';
 import { COMPANY } from '../lib/company';
 import { buttonClass } from '../components/ui/button-recipe';
 import { userFacingMessage } from '../lib/friendly-error';
+import { loadRazorpayCheckout, preloadRazorpayCheckout } from '../lib/razorpay-loader';
+import {
+  MIN_INR,
+  MAX_INR,
+  PHONE_REGEX,
+  EMAIL_REGEX,
+  parseAmount,
+  normalizePhone,
+  validateDonation,
+} from '../lib/donation-validation';
 
 /**
  * COM-02 (prod sweep 2026-08-12): this form asserted Section 80G eligibility in
@@ -87,41 +97,7 @@ type RazorpayOptions = {
   modal?: { ondismiss?: () => void };
 };
 
-type RazorpayConstructor = new (options: RazorpayOptions) => RazorpayInstance;
-
-// Minimum donation enforced by backend (apps/api/src/routes/donations.ts).
-// Mirror it here so users see the error before the network round-trip.
-const MIN_INR = 101;
-const MAX_INR = 1_000_000;
 const DEFAULT_AMOUNTS = [101, 501, 1100, 2100, 5100, 11000];
-
-const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
-const PHONE_REGEX = /^[6-9]\d{9}$/;
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-// ─── Razorpay loader ────────────────────────────────────────────
-
-function loadRazorpay(): Promise<RazorpayConstructor | null> {
-  return new Promise((resolve) => {
-    if (typeof window === 'undefined') {
-      resolve(null);
-      return;
-    }
-    const w = window as unknown as { Razorpay?: RazorpayConstructor };
-    if (w.Razorpay) {
-      resolve(w.Razorpay);
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-    script.onload = () => {
-      const win = window as unknown as { Razorpay?: RazorpayConstructor };
-      resolve(win.Razorpay ?? null);
-    };
-    script.onerror = () => resolve(null);
-    document.body.appendChild(script);
-  });
-}
 
 // ─── Component ──────────────────────────────────────────────────
 
@@ -147,6 +123,7 @@ export default function DonationForm({
 
   // UX state
   const [submitting, setSubmitting] = useState(false);
+  const [stage, setStage] = useState<'order' | 'checkout'>('order');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [topError, setTopError] = useState<string>('');
   const [success, setSuccess] = useState<{
@@ -170,55 +147,35 @@ export default function DonationForm({
     });
   }, [user]);
 
-  const amountNumber = useMemo(() => {
-    const n = Number(amount);
-    return Number.isFinite(n) ? Math.floor(n) : 0;
-  }, [amount]);
+  const amountNumber = useMemo(() => parseAmount(amount), [amount]);
+
+  // Start downloading checkout.js now so Pay does not wait on it.
+  useEffect(() => {
+    preloadRazorpayCheckout();
+  }, []);
+
+  // Editing a field clears ITS error at once. Errors used to persist until the
+  // next submit, so a donor who fixed the amount/phone still saw the old message.
+  function clearError(...keys: string[]) {
+    setErrors((prev) => {
+      if (!keys.some((k) => k in prev)) return prev;
+      const next = { ...prev };
+      for (const k of keys) delete next[k];
+      return next;
+    });
+  }
 
   // ─── Validation ─────────────────────────────────────────────
 
   function validate(): boolean {
-    const errs: Record<string, string> = {};
-
-    if (!amountNumber || amountNumber < MIN_INR) {
-      errs.amount = `Minimum donation is ₹${MIN_INR}`;
-    } else if (amountNumber > MAX_INR) {
-      errs.amount = `Maximum single donation via this form is ₹${MAX_INR.toLocaleString('en-IN')}`;
-    }
-
-    if (!donorName.trim()) {
-      errs.donorName = HAS_80G
-        ? 'Name is required for the 80G receipt'
-        : 'Name is required for your receipt';
-    }
-
-    if (!donorEmail.trim()) {
-      errs.donorEmail = 'Email is required to send the receipt';
-    } else if (!EMAIL_REGEX.test(donorEmail.trim())) {
-      errs.donorEmail = 'Enter a valid email address';
-    }
-
-    if (!donorPhone.trim()) {
-      errs.donorPhone = 'Phone is required';
-    } else if (!PHONE_REGEX.test(donorPhone.trim())) {
-      errs.donorPhone = 'Enter a valid 10-digit Indian phone number';
-    }
-
-    // PAN is collected from ₹2,000 up: that is the income-tax donation
-    // record-keeping threshold and it is recorded on the receipt either way.
-    // The reason given to the donor changes with the flag — demanding a
-    // sensitive identifier "for your 80G receipt" when no such instrument can
-    // be issued is the misrepresentation COM-02/COM-04 named.
-    if (donorPan.trim()) {
-      if (!PAN_REGEX.test(donorPan.trim().toUpperCase())) {
-        errs.donorPan = 'Invalid PAN format (e.g. ABCDE1234F)';
-      }
-    } else if (amountNumber >= 2000) {
-      errs.donorPan = HAS_80G
-        ? 'PAN is required for 80G receipt on donations ≥ ₹2,000'
-        : 'PAN is required on donations of ₹2,000 or more';
-    }
-
+    const errs = validateDonation({
+      amount,
+      name: donorName,
+      email: donorEmail,
+      phone: donorPhone,
+      pan: donorPan,
+      has80G: HAS_80G,
+    });
     setErrors(errs);
     return Object.keys(errs).length === 0;
   }
@@ -238,9 +195,12 @@ export default function DonationForm({
     if (!validate()) return;
 
     setSubmitting(true);
+    setStage('order');
 
     try {
-      // 1. Create order on backend.
+      // 1. Create order on backend. checkout.js loads in parallel (usually already
+      // cached by the mount preload), so the two waits overlap instead of adding up.
+      const razorpayReady = loadRazorpayCheckout();
       const createRes = await fetch(`${API_BASE_URL}/donations/create-order`, {
         method: 'POST',
         headers: {
@@ -273,7 +233,7 @@ export default function DonationForm({
           // who gave rather than the account that paid.
           ...(donorName.trim() ? { donorName: donorName.trim() } : {}),
           ...(EMAIL_REGEX.test(donorEmail.trim()) ? { donorEmail: donorEmail.trim() } : {}),
-          ...(PHONE_REGEX.test(donorPhone.trim()) ? { donorPhone: donorPhone.trim() } : {}),
+          ...(PHONE_REGEX.test(normalizePhone(donorPhone)) ? { donorPhone: normalizePhone(donorPhone) } : {}),
           ...(donorPan.trim() ? { donorPan: donorPan.trim().toUpperCase() } : {}),
           ...(dedication.trim() ? { dedication: dedication.trim() } : {}),
         }),
@@ -296,7 +256,8 @@ export default function DonationForm({
       }
 
       // 2. Open Razorpay checkout.
-      const Razorpay = await loadRazorpay();
+      setStage('checkout');
+      const Razorpay = await razorpayReady;
       if (!Razorpay) {
         setTopError('Could not load Razorpay checkout. Please check your connection.');
         setSubmitting(false);
@@ -313,7 +274,7 @@ export default function DonationForm({
         prefill: {
           name: donorName,
           email: donorEmail,
-          contact: donorPhone,
+          contact: normalizePhone(donorPhone),
         },
         notes: {
           causeId,
@@ -471,7 +432,10 @@ export default function DonationForm({
               <button
                 key={preset}
                 type="button"
-                onClick={() => setAmount(String(preset))}
+                onClick={() => {
+                  setAmount(String(preset));
+                  clearError('amount', 'donorPan');
+                }}
                 className={`rounded-lg border px-3 py-1.5 text-sm font-semibold transition-all ${
                   isActive
                     ? 'border-saffron-500 bg-saffron-50 text-saffron-700 shadow-sm'
@@ -493,7 +457,10 @@ export default function DonationForm({
             max={MAX_INR}
             step={1}
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => {
+              setAmount(e.target.value);
+              clearError('amount', 'donorPan');
+            }}
             placeholder={`Custom amount (min ₹${MIN_INR})`}
             className={`w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
               errors.amount ? 'border-red-300 bg-red-50' : 'border-surface-200'
@@ -518,7 +485,10 @@ export default function DonationForm({
             id="donor-name"
             type="text"
             value={donorName}
-            onChange={(e) => setDonorName(e.target.value)}
+            onChange={(e) => {
+              setDonorName(e.target.value);
+              clearError('donorName');
+            }}
             placeholder="As per PAN card"
             className={`w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
               errors.donorName ? 'border-red-300 bg-red-50' : 'border-surface-200'
@@ -542,7 +512,10 @@ export default function DonationForm({
               id="donor-email"
               type="email"
               value={donorEmail}
-              onChange={(e) => setDonorEmail(e.target.value)}
+              onChange={(e) => {
+                setDonorEmail(e.target.value);
+                clearError('donorEmail');
+              }}
               placeholder="you@example.com"
               className={`w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
                 errors.donorEmail ? 'border-red-300 bg-red-50' : 'border-surface-200'
@@ -564,9 +537,12 @@ export default function DonationForm({
               id="donor-phone"
               type="tel"
               inputMode="numeric"
-              maxLength={10}
+              autoComplete="tel-national"
               value={donorPhone}
-              onChange={(e) => setDonorPhone(e.target.value.replace(/\D/g, ''))}
+              onChange={(e) => {
+                setDonorPhone(normalizePhone(e.target.value));
+                clearError('donorPhone');
+              }}
               placeholder="10-digit number"
               className={`w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
                 errors.donorPhone ? 'border-red-300 bg-red-50' : 'border-surface-200'
@@ -586,7 +562,7 @@ export default function DonationForm({
           <span className="text-xs font-normal text-surface-500">
             {HAS_80G
               ? '(required for 80G receipt on ≥ ₹2,000)'
-              : '(required on donations of ₹2,000 or more)'}
+              : '(optional; printed on your receipt)'}
           </span>
         </label>
         <div className="relative">
@@ -596,7 +572,10 @@ export default function DonationForm({
             type="text"
             maxLength={10}
             value={donorPan}
-            onChange={(e) => setDonorPan(e.target.value.toUpperCase())}
+            onChange={(e) => {
+              setDonorPan(e.target.value.toUpperCase());
+              clearError('donorPan');
+            }}
             placeholder="ABCDE1234F"
             className={`w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
               errors.donorPan ? 'border-red-300 bg-red-50' : 'border-surface-200'
@@ -650,11 +629,13 @@ export default function DonationForm({
       <button
         type="submit"
         disabled={submitting}
+        aria-busy={submitting}
         className="flex w-full items-center justify-center gap-2 rounded-xl bg-saffron-600 py-3 font-bold text-white shadow-md transition-colors hover:bg-saffron-700 disabled:cursor-not-allowed disabled:opacity-60"
       >
         {submitting ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" /> Processing…
+            <Loader2 className="h-5 w-5 animate-spin" />{' '}
+            {stage === 'order' ? 'Preparing secure payment…' : 'Opening payment window…'}
           </>
         ) : (
           <>

@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { getYatraBySlug, formatINR } from '../../../lib/yatra-data';
 import { hasPublishedCompanions } from '../../../lib/companion-roster';
+import { API_BASE_URL } from '../../../lib/api-config';
+import { postJsonWithRetry } from '../../../lib/post-with-retry';
 
 /**
  * The companion day rate, in one place.
@@ -95,6 +97,7 @@ function BookYatraInner() {
  const [referenceId, setReferenceId] = useState<string | null>(null);
  const [buyerName, setBuyerName] = useState('');
  const [submitError, setSubmitError] = useState<string | null>(null);
+ const [submitStatus, setSubmitStatus] = useState('');
 
  // Persist to localStorage
  useEffect(() => {
@@ -208,8 +211,8 @@ function BookYatraInner() {
  const currentYatra = yatra;
  setSubmitting(true);
  setSubmitError(null);
+ setSubmitStatus('');
 
- const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.darshya.online';
  const totalInr = priceBreakdown.total;
 
  // COM-08: a hardcoded USD conversion at a fixed 83:1 rate was computed here
@@ -236,10 +239,8 @@ function BookYatraInner() {
  };
 
  try {
- const res = await fetch(`${API_BASE}/api/v1/yatra-inquiry/`, {
- method: 'POST',
- headers: { 'Content-Type': 'application/json' },
- body: JSON.stringify(payload),
+ const res = await postJsonWithRetry(`${API_BASE_URL}/yatra-inquiry/`, payload, {
+ onRetry: () => setSubmitStatus('Our server is waking up, still sending your request…'),
  });
  if (!res.ok) throw new Error(`HTTP ${res.status}`);
  const json = (await res.json()) as { referenceId: string; ok: boolean };
@@ -660,13 +661,13 @@ function BookYatraInner() {
  className={buttonClass('primary', 'md', 'w-full btn-press')}
  >
  {submitting ? (
- <><Loader2 className="w-4 h-4 animate-spin" /> Sending inquiry...</>
+ <><Loader2 className="w-4 h-4 animate-spin" /> {submitStatus || 'Sending inquiry...'}</>
  ) : (
  <><CreditCard className="w-4 h-4" /> Request booking · {formatINR(priceBreakdown.total)}</>
  )}
  </button>
  {submitError && (
- <p className="text-xs text-center" style={{ color: 'var(--color-status-danger, #b91c1c)' }}>{submitError}</p>
+ <p role="alert" className="text-xs text-center" style={{ color: 'var(--color-status-danger, #b91c1c)' }}>{submitError}</p>
  )}
  <p className="text-xs text-center" style={{ color: 'var(--color-text-faint)' }}>
  Payment link emailed after our team confirms availability. No charge now.

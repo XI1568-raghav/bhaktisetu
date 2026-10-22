@@ -42,7 +42,7 @@ import {
 } from '../../../lib/nri-pricing';
 import { useDisplayCurrency } from '../../../components/pricing/useDisplayCurrency';
 import { CurrencyToggle } from '../../../components/pricing/CurrencyToggle';
-import { loadRazorpayCheckout } from '../../../lib/razorpay-loader';
+import { loadRazorpayCheckout, preloadRazorpayCheckout } from '../../../lib/razorpay-loader';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import {
@@ -141,6 +141,9 @@ function OfferingCheckoutInner() {
   // Auth gate — redirect to login the moment we know there's no session.
   // useEffect (not inline redirect) so SSR / first paint stays clean and
   // Next's app router does not complain about navigation-during-render.
+  // Fetch checkout.js while the user fills the form, not after create-order returns.
+  useEffect(() => { preloadRazorpayCheckout(); }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     // Wait for the auth context to settle. If session is missing after

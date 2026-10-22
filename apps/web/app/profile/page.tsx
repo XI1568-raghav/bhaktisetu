@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
  User,
  Phone,
@@ -15,6 +15,7 @@ import {
  ArrowLeft,
  Shield,
  LogOut,
+ Settings,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import AuthGuard from '../../components/AuthGuard';
@@ -79,7 +80,8 @@ const countries = [
 ];
 
 function ProfileContent() {
- const { user, session, refreshUser, signOut } = useAuth();
+ const { user, session, refreshUser, renewSession, signOut } = useAuth();
+ const renewedRef = useRef(false);
  const router = useRouter();
 
  // AUTH-09: which scope is in flight, so both buttons disable together and the
@@ -144,6 +146,7 @@ function ProfileContent() {
  // sign in again, and a Retry that could only 401 again.
  const [loadReauth, setLoadReauth] = useState(false);
  const [touched, setTouched] = useState<Record<string, boolean>>({});
+ const [saveReauth, setSaveReauth] = useState(false);
 
  /**
  * Load profile data from API.
@@ -159,6 +162,13 @@ function ProfileContent() {
  const res = await fetchWithTimeout(`${API_BASE_URL}/users/me`, {
  headers: { Authorization: `Bearer ${session.accessToken}` },
  }, DATA_FETCH_TIMEOUT_MS);
+
+ // A 401 with a live client session: re-mint the token once (the new token
+ // re-runs this load) rather than leaving a read-only form behind a banner.
+ if (res.status === 401 && !renewedRef.current && typeof renewSession === 'function') {
+ renewedRef.current = true;
+ if (await renewSession()) return;
+ }
 
  if (!res.ok) {
  setLoadFailed(loadErrorMessage(res));
@@ -186,7 +196,7 @@ function ProfileContent() {
  } finally {
  setIsLoading(false);
  }
- }, [session?.accessToken]);
+ }, [session?.accessToken, renewSession]);
 
  useEffect(() => {
  loadProfile();
@@ -195,9 +205,26 @@ function ProfileContent() {
  /**
  * Save profile changes.
  */
+ // QA 2026-10-22: the confirmation used to render at the very top of a long form
+ // while the Save button sits at the very bottom, so on a phone (and on a laptop
+ // with the form scrolled) a successful save changed nothing the person could
+ // see: "Save Changes does not work". The feedback now renders beside the button
+ // as well and the page scrolls to it.
+ const feedbackRef = useRef<HTMLDivElement>(null);
+ const scrollFeedbackIntoView = () => {
+ setTimeout(() => {
+ try {
+ feedbackRef.current?.scrollIntoView?.({ behavior: 'smooth', block: 'center' });
+ } catch {
+ // scrolling is a nicety
+ }
+ }, 0);
+ };
+
  const handleSave = async () => {
  setError('');
  setSuccess('');
+ setSaveReauth(false);
 
  // Never PATCH over a profile we never managed to read.
  if (loadFailed) {
@@ -207,11 +234,13 @@ function ProfileContent() {
 
  if (!form.fullName.trim()) {
  setError('Full name is required.');
+ scrollFeedbackIntoView();
  return;
  }
 
  if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
  setError('Please enter a valid email address.');
+ scrollFeedbackIntoView();
  return;
  }
 
@@ -247,18 +276,46 @@ function ProfileContent() {
  body: JSON.stringify(payload),
  }, DATA_FETCH_TIMEOUT_MS);
 
- const data = await res.json();
+ // A gateway error answers HTML; res.json() would throw and the catch below
+ // would show a network message for what was a server answer.
+ const data = await res.json().catch(() => null);
 
  if (!res.ok) {
- setError(serverErrorMessage(data, 'Failed to save profile.'));
+ // 401 is the one failure the person can fix from here, and it needs the
+ // sentence that says so rather than "Failed to save profile".
+ setError(res.status === 401 ? loadErrorMessage(res) : serverErrorMessage(data, 'Failed to save profile.'));
+ setSaveReauth(loadErrorIsReauth(res));
+ scrollFeedbackIntoView();
  return;
  }
 
- setSuccess('Profile updated successfully!');
- await refreshUser();
+ setSaveReauth(false);
+ setSuccess('Profile saved. Your changes are stored on your account.');
+ // Re-sync the form from what the server actually stored, so the screen shows
+ // persisted values (trimmed, nulled) rather than what was typed.
+ const u = data?.user;
+ if (u) {
+ setForm((prev) => ({
+ ...prev,
+ fullName: u.fullName ?? prev.fullName,
+ email: u.email ?? '',
+ gotra: u.gotra ?? '',
+ nakshatra: u.nakshatra ?? '',
+ rashi: u.rashi ?? '',
+ preferredLanguage: u.preferredLanguage ?? prev.preferredLanguage,
+ locationCity: u.locationCity ?? '',
+ locationState: u.locationState ?? '',
+ isNri: u.isNri ?? prev.isNri,
+ nriCountry: u.nriCountry ?? '',
+ }));
+ }
+ setTouched({});
+ scrollFeedbackIntoView();
+ // The header/nav name refresh is not worth blocking the confirmation on.
+ void refreshUser();
 
- // Clear success after 3 seconds
- setTimeout(() => setSuccess(''), 3000);
+ // Clear success after 6 seconds
+ setTimeout(() => setSuccess(''), 6000);
  } catch (err) {
  setError(loadErrorMessage(err));
  } finally {
@@ -336,17 +393,6 @@ function ProfileContent() {
  Retry
  </button>
  )}
- </div>
- )}
- {error && (
- <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
- {error}
- </div>
- )}
- {success && (
- <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-xl text-green-700 text-sm flex items-center gap-2">
- <CheckCircle2 className="w-4 h-4 shrink-0" />
- {success}
  </div>
  )}
 
@@ -592,6 +638,39 @@ function ProfileContent() {
  </div>
  </div>
 
+ {/* QA 2026-10-22: there was no "Settings" anywhere on the site, and the
+     account pages below existed with no way in. This is the one place that
+     lists them; the account menu's Settings item lands here (#settings). */}
+ <div id="settings" className="scroll-mt-24 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
+ <h2 className="text-lg font-bold text-surface-800 mb-1 flex items-center gap-2">
+ <Settings className="w-5 h-5 text-saffron-600" />
+ Account settings
+ </h2>
+ <p className="text-sm text-surface-500 mb-4">
+ Your details and message language are on this page. The rest of your account lives here.
+ </p>
+ <ul className="grid gap-2 sm:grid-cols-2">
+ {[
+ { href: '/profile/consultations', label: 'My consultations', hint: 'Astrology and wellness sessions you booked' },
+ { href: '/bookings', label: 'My bookings', hint: 'Pujas, status and video proof' },
+ { href: '/account/subscriptions', label: 'Subscriptions', hint: 'Your plan and auto-renewal' },
+ { href: '/account/privacy', label: 'Privacy and data', hint: 'Download or delete your data' },
+ { href: '/refer', label: 'Refer a friend (coming soon)', hint: 'Referral programme status' },
+ { href: '#security', label: 'Sign-out options', hint: 'Sign out on this device or everywhere' },
+ ].map((item) => (
+ <li key={item.href}>
+ <a
+ href={item.href}
+ className="block rounded-lg border border-[var(--color-border)] px-4 py-3 hover:bg-surface-50 transition-colors"
+ >
+ <span className="block text-sm font-semibold text-surface-800">{item.label}</span>
+ <span className="block text-xs text-surface-500">{item.hint}</span>
+ </a>
+ </li>
+ ))}
+ </ul>
+ </div>
+
  {/* Delivery Addresses (devotee revamp 2026-08-05: backend existed, no UI) */}
  <AddressManager />
 
@@ -614,7 +693,7 @@ function ProfileContent() {
      sign-out had already run.
 
      Guarded by __tests__/auth09-profile-security-scopes.test.tsx. */}
- <div className="bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
+ <div id="security" className="scroll-mt-24 bg-[var(--color-surface)] rounded-xl border border-[var(--color-border)] p-6 mb-6">
  <h2 className="text-lg font-bold text-surface-800 mb-5 flex items-center gap-2">
  <Shield className="w-5 h-5 text-tulsi-green" />
  Security
@@ -658,6 +737,26 @@ function ProfileContent() {
  </button>
  </div>
  </div>
+ </div>
+
+ {/* Save feedback, next to the button that caused it */}
+ <div ref={feedbackRef} aria-live="polite" className="mb-3">
+ {error && (
+ <div role="alert" className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+ {saveReauth ? <ReauthPrompt message={error} /> : error}
+ </div>
+ )}
+ {success && (
+ <div role="status" className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm flex items-center gap-2">
+ <CheckCircle2 className="w-4 h-4 shrink-0" />
+ {success}
+ </div>
+ )}
+ {loadFailed && !error && !success && (
+ <p className="text-sm text-amber-800">
+ Saving is switched off because your profile did not load. Use Retry above first.
+ </p>
+ )}
  </div>
 
  {/* Save button */}

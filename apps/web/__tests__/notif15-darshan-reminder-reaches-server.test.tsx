@@ -61,7 +61,9 @@ describe('NOTIF-15 — /darshan offers a reminder that leaves the browser', () =
   it('keeps the per-slot bookmark as well', () => {
     // Deleting the device-local shortlist would satisfy "no lying toast" while
     // removing a feature devotees use. Both controls must be on the page.
-    expect(src).toMatch(/<DarshanScheduleRemindButton\b/);
+    const table = stripComments(readFileSync(path.join(WEB_ROOT, 'components/DarshanScheduleTable.tsx'), 'utf8'));
+    expect(src).toMatch(/<DarshanScheduleTable\b/);
+    expect(table).toMatch(/<DarshanScheduleRemindButton\b/);
   });
 });
 

@@ -1250,10 +1250,16 @@ export async function authRoutes(server: FastifyInstance) {
         });
       }
 
-      const role = await getPrimaryRoleForUser(user.id, user.email);
-
+      // QA 2026-10-22 (sign-in lag): these two were awaited back to back, two
+      // sequential DB round trips on the sign-in critical path. They are
+      // independent (the role read needs the user row, the ledger write needs
+      // the refresh token), so they run together. seedRefreshTokenJti still
+      // completes before the response is sent, which A-009 requires.
       // A-009: seed the replay ledger for the refresh token we are about to hand out.
-      await seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id);
+      const [role] = await Promise.all([
+        getPrimaryRoleForUser(user.id, user.email),
+        seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id),
+      ]);
 
       setAuthCookies(reply, authData.session.access_token, authData.session.refresh_token);
       return reply.send({

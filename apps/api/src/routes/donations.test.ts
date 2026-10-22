@@ -86,3 +86,31 @@ describe('donations createOrderSchema — polymorphic donee (PBO-2)', () => {
     ).toBe(false);
   });
 });
+
+// QA 2026-10-22 (devotee report): Rs 1,100 + a valid phone was reported as
+// "Minimum donation is Rs 101" / "Phone is required". The API side must agree
+// with the web form on what a valid amount and phone look like.
+describe('donations createOrderSchema — amount and phone agree with the web form', () => {
+  const base = { gaushalaId: 'gaushala-user-1' };
+
+  it('accepts 1100 as a number and as a numeric string, and a PAN-less donation of Rs 2,100', () => {
+    expect(createOrderSchema.safeParse({ ...base, amountInr: 1100 }).success).toBe(true);
+    const s = createOrderSchema.safeParse({ ...base, amountInr: '1,100' });
+    expect(s.success && s.data.amountInr).toBe(1100);
+    expect(createOrderSchema.safeParse({ ...base, amountInr: 2100 }).success).toBe(true);
+  });
+
+  it('still rejects 100, 101.5, junk and over-cap amounts', () => {
+    for (const amountInr of [100, 101.5, 'abc', '', 1000001, '99']) {
+      expect(createOrderSchema.safeParse({ ...base, amountInr }).success).toBe(false);
+    }
+  });
+
+  it('accepts 8868912697 and +91 88689 12697, rejects letters and short numbers', () => {
+    expect(createOrderSchema.safeParse({ ...base, amountInr: 1100, donorPhone: '8868912697' }).success).toBe(true);
+    const p = createOrderSchema.safeParse({ ...base, amountInr: 1100, donorPhone: '+91 88689 12697' });
+    expect(p.success && p.data.donorPhone).toBe('+918868912697');
+    expect(createOrderSchema.safeParse({ ...base, amountInr: 1100, donorPhone: '12345' }).success).toBe(false);
+    expect(createOrderSchema.safeParse({ ...base, amountInr: 1100, donorPhone: 'abcdefghij' }).success).toBe(false);
+  });
+});

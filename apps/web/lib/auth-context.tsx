@@ -129,6 +129,14 @@ interface AuthContextValue {
   */
  signOut: (options?: SignOutArg) => Promise<void>;
  refreshUser: () => Promise<void>;
+ /**
+  * Re-mint the access token from the httpOnly refresh cookie and put it in
+  * state. Resolves true when a fresh session is now in place. For a page that
+  * was just told 401 by the API while the client still believes it is signed in
+  * (a token revoked or rotated away elsewhere): one silent retry beats showing
+  * "sign in again" to someone who signed in seconds ago. Never signs anyone out.
+  */
+ renewSession: () => Promise<boolean>;
  demoSignIn: () => void;
 }
 
@@ -1180,6 +1188,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  }
  }, [session, user?.role, persistSession]);
 
+ const renewSession = useCallback(async (): Promise<boolean> => {
+ if (!session || session.accessToken.startsWith('demo-')) return false;
+ try {
+ const outcome = await reviveSessionFromCookieResult();
+ if (!outcome.session) return false;
+ setSession(outcome.session as AuthSession);
+ return true;
+ } catch {
+ return false;
+ }
+ }, [session]);
+
  const value: AuthContextValue = {
  user,
  session,
@@ -1191,6 +1211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  signUpWithCredentials,
  signOut,
  refreshUser,
+ renewSession,
  demoSignIn,
  };
 

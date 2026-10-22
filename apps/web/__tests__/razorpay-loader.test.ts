@@ -90,3 +90,21 @@ describe('loadRazorpayCheckout', () => {
     expect(script).toThrow(); // no call recorded — nothing was appended
   });
 });
+
+describe('preloadRazorpayCheckout / in-flight dedupe', () => {
+  it('shares one script tag between a preload and the later Pay press', async () => {
+    delete (window as { Razorpay?: unknown }).Razorpay;
+    const appended: HTMLScriptElement[] = [];
+    vi.spyOn(document.body, 'appendChild').mockImplementation(((el: HTMLScriptElement) => {
+      appended.push(el);
+      return el;
+    }) as never);
+    const { preloadRazorpayCheckout } = await import('../lib/razorpay-loader');
+    preloadRazorpayCheckout();
+    const pending = loadRazorpayCheckout();
+    expect(appended).toHaveLength(1);
+    (window as { Razorpay?: unknown }).Razorpay = function Fake() {};
+    appended[0]!.onload?.(new Event('load'));
+    await expect(pending).resolves.toBeTypeOf('function');
+  });
+});

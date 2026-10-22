@@ -1,6 +1,6 @@
 'use client';
 
-import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon, MessageSquare, Compass } from 'lucide-react';
+import { User, LogOut, LayoutDashboard, Settings, BookOpen, ShieldCheck, ShoppingBag, Store, Moon, MessageSquare, Compass, Phone, Repeat, Gift } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth, getRoleLabel, getRoleDashboardPath } from '../lib/auth-context';
 import { buttonClass } from './ui/button-recipe';
@@ -139,6 +139,25 @@ export default function NavAuthButton() {
  <ShoppingBag className="w-4 h-4" />
  My Cart
  </a>
+ {/* QA 2026-10-22: these three existed as pages with no way in. */}
+ <a
+ href="/profile/consultations"
+ className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors">
+ <Phone className="w-4 h-4" />
+ My Consultations
+ </a>
+ <a
+ href="/account/subscriptions"
+ className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors">
+ <Repeat className="w-4 h-4" />
+ Subscriptions
+ </a>
+ <a
+ href="/refer"
+ className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors">
+ <Gift className="w-4 h-4" />
+ Refer a Friend (coming soon)
+ </a>
  </>
  )}
 
@@ -179,8 +198,17 @@ export default function NavAuthButton() {
  href="/profile"
  className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors"
  >
- <Settings className="w-4 h-4" />
+ <User className="w-4 h-4" />
  Edit Profile
+ </a>
+
+ {/* Settings: the profile page's "Account settings" section (notification
+     language, subscriptions, privacy and data, security). */}
+ <a
+ href="/profile#settings"
+ className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-surface-700 hover:bg-saffron-50 hover:text-saffron-700 transition-colors">
+ <Settings className="w-4 h-4" />
+ Settings
  </a>
 
  <div className="border-t border-surface-100 mt-1 pt-1">
