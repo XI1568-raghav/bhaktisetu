@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { normalizePhone, parseAmount, validateDonation } from '../lib/donation-validation';
 
-const ok = { amount: '1100', name: 'Asha', email: 'a@b.co', phone: '8868912697', pan: '', hasTaxReceipt: false };
+const ok = { amount: '1100', name: 'Asha', email: 'a@b.co', phone: '8868912697', pan: '', has80G: false };
 
 describe('donation validation (QA 2026-10-22)', () => {
   it('accepts Rs 1,100 with a 10-digit phone and no PAN', () => {
@@ -24,8 +24,8 @@ describe('donation validation (QA 2026-10-22)', () => {
   });
   it('asks for PAN at Rs 2,000+ only when an 80G receipt can be issued', () => {
     expect(validateDonation({ ...ok, amount: '5100' }).donorPan).toBeUndefined();
-    expect(validateDonation({ ...ok, amount: '5100', hasTaxReceipt: true }).donorPan).toMatch(/PAN is required/);
-    expect(validateDonation({ ...ok, amount: '1100', hasTaxReceipt: true }).donorPan).toBeUndefined();
+    expect(validateDonation({ ...ok, amount: '5100', has80G: true }).donorPan).toMatch(/PAN is required/);
+    expect(validateDonation({ ...ok, amount: '1100', has80G: true }).donorPan).toBeUndefined();
   });
   it('still format-checks a PAN that is given', () => {
     expect(validateDonation({ ...ok, pan: 'bad' }).donorPan).toMatch(/Invalid PAN/);
