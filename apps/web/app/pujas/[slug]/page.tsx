@@ -182,6 +182,7 @@ async function withFetchSlot<T>(fn: () => Promise<T>): Promise<T> {
 
 async function getPujaBySlug(slug: string): Promise<PujaLookup> {
  return withFetchSlot(async () => {
+ let rateWaits = 0;
  for (let attempt = 0; attempt < RETRY_DELAYS_MS.length; attempt++) {
  if (RETRY_DELAYS_MS[attempt]) await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
  try {
@@ -190,6 +191,14 @@ async function getPujaBySlug(slug: string): Promise<PujaLookup> {
  });
  if (res.status === 404) return { status: 'not-found' } as PujaLookup;
  if (res.ok) return { status: 'ok', puja: normalizePuja(await res.json()) } as PujaLookup;
+ if (IS_BUILD && res.status === 429 && rateWaits < 6) {
+ rateWaits++;
+ // The API rate-limits one IP at 100 calls/minute; wait the time it asks for instead of giving up.
+ const waitS = Math.min(70, Math.max(1, Number(res.headers.get('retry-after')) || 15));
+ await new Promise((r) => setTimeout(r, waitS * 1000));
+ attempt = Math.max(-1, attempt - 1); // a rate-limit wait does not use up a retry
+ continue;
+ }
  if (!IS_BUILD && res.status < 500 && res.status !== 429) return { status: 'unavailable' } as PujaLookup;
  } catch {
  // network error: fall through to the next attempt
