@@ -3,7 +3,7 @@ import { prisma } from '../lib/prisma.js';
 import { assessCauseProfile } from '../lib/cause-approval-guard.js';
 import { requireProviderApproval } from '../lib/provider-approval.js';
 import { describeQualityReasons, type CauseQualityReason } from '../lib/cause-quality.js';
-import { createTempleFromProfile, getLinkedTempleId } from './temple-manager-link.service.js';
+import { createTempleFromProfile, getLinkedTempleId, setTempleManagerLink } from './temple-manager-link.service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -348,15 +348,8 @@ export class OnboardingService {
         ? await prisma.temple.findFirst({ where: { name: { equals: name, mode: 'insensitive' } }, select: { id: true } })
         : null;
       if (existing) {
-        const linked = await getLinkedTempleId(userId);
-        if (linked !== existing.id) {
-          return {
-            activated: false,
-            reason: 'temple_name_taken',
-            message:
-              'Your portal is active. A temple with this name is already on Darshya, so the Darshya team confirms that you manage it before donations and bookings are linked to you.',
-          };
-        }
+        // No admin step: claiming a catalogue temple links this manager to it directly.
+        if ((await getLinkedTempleId(userId)) !== existing.id) await setTempleManagerLink(userId, existing.id);
       } else {
         templeNeedsCreate = true;
       }

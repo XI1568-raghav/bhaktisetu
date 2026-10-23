@@ -1,7 +1,7 @@
 import { prisma } from '../lib/prisma.js';
 import { CauseQualityError, gaushalaQuality, qualityReasonsForEdit, templeQuality } from '../lib/cause-quality.js';
 import { requireProviderApproval } from '../lib/provider-approval.js';
-import { getLinkedTempleId } from './temple-manager-link.service.js';
+import { getLinkedTempleId, setTempleManagerLink } from './temple-manager-link.service.js';
 
 /** Upper bound on approved cause profiles scanned per list call (quality filter runs in memory). */
 const CAUSE_LIST_CAP = 500;
@@ -558,11 +558,7 @@ export class ProviderService {
         const failing = qualityReasonsForEdit('temple', existing, safeUpdates);
         if (failing) throw new CauseQualityError('TEMPLE_MANAGER', failing);
         const data: Record<string, unknown> = { ...safeUpdates };
-        // With approval off a profile goes live on submit, so a rename is the way
-        // to claim a catalogue temple (the name match finds the payee for its
-        // donations and settlements). A rename onto a name that is already a
-        // Temple this manager is not explicitly linked to drops the profile back
-        // to not-live until the team confirms it.
+        // With approval off a rename onto a catalogue temple links this manager to it directly (no admin step).
         const newName = typeof data.templeName === 'string' ? data.templeName.trim() : '';
         if (
           !requireProviderApproval() &&
@@ -574,7 +570,7 @@ export class ProviderService {
             where: { name: { equals: newName, mode: 'insensitive' } },
             select: { id: true },
           });
-          if (clash && (await getLinkedTempleId(userId)) !== clash.id) data.approved = false;
+          if (clash && (await getLinkedTempleId(userId)) !== clash.id) await setTempleManagerLink(userId, clash.id);
         }
         const updated = await prisma.templeProfile.update({ where: { id }, data });
         return updated as unknown as Record<string, unknown>;
