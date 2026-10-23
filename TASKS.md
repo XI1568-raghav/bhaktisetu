@@ -53,6 +53,10 @@ PR #338 (`708b101`) is merged to `main`; round four is on branch `claude/jolly-b
 
 **Invariants (do not break):** `Commission.amount` = provider earning, `percentage` = platform take rate; payout rails mutually exclusive (`createPriestPayout` refuses when a Commission owns the booking); provider earnings held until performed/proved; COD creates no commission; NRI price 2.5x charged in INR; rate-limit trust rule (see env-vars.md); refunds idempotent with money-audit rows.
 
+## Provider approval removed (2026-10-23, branch feat/no-role-approval, not merged/deployed)
+
+All six provider roles go live on submit (`REQUIRE_PROVIDER_APPROVAL` unset = off; set `true` to restore the gate). Owner actions: review then run `ops/sql/activate-pending-providers-2026-10.sql` through `prod-db-task.yml` (dry-run first) for providers already pending; deploy web then API. Details: `docs/auth-model.md` "Provider approval".
+
 ## Open owner/runtime items (from the 2026-08-05 launch audit; none are code)
 - **#196 phone-OTP** — Supabase SMS provider unconfigured (MSG91/Twilio) or hide the Mobile tab.
 - **#211 admin panels** — needs a real admin account to click-verify (add owner email to API `ADMIN_EMAILS`).

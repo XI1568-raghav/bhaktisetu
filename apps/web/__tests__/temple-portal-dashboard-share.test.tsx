@@ -85,6 +85,7 @@ describe('temple portal dashboard', () => {
       reason: 'not_approved',
     });
     render(<TempleDashboard />);
-    await waitFor(() => expect(screen.getByText(/awaiting approval/i)).toBeTruthy());
+    await waitFor(() => expect(screen.getByText(/portal is active/i)).toBeTruthy());
+    expect(screen.queryByText(/awaiting approval/i)).toBeNull();
   });
 });

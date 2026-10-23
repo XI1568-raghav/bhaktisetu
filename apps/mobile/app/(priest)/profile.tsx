@@ -154,7 +154,7 @@ export default function PriestProfile() {
               color={profile.isVerified ? colors.green[600] : colors.amber[600]}
             />
             <Text style={styles.verifyText}>
-              Listing {profile.verificationStatus ?? (profile.isVerified ? 'approved' : 'pending')}
+              {profile.isVerified ? 'Listing approved' : 'Account active'}
             </Text>
           </View>
           {/* Bank and GST are NOT on this endpoint. Saying "Not linked" for a

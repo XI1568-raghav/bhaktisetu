@@ -640,6 +640,15 @@ export class AdminService {
                 where: { userId: id },
                 data: { isVerified: updates.approved },
               });
+              if (!updates.approved) {
+                // Suspension must close the portal as well: with approval off a pandit
+                // is live from registration, so un-approving has to do more than hide
+                // them. Only an active row is touched; suspended stays suspended.
+                await prisma.priest.updateMany({
+                  where: { userId: id, status: 'active' },
+                  data: { status: 'inactive' },
+                });
+              }
               if (updates.approved) {
                 // Approval must also make the portal reachable: requireRole('priest')
                 // needs an ACTIVE Priest row. A pandit who signed up but never

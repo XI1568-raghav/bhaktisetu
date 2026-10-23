@@ -18,9 +18,9 @@ import LiveAstrologersClient from './LiveAstrologersClient';
  */
 
 export const metadata: Metadata = {
-  title: 'Live Astrologers — Approved Vedic Astrologers Online Now',
+  title: 'Live Astrologers — Vedic Astrologers Online Now',
   description:
-    'Talk to approved Vedic astrologers on Darshya. Every profile in this directory is a real, approved astrologer with live online status, per-minute rate, languages and specializations. Book a consultation by chat or call.',
+    'Talk to Vedic astrologers on Darshya. Every profile in this directory is a real, live astrologer listing with live online status, per-minute rate, languages and specializations. Book a consultation by chat or call.',
   alternates: { canonical: 'https://darshya.online/astrology/astrologers/live' },
 };
 

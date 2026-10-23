@@ -125,8 +125,9 @@ const templeDataSchema = z.object({
 // /onboarding/[role] page's "Submit for Approval" button. Bypasses the
 // step machinery (start → step/1..N → submit) and instead atomically
 // upserts the role assignment and the matching role-specific profile in
-// one round trip. The profile is created with approved=false (schema
-// default), so it surfaces in /admin/approvals immediately.
+// one round trip. With REQUIRE_PROVIDER_APPROVAL unset the profile is activated
+// on submit (onboardingService.activateOnSubmit); with it set the profile stays
+// approved=false and surfaces in /admin/approvals.
 const providerSchema = z.discriminatedUnion('role', [
   z.object({ role: z.literal('PANDIT'), data: panditDataSchema }),
   z.object({ role: z.literal('STORE_OWNER'), data: storeOwnerDataSchema }),
@@ -236,8 +237,8 @@ export async function onboardingRoutes(server: FastifyInstance) {
   // Skips the start/step/submit dance. Used by /auth/signup right after
   // the user account exists, and by the consolidated /onboarding/[role]
   // form on its final "Submit for Approval" click. Idempotent: re-posting
-  // overwrites the in-progress profile (still approved=false until admin
-  // flips it via /admin/users/:id).
+  // overwrites the in-progress profile. With approval off, re-posting also
+  // re-activates it; to remove a provider for good an admin blocks the user.
 
   server.post('/provider', { preHandler: authPreHandler }, async (request, reply) => {
     const parsed = providerSchema.safeParse(request.body);
@@ -307,10 +308,14 @@ export async function onboardingRoutes(server: FastifyInstance) {
         parsed.data.role,
         parsed.data.data,
       );
+      const approved = result.approved === true;
       return reply.send({
-        message: 'Profile submitted for review.',
+        message: approved
+          ? 'Your profile is live and your portal is ready.'
+          : result.message ?? 'Profile submitted for review.',
         profile: result,
-        approved: false,
+        approved,
+        ...(result.reason ? { reason: result.reason } : {}),
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to submit profile';

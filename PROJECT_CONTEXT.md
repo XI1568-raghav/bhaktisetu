@@ -31,10 +31,14 @@
 1. Video proof MANDATORY for puja bookings.
 2. NRI pricing 2-3× domestic (2.5×). Shown in USD, charged as an INR Razorpay order; fees are not multiplied. Config: `apps/api/src/lib/nri-pricing.ts` + `apps/web/lib/nri-pricing.ts`.
 3. Platform commission 20-40% per temple.
-4. Priest payout = price − commission, gated on Aadhaar.
+4. Priest payout = price − commission, gated on Aadhaar. (Unchanged by `REQUIRE_PROVIDER_APPROVAL`: earnings stay held until performed/proved and a payout still needs KYC + bank details.)
 5. Cancellation up to 24h before scheduled time.
-6. Temples must be verified before live.
+6. Temples must be verified before live. (Catalogue `Temple.isVerified` is unchanged. Since 2026-10 a temple MANAGER profile goes live without admin approval, but only for a name that is not already a catalogue temple; claiming an existing temple still needs an admin link.)
 7. 80G receipt requires donee 80G regn + PAN.
+
+## Provider approval
+
+Off by default (`REQUIRE_PROVIDER_APPROVAL`, `docs/env-vars.md`, `docs/auth-model.md`): the six provider roles go live on submit. `Priest.isVerified` is never auto-set (TC-08).
 
 ## Tests
 

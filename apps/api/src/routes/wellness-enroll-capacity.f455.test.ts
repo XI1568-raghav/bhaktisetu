@@ -587,7 +587,7 @@ describe('role pass 2026-10-07 — nobody pays an unapproved instructor', () => 
     const app = await buildApp();
     const res = await enroll(app);
     expect(res.statusCode).toBe(409);
-    expect(res.json().error).toMatch(/not yet approved/i);
+    expect(res.json().error).toMatch(/not finished setting up/i);
     expect(ordersCreate).not.toHaveBeenCalled();
     expect(prismaMock.wellnessEnrollment.create).not.toHaveBeenCalled();
   });

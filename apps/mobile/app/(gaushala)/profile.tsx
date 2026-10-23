@@ -111,7 +111,7 @@ export default function GaushalaProfile() {
           no writer for `verified`, `gaushala_profiles.regn_80g` / `.pan` are
           SELECTed in one place and written nowhere, and no AWBI number is
           stored anywhere in the schema. The honest version states what the
-          product actually knows — that a reviewer approved the listing — and
+          product actually knows — whether the listing is live — and
           says plainly that no registration has been checked. */}
       <Section title="Registration">
         {me && !me.profileMissing ? (
@@ -127,8 +127,8 @@ export default function GaushalaProfile() {
                 is deliberately not rendered. */}
             <Text style={styles.rowText}>
               {me.approved
-                ? 'Listing approved by a Darshya reviewer.'
-                : 'Listing awaiting review by Darshya.'}
+                ? 'Listed on Darshya.'
+                : 'Not listed yet: add a description and a full address to appear to donors.'}
             </Text>
           </View>
         ) : null}

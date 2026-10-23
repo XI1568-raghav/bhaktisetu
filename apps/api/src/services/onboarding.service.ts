@@ -1,6 +1,9 @@
 import { Prisma } from '@prisma/client';
 import { prisma } from '../lib/prisma.js';
 import { assessCauseProfile } from '../lib/cause-approval-guard.js';
+import { requireProviderApproval } from '../lib/provider-approval.js';
+import { describeQualityReasons, type CauseQualityReason } from '../lib/cause-quality.js';
+import { createTempleFromProfile, getLinkedTempleId } from './temple-manager-link.service.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -200,7 +203,19 @@ export class OnboardingService {
       // as 'devotee'. Promote once the profile exists, not before.
       await this.setPrimaryRole(userId, role as RoleType);
 
-      return { message: 'Application submitted for review. You will be notified upon approval.', submitted: true };
+      const activation = (await this.activateOnSubmit(userId, role as RoleType).catch(() => ({ activated: false }))) as {
+        activated: boolean;
+        message?: string;
+      };
+      if (activation.activated) {
+        return { message: 'Your profile is live and your portal is ready.', submitted: true };
+      }
+      return {
+        message:
+          activation.message ??
+          'Application submitted for review. You will be notified upon approval.',
+        submitted: true,
+      };
     } catch {
       return { message: 'Application submitted for review (demo). You will be notified upon approval.', submitted: true };
     }
@@ -217,16 +232,96 @@ export class OnboardingService {
     userId: string,
     role: RoleType,
     data: Record<string, unknown>,
-  ): Promise<{ role: string; profileId?: string }> {
+  ): Promise<{ role: string; profileId?: string; approved: boolean; activated: boolean; reason?: string; message?: string }> {
     // A-010: was `create: { isPrimary: false }` + a no-op `update: {}`, which
     // left the account resolving as whatever it was before (devotee).
     await this.setPrimaryRole(userId, role);
 
     await this.createProviderProfile(userId, role, data);
     await this.saveUploads(userId, role, data);
+    // The profile is saved either way: a failure to activate leaves it where the
+    // old flow left it (waiting in /admin/approvals) instead of failing the submit.
+    const activation = await this.activateOnSubmit(userId, role).catch(() => ({ activated: false as const }));
 
-    const profileId = await this.fetchProfileId(userId, role);
-    return { role, profileId };
+    const profile = (await this.getProviderProfile(userId, role)) as { id?: string; approved?: boolean } | null;
+    return { role, profileId: profile?.id, approved: activation.activated || profile?.approved === true, ...activation };
+  }
+
+
+  /**
+   * REQUIRE_PROVIDER_APPROVAL=false (the default): a submitted provider profile
+   * goes live with no admin action. Called from every submit path
+   * (`upsertProviderProfile`, the wizard's `submitForApproval`).
+   *
+   * Holds back, with a reason the UI can state honestly, only what would put a
+   * third party's money or identity at risk:
+   *  - a blocked user (the blocked-user gate outranks everything);
+   *  - a gaushala / temple profile below the cause-quality bar (it would be a
+   *    public donation page);
+   *  - a temple profile whose name is already a catalogue Temple that this
+   *    manager is not explicitly linked to (name match is how donations and
+   *    settlements find the payee, so an unreviewed claim on a real temple's
+   *    name must stay a human decision).
+   *
+   * TC-08: never writes `Priest.isVerified` / `verificationStatus`. A pandit is
+   * "live" (PanditProfile.approved + ACTIVE Priest row), not "vetted".
+   */
+  async activateOnSubmit(
+    userId: string,
+    role: RoleType,
+  ): Promise<{ activated: boolean; reason?: 'approval_required' | 'blocked' | 'quality' | 'temple_name_taken'; message?: string }> {
+    if (requireProviderApproval()) return { activated: false, reason: 'approval_required' };
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { blocked: true } });
+    if (user?.blocked) return { activated: false, reason: 'blocked' };
+
+    if (role === 'GAUSHALA_MANAGER' || role === 'TEMPLE_MANAGER') {
+      const q = await assessCauseProfile(userId, role);
+      if (q && !q.ok) {
+        return {
+          activated: false,
+          reason: 'quality',
+          message: `Your portal is active. To list this profile publicly, please fix: ${describeQualityReasons(q.reasons as CauseQualityReason[])}.`,
+        };
+      }
+    }
+
+    let templeNeedsCreate = false;
+    if (role === 'TEMPLE_MANAGER') {
+      const profile = await prisma.templeProfile.findUnique({ where: { userId }, select: { templeName: true } });
+      const name = (profile?.templeName ?? '').trim();
+      const existing = name
+        ? await prisma.temple.findFirst({ where: { name: { equals: name, mode: 'insensitive' } }, select: { id: true } })
+        : null;
+      if (existing) {
+        const linked = await getLinkedTempleId(userId);
+        if (linked !== existing.id) {
+          return {
+            activated: false,
+            reason: 'temple_name_taken',
+            message:
+              'Your portal is active. A temple with this name is already on Darshya, so the Darshya team confirms that you manage it before donations and bookings are linked to you.',
+          };
+        }
+      } else {
+        templeNeedsCreate = true;
+      }
+    }
+
+    const ok = await this.approveProviderProfile(userId, role);
+    if (!ok) return { activated: false, reason: 'approval_required' };
+
+    if (role === 'PANDIT') {
+      // Portal access = an ACTIVE Priest row. Reopen a backfilled inactive row;
+      // a suspended one stays suspended.
+      await prisma.priest.updateMany({ where: { userId, status: 'inactive' }, data: { status: 'active' } });
+    }
+    if (templeNeedsCreate) {
+      // Hidden pending_review Temple + explicit link, exactly what the admin
+      // "create temple from profile" button does; it is not listed to devotees.
+      await createTempleFromProfile(userId).catch(() => undefined);
+    }
+    return { activated: true };
   }
 
   // Profile photo -> the account avatar; identity documents -> the private
@@ -356,11 +451,6 @@ export class OnboardingService {
       default:
         return null;
     }
-  }
-
-  private async fetchProfileId(userId: string, role: RoleType): Promise<string | undefined> {
-    const profile = await this.getProviderProfile(userId, role);
-    return (profile as { id?: string } | null)?.id;
   }
 
   private async createProviderProfile(userId: string, role: RoleType, data: Record<string, unknown>): Promise<void> {

@@ -194,7 +194,7 @@ function Content() {
           <div className="flex items-center gap-1 mt-1">
             <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
             <span className="text-sm font-medium text-surface-700">{profile.rating.toFixed(1)}</span>
-            <span className="text-xs text-surface-400">{profile.approved ? '(approved)' : '(pending approval)'}</span>
+            <span className="text-xs text-surface-400">{profile.approved ? '(live)' : '(not listed yet)'}</span>
           </div>
         </div>
       </div>

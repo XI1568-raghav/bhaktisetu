@@ -46,7 +46,7 @@ const BENEFITS = [
     // it. Same defect as the Rs 500 tier this page also carried, one
     // abstraction up: not a feature that does not exist, but a RESULT that was
     // never obtained. The badge is now described by what it is.
-    body: 'Submit your registration certificate once. Donors see the listing only after a Darshya reviewer approves it.',
+    body: 'Submit your registration certificate once. Donors see the listing once it passes our minimum profile checks (name, description and a full address).',
   },
   {
     title: 'Cow-count + photos',

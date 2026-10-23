@@ -79,10 +79,10 @@ export async function ApprovedProvidersStrip({
  <div className="flex items-end justify-between mb-6">
  <div>
  <h2 className="text-xl font-semibold text-surface-800">
- {heading ?? `Verified ${label}`}
+ {heading ?? label}
  </h2>
  <p className="text-sm text-surface-500 mt-1">
- {subheading ?? `Approved ${label.toLowerCase()} on Darshya. Each profile is reviewed before going live.`}
+ {subheading ?? `${label} on Darshya. Profiles go live when the provider submits them; Darshya does not vouch for credentials.`}
  </p>
  </div>
  {total > limit && (
@@ -99,9 +99,9 @@ export async function ApprovedProvidersStrip({
  {providers.length === 0 ? (
  <div className="rounded-xl border border-dashed border-surface-200 p-8 text-center bg-surface-50">
  <Award className="w-8 h-8 text-surface-300 mx-auto mb-2" />
- <p className="text-sm font-medium text-surface-700">No approved {label.toLowerCase()} yet</p>
+ <p className="text-sm font-medium text-surface-700">No {label.toLowerCase()} listed yet</p>
  <p className="text-xs text-surface-500 mt-1">
- New profiles appear here once reviewed.{' '}
+ New profiles appear here as soon as they are submitted.{' '}
  <Link href="/auth/signup" className="text-saffron-600 hover:underline">
  Apply to be listed
  </Link>

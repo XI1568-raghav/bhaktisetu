@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
+import { goLive } from '../lib/go-live.js';
 
 const profileUpdateSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
@@ -393,12 +394,12 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
           bio: parsed.data.bio,
         },
       });
-      return reply.send({ profile });
+      return reply.send({ profile: await goLive(userId, 'WELLNESS_INSTRUCTOR', profile, () => prisma.wellnessProfile.findUnique({ where: { userId } })) });
     }
     const profile = await prisma.wellnessProfile.update({
       where: { userId },
       data: parsed.data,
     });
-    return reply.send({ profile });
+    return reply.send({ profile: await goLive(userId, 'WELLNESS_INSTRUCTOR', profile, () => prisma.wellnessProfile.findUnique({ where: { userId } })) });
   });
 }
