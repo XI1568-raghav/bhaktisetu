@@ -11,6 +11,7 @@ import {
 } from '../services/astrologer.service.js';
 import { isUpcomingCommission, unfinishedConsultationIds } from '../services/payout.service.js';
 import { goLive } from '../lib/go-live.js';
+import { onboardingService } from '../services/onboarding.service.js';
 
 /**
  * PAR-13. `AstrologerProfile.userId` and `Commission.providerId` are both
@@ -291,8 +292,12 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       server.log.warn({ err }, 'astrologer_consultations query failed (table may not exist yet)');
     }
 
+    // Honest listing state for the profile screen (never approval wording unless the switch is on).
+    const listing = profile ? await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) : null;
+
     return reply.send({
       profile,
+      listing,
       stats: {
         // AW-14: derived when the ledger table answered; the stored counter is
         // the fallback for the table-missing case only.
@@ -360,13 +365,15 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
           bio: parsed.data.bio,
         },
       });
-      return reply.send({ profile: await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } })) });
+      const live = await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerMinute !== undefined });
+      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) });
     }
     const profile = await prisma.astrologerProfile.update({
       where: { userId },
       data: parsed.data,
     });
-    return reply.send({ profile: await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } })) });
+    const live = await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerMinute !== undefined });
+      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) });
   });
 
   // ─── PATCH /availability ────────────────────────────────────────────────────

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import {
  ArrowRight,
@@ -43,6 +44,8 @@ const BACKEND_ROLE: Record<string, string> = {
 // place where the mapping lives.
 function projectOnboardingData(role: string, d: Record<string, unknown>): Record<string, unknown> {
  const num = (v: unknown, fallback = 0) => Number(v) || fallback;
+ // A price is only sent when the owner entered one; never a made-up default.
+ const price = (v: unknown): number | undefined => (Number(v) > 0 ? Number(v) : undefined);
  const arr = (v: unknown): string[] => Array.isArray(v) ? (v as string[]) : [];
  const str = (v: unknown): string | null => typeof v === 'string' && v.length > 0 ? v : null;
  switch (role) {
@@ -56,7 +59,7 @@ function projectOnboardingData(role: string, d: Record<string, unknown>): Record
  city: str(d.city),
  state: str(d.state),
  bio: str(d.bio),
- pricePerPuja: num(d.pricePerPuja ?? d.basePricePerPuja, 500),
+ pricePerPuja: price(d.pricePerPuja ?? d.basePricePerPuja),
  photoUrl: str(d.photoUrl),
  aadhaarDocKey: str(d.aadhaarDocKey),
  certificateDocKey: str(d.certificateDocKey),
@@ -78,7 +81,7 @@ function projectOnboardingData(role: string, d: Record<string, unknown>): Record
  languages: arr(d.languages),
  bio: str(d.bio),
  photoUrl: str(d.photoUrl),
- pricePerMinute: num(d.pricePerMinute, 10),
+ pricePerMinute: price(d.pricePerMinute),
  };
  case 'wellness_instructor':
  return {
@@ -92,7 +95,7 @@ function projectOnboardingData(role: string, d: Record<string, unknown>): Record
  experience: num(d.experience ?? d.experienceYears),
  bio: str(d.bio),
  photoUrl: str(d.photoUrl),
- pricePerSession: num(d.pricePerSession, 500),
+ pricePerSession: price(d.pricePerSession),
  };
  case 'gaushala_manager':
  return {
@@ -735,13 +738,13 @@ function OnboardingInner() {
  <p className="text-xs text-amber-700">{submitNote}</p>
  </div>
  )}
- <a
+ <Link
  href={dashPath}
  className={buttonClass('primary', 'lg', 'w-full')}
  >
  Go to Dashboard
  <ArrowRight className="w-4 h-4" />
- </a>
+ </Link>
  </div>
  </div>
  );

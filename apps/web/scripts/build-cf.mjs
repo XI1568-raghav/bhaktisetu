@@ -25,5 +25,5 @@ run(findBin('tsx'), ['--tsconfig', 'scripts/tsconfig.prerender.json', 'scripts/p
 if (process.argv.includes('--og-only')) process.exit(0);
 // Next 15 reached its 2-year support cutoff (Oct 2026); OpenNext refuses to build without this flag.
 run(findBin('opennextjs-cloudflare'), ['build', '--dangerouslyUseUnsupportedNextVersion'], { NEXT_PUBLIC_OG_STATIC: '1' });
-// Serve the fully static pages listed in scripts/cf-static-pages.json straight from assets.
+// Serve every discovered static page (rules in scripts/cf-static-pages.json) straight from assets.
 run(process.execPath, ['scripts/static-pages-to-assets.mjs']);

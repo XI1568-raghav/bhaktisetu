@@ -1217,6 +1217,7 @@ export interface AstrologerUpcomingVM {
 export interface AstrologerDashboardVM {
   displayName?: string;
   approved: boolean;
+  listingNote?: string | null;
   pricePerMinute: number | null;
   rating: number | null;
   totalConsultations: number;
@@ -1235,6 +1236,7 @@ export function selectAstrologerDashboard(payload: unknown): AstrologerDashboard
   return {
     displayName: profile ? str(profile.displayName) : undefined,
     approved: stats.approved === true,
+    listingNote: isRecord(payload.listing) ? str(payload.listing.message) : null,
     pricePerMinute: toNumber(stats.pricePerMinute),
     rating: toNumber(stats.rating),
     totalConsultations: toNumberOr(stats.totalConsultations, 0),

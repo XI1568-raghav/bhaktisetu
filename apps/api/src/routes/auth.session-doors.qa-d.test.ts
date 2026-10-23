@@ -246,3 +246,23 @@ describe('phone OTP', () => {
     await app.close();
   });
 });
+
+describe('POST /refresh — no credential at all is a clean 401, never a 400', () => {
+  it.each([
+    ['no body', undefined],
+    ['empty object', {}],
+    ['blank token', { refreshToken: '' }],
+    ['null token', { refreshToken: null }],
+  ])('%s -> 401 Unauthorized and Supabase is not called', async (_label, payload) => {
+    const app = await makeApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/refresh',
+      ...(payload === undefined ? {} : { payload: payload as object }),
+    });
+    expect(res.statusCode).toBe(401);
+    expect(res.json().error).toBe('Unauthorized');
+    expect(sb.refreshSession).not.toHaveBeenCalled();
+    await app.close();
+  });
+});

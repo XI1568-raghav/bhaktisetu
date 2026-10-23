@@ -11,10 +11,11 @@ export async function goLive<T extends { approved?: boolean | null }>(
   role: RoleType,
   saved: T,
   reload: () => Promise<T | null>,
+  opts: { priceProvided?: boolean } = {},
 ): Promise<T> {
   if (saved.approved) return saved;
   try {
-    const r = await onboardingService.activateOnSubmit(userId, role);
+    const r = await onboardingService.activateOnSubmit(userId, role, opts);
     if (!r.activated) return saved;
     return (await reload()) ?? saved;
   } catch {

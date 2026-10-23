@@ -57,7 +57,10 @@ const verifyOtpSchema = z.object({
  * when BOTH sources are absent.
  */
 const refreshSchema = z.object({
-  refreshToken: z.string().min(1, 'Refresh token is required').optional(),
+  // A blank/null token is "no token in the body" (the cookie may still carry one),
+  // not a validation failure: the only refusal left is "no credential at all" -> 401.
+  refreshToken: z
+    .preprocess((v) => (v === '' || v === null ? undefined : v), z.string().min(1, 'Refresh token is required').optional()),
 });
 
 /**
@@ -647,16 +650,17 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    // SEC-02: body OR the httpOnly darshya_refresh cookie. 400 only when the
-    // request carries no refresh credential at all.
+    // SEC-02: body OR the httpOnly darshya_refresh cookie. A request with no
+    // refresh credential at all is simply not signed in: a clean 401 (it used to be
+    // a 400, which every signed-out page load logged as a client bug).
     const refreshToken = resolveRefreshToken(
       parseResult.data,
       request.cookies as Record<string, string | undefined> | undefined,
     );
     if (!refreshToken) {
-      return reply.code(400).send({
-        error: 'Validation Error',
-        message: 'Refresh token is required',
+      return reply.code(401).send({
+        error: 'Unauthorized',
+        message: 'Not signed in: no refresh token.',
       });
     }
 

@@ -55,6 +55,8 @@ export interface ProviderOwnProfileVM {
   /** Astrologer: pricePerMinute. Wellness: pricePerSession. Rupees. */
   priceInr: number | null;
   approved: boolean;
+  /** The API's honest listing note (what is missing, or admin-approval wording only when that switch is on). */
+  listingNote: string | null;
 }
 
 function isRecord(v: unknown): v is Record<string, unknown> {
@@ -106,5 +108,6 @@ export function selectProviderOwnProfile(
     rating: rating !== null && rating > 0 ? rating : null,
     priceInr: num(profile[priceField]),
     approved: profile.approved === true,
+    listingNote: isRecord(payload.listing) ? str(payload.listing.message) : null,
   };
 }

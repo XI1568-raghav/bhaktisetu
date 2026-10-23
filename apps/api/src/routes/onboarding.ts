@@ -62,7 +62,9 @@ const panditDataSchema = z.object({
   bio: optionalShortString(2000),
   city: optionalShortString(80),
   state: optionalShortString(80),
-  pricePerPuja: z.coerce.number().int().min(100, 'pricePerPuja must be at least ₹100').max(100000),
+  // Optional at registration: nobody invents a price for the owner. The profile
+  // is listed once a price is submitted (see onboardingService.listingGaps).
+  pricePerPuja: z.preprocess(blankToUndefined, z.coerce.number().int().min(100, 'pricePerPuja must be at least ₹100').max(100000).optional()),
   photoUrl: photoUrlSchema,
   aadhaarDocKey: docKeySchema,
   certificateDocKey: docKeySchema,
@@ -90,7 +92,7 @@ const astrologerDataSchema = z.object({
   experience: z.coerce.number().int().min(0).max(80),
   languages: stringArray(15, 40).default([]),
   bio: optionalShortString(2000),
-  pricePerMinute: z.coerce.number().int().min(1).max(10000),
+  pricePerMinute: z.preprocess(blankToUndefined, z.coerce.number().int().min(1).max(10000).optional()),
   photoUrl: photoUrlSchema,
 });
 
@@ -100,7 +102,7 @@ const wellnessDataSchema = z.object({
   certifications: stringArray(20, 200).default([]),
   experience: z.coerce.number().int().min(0).max(80),
   bio: optionalShortString(2000),
-  pricePerSession: z.coerce.number().int().min(100).max(100000),
+  pricePerSession: z.preprocess(blankToUndefined, z.coerce.number().int().min(100).max(100000).optional()),
   photoUrl: photoUrlSchema,
 });
 
@@ -269,7 +271,7 @@ export async function onboardingRoutes(server: FastifyInstance) {
 
     if (isDemoSession) {
       return reply.code(202).send({
-        message: 'Demo session — profile not persisted. Sign up with a real email to submit for approval.',
+        message: 'Demo session — profile not persisted. Sign up with a real email to create your provider profile.',
         demoMode: true,
         role: parsed.data.role,
       });
@@ -309,12 +311,14 @@ export async function onboardingRoutes(server: FastifyInstance) {
         parsed.data.data,
       );
       const approved = result.approved === true;
+      const listing = await onboardingService.describeListing(userId, parsed.data.role).catch(() => null);
       return reply.send({
         message: approved
           ? 'Your profile is live and your portal is ready.'
-          : result.message ?? 'Profile submitted for review.',
+          : result.message ?? listing?.message ?? 'Your portal is active.',
         profile: result,
         approved,
+        ...(listing ? { listing } : {}),
         ...(result.reason ? { reason: result.reason } : {}),
       });
     } catch (err: unknown) {
@@ -348,7 +352,10 @@ export async function onboardingRoutes(server: FastifyInstance) {
         userId,
         role as typeof ONBOARDING_ROLES[number],
       );
-      return reply.send({ profile });
+      const listing = profile
+        ? await onboardingService.describeListing(userId, role as typeof ONBOARDING_ROLES[number]).catch(() => null)
+        : null;
+      return reply.send({ profile, ...(listing ? { listing } : {}) });
     } catch (err) {
       request.log.error({ err, userId, role }, 'onboarding.getProvider failed');
       return reply.send({ profile: null });

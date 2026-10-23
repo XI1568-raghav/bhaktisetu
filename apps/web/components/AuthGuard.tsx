@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../lib/auth-context';
 import { isSuspendedRedirectPending } from '../lib/suspended-notice';
+import { useSoftNavigate } from '../lib/use-soft-navigate';
 
 interface AuthGuardProps {
  children: React.ReactNode;
@@ -28,6 +29,7 @@ const Spinner = () => (
  */
 export default function AuthGuard({ children, fallback, allowedRoles }: AuthGuardProps) {
  const { isAuthenticated, isLoading, user } = useAuth();
+ const navigate = useSoftNavigate();
 
  useEffect(() => {
  if (isLoading) return;
@@ -42,9 +44,10 @@ export default function AuthGuard({ children, fallback, allowedRoles }: AuthGuar
 
  // Wrong role → redirect to their correct dashboard
  if (user && allowedRoles && !allowedRoles.includes(user.role)) {
- window.location.href = getRoleDashboardPath(user.role);
+ // Soft: a full load would drop the in-memory access token.
+ navigate(getRoleDashboardPath(user.role));
  }
- }, [isLoading, isAuthenticated, user, allowedRoles]);
+ }, [isLoading, isAuthenticated, user, allowedRoles, navigate]);
 
  if (isLoading) {
  return <>{fallback ?? <Spinner />}</>;
