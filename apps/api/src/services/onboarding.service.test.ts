@@ -177,7 +177,7 @@ describe('OnboardingService.upsertProviderProfile', () => {
     expect(prismaMock.storeProfile.upsert).toHaveBeenCalled();
   });
 
-  it('upserts ASTROLOGER profile with default rate when missing', async () => {
+  it('upserts ASTROLOGER profile WITHOUT inventing a rate when none was submitted', async () => {
     prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
     prismaMock.astrologerProfile.upsert.mockResolvedValue({});
     prismaMock.astrologerProfile.findUnique.mockResolvedValue({ id: 'ap-1' });
@@ -185,7 +185,20 @@ describe('OnboardingService.upsertProviderProfile', () => {
     await service.upsertProviderProfile('user-a', 'ASTROLOGER', { displayName: 'Acharya X' });
 
     const call = prismaMock.astrologerProfile.upsert.mock.calls[0]![0]!;
-    expect(call.create.pricePerMinute).toBe(10);
+    // Neither branch writes a price: the schema placeholder stays a placeholder
+    // and the profile is not listed until the owner submits a real one.
+    expect('pricePerMinute' in call.create).toBe(false);
+    expect('pricePerMinute' in call.update).toBe(false);
+  });
+
+  it('writes the price the owner submitted', async () => {
+    prismaMock.userRoleAssignment.upsert.mockResolvedValue({});
+    prismaMock.astrologerProfile.upsert.mockResolvedValue({});
+    prismaMock.astrologerProfile.findUnique.mockResolvedValue({ id: 'ap-1' });
+    await service.upsertProviderProfile('user-a', 'ASTROLOGER', { displayName: 'Acharya X', pricePerMinute: 25 });
+    const call = prismaMock.astrologerProfile.upsert.mock.calls[0]![0]!;
+    expect(call.create.pricePerMinute).toBe(25);
+    expect(call.update.pricePerMinute).toBe(25);
   });
 });
 

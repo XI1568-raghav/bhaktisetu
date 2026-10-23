@@ -2,7 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const upsertProviderProfile = vi.fn(async () => ({ role: 'PANDIT', profileId: 'p1' }));
 vi.mock('../services/onboarding.service.js', () => ({
-  onboardingService: { upsertProviderProfile: (...a: unknown[]) => upsertProviderProfile(...(a as [])) },
+  onboardingService: {
+    upsertProviderProfile: (...a: unknown[]) => upsertProviderProfile(...(a as [])),
+    describeListing: async () => ({ listed: false, approvalRequired: false, missing: ['price'], message: 'Your portal is active. Add your price and details to be listed.' }),
+  },
 }));
 vi.mock('../middlewares/auth.js', () => ({
   authenticateUser: async (request: any) => {
@@ -54,5 +57,46 @@ describe('POST /onboarding/provider — pandit payload', () => {
     });
     expect(res.statusCode).toBe(400);
     expect(upsertProviderProfile).not.toHaveBeenCalled();
+  });
+});
+
+
+describe('POST /onboarding/provider — registration does not require a price', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  async function postRole(role: string, data: Record<string, unknown>) {
+    const app = Fastify({ logger: false });
+    await app.register(async (i) => onboardingRoutes(i), { prefix: '/api/v1/onboarding' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/onboarding/provider',
+      payload: { role, data },
+      headers: { authorization: 'Bearer real-token', 'content-type': 'application/json' },
+    });
+    await app.close();
+    return res;
+  }
+
+  it.each([
+    ['PANDIT', { experience: 4, specialties: ['Satyanarayan Puja'] }],
+    ['ASTROLOGER', { displayName: 'Acharya X', experience: 2, specialties: ['Vedic'] }],
+    ['WELLNESS_INSTRUCTOR', { displayName: 'Yogi Y', experience: 1, specialties: ['Yoga'] }],
+  ])('%s: accepted with no price (the signup form sends none)', async (role, data) => {
+    const res = await postRole(role, data);
+    expect(res.statusCode).toBe(200);
+    expect(upsertProviderProfile).toHaveBeenCalledTimes(1);
+    const body = res.json();
+    expect(body.listing.message).toMatch(/portal is active/i);
+    expect(JSON.stringify(body)).not.toMatch(/pending approval|awaiting approval|submitted for review/i);
+  });
+
+  it('a price that IS sent is still range-checked', async () => {
+    expect((await postRole('PANDIT', { experience: 4, pricePerPuja: 5 })).statusCode).toBe(400);
+    expect((await postRole('ASTROLOGER', { displayName: 'A B', experience: 1, pricePerMinute: 0 })).statusCode).toBe(400);
+  });
+
+  it('a blank price from a form is treated as absent', async () => {
+    expect((await postRole('PANDIT', { experience: 4, pricePerPuja: '' })).statusCode).toBe(200);
+    expect((await postRole('ASTROLOGER', { displayName: 'A B', experience: 1, pricePerMinute: null })).statusCode).toBe(200);
   });
 });

@@ -56,7 +56,7 @@ describe('SEC-02 — POST /auth/refresh accepts the httpOnly cookie', () => {
     expect(token).toBe('body-refresh-xyz');
   });
 
-  it('returns null only when BOTH are absent — that is the one 400 left', () => {
+  it('returns null only when BOTH are absent — that is the one 401 left (the handler answers it)', () => {
     expect(resolveRefreshToken({}, {})).toBeNull();
     expect(resolveRefreshToken(undefined, undefined)).toBeNull();
     // An empty-string cookie is not a credential.

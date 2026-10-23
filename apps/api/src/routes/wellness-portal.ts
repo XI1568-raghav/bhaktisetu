@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { goLive } from '../lib/go-live.js';
+import { onboardingService } from '../services/onboarding.service.js';
 
 const profileUpdateSchema = z.object({
   displayName: z.string().min(1).max(100).optional(),
@@ -183,8 +184,12 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
     // cards needed. See loadInstructorPayoutSplit.
     const payoutSplit = await loadInstructorPayoutSplit(userId);
 
+    // Honest listing state for the profile screen (never approval wording unless the switch is on).
+    const listing = profile ? await onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR').catch(() => null) : null;
+
     return reply.send({
       profile,
+      listing,
       stats: {
         totalSessions,
         upcomingSessions: upcomingSessions.length,
@@ -384,12 +389,14 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
           bio: parsed.data.bio,
         },
       });
-      return reply.send({ profile: await goLive(userId, 'WELLNESS_INSTRUCTOR', profile, () => prisma.wellnessProfile.findUnique({ where: { userId } })) });
+      const live = await goLive(userId, 'WELLNESS_INSTRUCTOR', profile, () => prisma.wellnessProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerSession !== undefined });
+      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR').catch(() => null) });
     }
     const profile = await prisma.wellnessProfile.update({
       where: { userId },
       data: parsed.data,
     });
-    return reply.send({ profile: await goLive(userId, 'WELLNESS_INSTRUCTOR', profile, () => prisma.wellnessProfile.findUnique({ where: { userId } })) });
+    const live = await goLive(userId, 'WELLNESS_INSTRUCTOR', profile, () => prisma.wellnessProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerSession !== undefined });
+      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR').catch(() => null) });
   });
 }

@@ -9,6 +9,37 @@ import { createTempleFromProfile, getLinkedTempleId } from './temple-manager-lin
 
 export type RoleType = 'PANDIT' | 'STORE_OWNER' | 'ASTROLOGER' | 'WELLNESS_INSTRUCTOR' | 'GAUSHALA_MANAGER' | 'TEMPLE_MANAGER';
 
+/**
+ * The DB defaults a stub profile row is born with (schema `@default`). They are
+ * placeholders, not prices anyone chose: a profile is only listed once its owner
+ * has submitted a price (or the stored price differs from the placeholder).
+ */
+const PRICE_PLACEHOLDER: Partial<Record<RoleType, { field: string; value: number }>> = {
+  PANDIT: { field: 'pricePerPuja', value: 500 },
+  ASTROLOGER: { field: 'pricePerMinute', value: 10 },
+  WELLNESS_INSTRUCTOR: { field: 'pricePerSession', value: 500 },
+};
+
+export type ListingGap = 'price' | 'specialties';
+
+export interface ListingStatus {
+  /** Profile is publicly listed (`approved`). */
+  listed: boolean;
+  /** REQUIRE_PROVIDER_APPROVAL: true means an admin still has to approve. */
+  approvalRequired: boolean;
+  /** What the owner still has to add before the profile is listed. Empty when approval is the only blocker. */
+  missing: ListingGap[];
+  /** Honest one-liner for the portal, or null when listed. */
+  message: string | null;
+}
+
+const GAP_LABEL: Record<ListingGap, string> = { price: 'price', specialties: 'specialties' };
+
+export function listingMessage(missing: ListingGap[]): string {
+  const what = missing.map((g) => GAP_LABEL[g]).join(' and ');
+  return `Your portal is active. Add your ${what} and details to be listed.`;
+}
+
 interface OnboardingProgress {
   userId: string;
   role: string;
@@ -203,7 +234,11 @@ export class OnboardingService {
       // as 'devotee'. Promote once the profile exists, not before.
       await this.setPrimaryRole(userId, role as RoleType);
 
-      const activation = (await this.activateOnSubmit(userId, role as RoleType).catch(() => ({ activated: false }))) as {
+      const ph = PRICE_PLACEHOLDER[role as RoleType];
+      const sent = ph ? Number(stepsData[ph.field]) : NaN;
+      const activation = (await this.activateOnSubmit(userId, role as RoleType, {
+        priceProvided: Number.isFinite(sent) && sent > 0,
+      }).catch(() => ({ activated: false }))) as {
         activated: boolean;
         message?: string;
       };
@@ -241,7 +276,11 @@ export class OnboardingService {
     await this.saveUploads(userId, role, data);
     // The profile is saved either way: a failure to activate leaves it where the
     // old flow left it (waiting in /admin/approvals) instead of failing the submit.
-    const activation = await this.activateOnSubmit(userId, role).catch(() => ({ activated: false as const }));
+    const placeholder = PRICE_PLACEHOLDER[role];
+    const sentPrice = placeholder ? Number(data[placeholder.field]) : NaN;
+    const activation = await this.activateOnSubmit(userId, role, {
+      priceProvided: Number.isFinite(sentPrice) && sentPrice > 0,
+    }).catch(() => ({ activated: false as const }));
 
     const profile = (await this.getProviderProfile(userId, role)) as { id?: string; approved?: boolean } | null;
     return { role, profileId: profile?.id, approved: activation.activated || profile?.approved === true, ...activation };
@@ -269,11 +308,26 @@ export class OnboardingService {
   async activateOnSubmit(
     userId: string,
     role: RoleType,
-  ): Promise<{ activated: boolean; reason?: 'approval_required' | 'blocked' | 'quality' | 'temple_name_taken'; message?: string }> {
+    opts: { priceProvided?: boolean } = {},
+  ): Promise<{ activated: boolean; reason?: 'approval_required' | 'blocked' | 'quality' | 'temple_name_taken' | 'incomplete'; message?: string }> {
     if (requireProviderApproval()) return { activated: false, reason: 'approval_required' };
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { blocked: true } });
     if (user?.blocked) return { activated: false, reason: 'blocked' };
+
+    if (role === 'PANDIT') {
+      // Portal access = an ACTIVE Priest row. It does not wait for the public
+      // listing: a registered pandit has a usable portal even while unlisted.
+      // A suspended row stays suspended.
+      await prisma.priest.updateMany({ where: { userId, status: 'inactive' }, data: { status: 'active' } });
+    }
+
+    // Listing completeness: what the public lists need (a price the owner
+    // chose, specialties). Never invented; the portal says what is missing.
+    const gaps = await this.listingGaps(userId, role, opts);
+    if (gaps.length > 0) {
+      return { activated: false, reason: 'incomplete', message: listingMessage(gaps) };
+    }
 
     if (role === 'GAUSHALA_MANAGER' || role === 'TEMPLE_MANAGER') {
       const q = await assessCauseProfile(userId, role);
@@ -311,17 +365,60 @@ export class OnboardingService {
     const ok = await this.approveProviderProfile(userId, role);
     if (!ok) return { activated: false, reason: 'approval_required' };
 
-    if (role === 'PANDIT') {
-      // Portal access = an ACTIVE Priest row. Reopen a backfilled inactive row;
-      // a suspended one stays suspended.
-      await prisma.priest.updateMany({ where: { userId, status: 'inactive' }, data: { status: 'active' } });
-    }
     if (templeNeedsCreate) {
       // Hidden pending_review Temple + explicit link, exactly what the admin
       // "create temple from profile" button does; it is not listed to devotees.
       await createTempleFromProfile(userId).catch(() => undefined);
     }
     return { activated: true };
+  }
+
+  /**
+   * What a profile still lacks before the public lists may show it. Price counts
+   * as set when this submission carried one, or the stored value is no longer the
+   * schema placeholder. Specialties must be non-empty for the three roles that
+   * are searched by them.
+   */
+  async listingGaps(userId: string, role: RoleType, opts: { priceProvided?: boolean } = {}): Promise<ListingGap[]> {
+    const placeholder = PRICE_PLACEHOLDER[role];
+    if (!placeholder) return [];
+    const profile = (await this.getProviderProfile(userId, role)) as Record<string, unknown> | null;
+    if (!profile) return [];
+    const gaps: ListingGap[] = [];
+    const stored = Number(profile[placeholder.field]);
+    if (!opts.priceProvided && !(Number.isFinite(stored) && stored !== placeholder.value)) gaps.push('price');
+    const specialties = profile.specialties;
+    if (!Array.isArray(specialties) || specialties.length === 0) gaps.push('specialties');
+    return gaps;
+  }
+
+  /** Listing state for the portal screens: never approval wording unless the switch is on. */
+  async describeListing(userId: string, role: RoleType): Promise<ListingStatus> {
+    const approvalRequired = requireProviderApproval();
+    const profile = (await this.getProviderProfile(userId, role)) as { approved?: boolean } | null;
+    const listed = profile?.approved === true;
+    if (listed) return { listed, approvalRequired, missing: [], message: null };
+    if (approvalRequired) {
+      return { listed, approvalRequired, missing: [], message: 'Your profile is waiting for admin approval.' };
+    }
+    const missing = await this.listingGaps(userId, role).catch(() => [] as ListingGap[]);
+    if (missing.length === 0 && (role === 'GAUSHALA_MANAGER' || role === 'TEMPLE_MANAGER')) {
+      const q = await assessCauseProfile(userId, role).catch(() => null);
+      if (q && !q.ok) {
+        return {
+          listed,
+          approvalRequired,
+          missing,
+          message: `Your portal is active. To list this profile publicly, please fix: ${describeQualityReasons(q.reasons as CauseQualityReason[])}.`,
+        };
+      }
+    }
+    return {
+      listed,
+      approvalRequired,
+      missing,
+      message: missing.length > 0 ? listingMessage(missing) : 'Your portal is active. Complete your profile details to be listed.',
+    };
   }
 
   // Profile photo -> the account avatar; identity documents -> the private
@@ -466,7 +563,7 @@ export class OnboardingService {
             bio: data.bio as string ?? null,
             city: data.city as string ?? null,
             state: data.state as string ?? null,
-            pricePerPuja: Number(data.pricePerPuja) || 500,
+            ...(Number(data.pricePerPuja) > 0 ? { pricePerPuja: Number(data.pricePerPuja) } : {}),
           },
           create: {
             userId,
@@ -477,7 +574,7 @@ export class OnboardingService {
             bio: data.bio as string ?? null,
             city: data.city as string ?? null,
             state: data.state as string ?? null,
-            pricePerPuja: Number(data.pricePerPuja) || 500,
+            ...(Number(data.pricePerPuja) > 0 ? { pricePerPuja: Number(data.pricePerPuja) } : {}),
           },
         });
         // Mirror into `Priest` so getPriestId() in priest routes / payouts
@@ -541,7 +638,7 @@ export class OnboardingService {
             experience: Number(data.experience) || 0,
             languages: (data.languages as string[]) ?? [],
             bio: data.bio as string ?? null,
-            pricePerMinute: Number(data.pricePerMinute) || 10,
+            ...(Number(data.pricePerMinute) > 0 ? { pricePerMinute: Number(data.pricePerMinute) } : {}),
           },
           create: {
             userId,
@@ -550,7 +647,7 @@ export class OnboardingService {
             experience: Number(data.experience) || 0,
             languages: (data.languages as string[]) ?? [],
             bio: data.bio as string ?? null,
-            pricePerMinute: Number(data.pricePerMinute) || 10,
+            ...(Number(data.pricePerMinute) > 0 ? { pricePerMinute: Number(data.pricePerMinute) } : {}),
           },
         });
         break;
@@ -563,7 +660,7 @@ export class OnboardingService {
             certifications: (data.certifications as string[]) ?? [],
             experience: Number(data.experience) || 0,
             bio: data.bio as string ?? null,
-            pricePerSession: Number(data.pricePerSession) || 500,
+            ...(Number(data.pricePerSession) > 0 ? { pricePerSession: Number(data.pricePerSession) } : {}),
           },
           create: {
             userId,
@@ -572,7 +669,7 @@ export class OnboardingService {
             certifications: (data.certifications as string[]) ?? [],
             experience: Number(data.experience) || 0,
             bio: data.bio as string ?? null,
-            pricePerSession: Number(data.pricePerSession) || 500,
+            ...(Number(data.pricePerSession) > 0 ? { pricePerSession: Number(data.pricePerSession) } : {}),
           },
         });
         break;
