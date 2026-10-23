@@ -292,6 +292,9 @@ function bucketOk(map: Map<string, Bucket>, key: string, max: number): boolean {
 // Supabase's refresh-token lifetime.
 const SESSION_COOKIE = 'darshya_session';
 const REFRESH_COOKIE = 'darshya_refresh';
+// Two tabs, or a retry after a dropped response, present one refresh token within seconds of each other.
+// GoTrue tolerates that inside its reuse interval; a used JTI inside this window is a race, not theft.
+const REFRESH_REUSE_WINDOW_MS = Number(process.env.REFRESH_REUSE_WINDOW_SEC ?? 10) * 1000;
 const SESSION_TTL_SECONDS = 60 * 60;                 // 1 hour
 const REFRESH_TTL_SECONDS = 7 * 24 * 60 * 60;        // 7 days
 const REFRESH_COOKIE_PATH = '/api/v1/auth';
@@ -604,14 +607,16 @@ export async function authRoutes(server: FastifyInstance) {
     let replayDetected = false;
     let knownUserId: string | null = null;
     try {
-      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date }>>(
-        `SELECT user_id, used_at, expires_at FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
+      const existing = await prisma.$queryRawUnsafe<Array<{ user_id: string; used_at: Date | null; expires_at: Date; used_age_ms: number | null }>>(
+        `SELECT user_id, used_at, expires_at,
+                (EXTRACT(EPOCH FROM (now() - used_at)) * 1000)::float8 AS used_age_ms
+           FROM refresh_token_jtis WHERE jti = $1 LIMIT 1`,
         jti,
       );
       const row = existing[0];
       if (row) {
         knownUserId = row.user_id;
-        if (row.used_at !== null) {
+        if (row.used_at !== null && !(row.used_age_ms !== null && row.used_age_ms >= 0 && row.used_age_ms <= REFRESH_REUSE_WINDOW_MS)) {
           replayDetected = true;
         }
         if (new Date(row.expires_at).getTime() < Date.now()) {
@@ -624,9 +629,10 @@ export async function authRoutes(server: FastifyInstance) {
 
     if (replayDetected && knownUserId) {
       // Family-wide revoke — mark all of this user's JTIs as used.
+      // Backdated on purpose: a revoke stamp inside the reuse window would read as a harmless race.
       try {
         await prisma.$executeRawUnsafe(
-          `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+          `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
           knownUserId,
         );
       } catch (err) {
@@ -873,7 +879,7 @@ export async function authRoutes(server: FastifyInstance) {
         const userId = claims.data?.user?.id;
         if (userId && scope === 'global') {
           await prisma.$executeRawUnsafe(
-            `UPDATE refresh_token_jtis SET used_at = now() WHERE user_id = $1::uuid AND used_at IS NULL`,
+            `UPDATE refresh_token_jtis SET used_at = now() - interval '1 hour' WHERE user_id = $1::uuid AND used_at IS NULL`,
             userId,
           );
           // AUTH-11: a password user may ALSO hold a magic-link session on
