@@ -639,6 +639,56 @@ export class AdminService {
                 where: { userId: id },
                 data: { isVerified: updates.approved },
               });
+              if (!updates.approved) {
+                // Suspension must close the portal as well: with approval off a pandit
+                // is live from registration, so un-approving has to do more than hide
+                // them. Only an active row is touched; suspended stays suspended.
+                await prisma.priest.updateMany({
+                  where: { userId: id, status: 'active' },
+                  data: { status: 'inactive' },
+                });
+              }
+              if (updates.approved) {
+                // Approval must also make the portal reachable: requireRole('priest')
+                // needs an ACTIVE Priest row. A pandit who signed up but never
+                // finished /onboarding/provider had no row (so the update above
+                // matched nothing), and one who opened the portal early got an
+                // `inactive` backfill row that nothing ever flipped. Either way an
+                // approved pandit got 403 on every /priest/* call. Suspended
+                // pandits are left suspended.
+                const existing = await prisma.priest.findUnique({
+                  where: { userId: id },
+                  select: { id: true, status: true },
+                });
+                if (existing) {
+                  if (existing.status === 'inactive') {
+                    await prisma.priest.update({
+                      where: { id: existing.id },
+                      data: { status: 'active' },
+                    });
+                  }
+                } else {
+                  const pp = await prisma.panditProfile.findUnique({ where: { userId: id } });
+                  const u = await prisma.user.findUnique({ where: { id }, select: { fullName: true } });
+                  if (pp) {
+                    await prisma.priest.create({
+                      data: {
+                        userId: id,
+                        displayName: u?.fullName ?? 'Pandit',
+                        specializations: pp.specialties ?? [],
+                        languages: pp.languages ?? [],
+                        experienceYears: pp.experience ?? 0,
+                        bio: pp.bio ?? null,
+                        // Mirrors the updateMany above: the admin's decision, not a
+                        // literal. verificationStatus stays at its default — TC-08
+                        // forbids any route from minting a vetting verdict.
+                        isVerified: updates.approved,
+                        status: 'active',
+                      },
+                    });
+                  }
+                }
+              }
               break;
             case 'STORE_OWNER':
               await prisma.storeProfile.updateMany({

@@ -4,6 +4,7 @@ import { createSupabaseClient } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
+import { requireProviderApproval } from '../lib/provider-approval.js';
 
 // Tighter rate limit for unauthenticated credential/OTP endpoints — the
 // global 100/min is too generous for OTP-spam and credential-stuffing.
@@ -1290,6 +1291,18 @@ export async function authRoutes(server: FastifyInstance) {
                 update: {},
                 create: { userId: u.id, experience: 0, specialties: [], languages: [], pricePerPuja: 500 },
               });
+              // Portal access for a pandit is an ACTIVE Priest row (requireRole('priest')).
+              // With approval off, register -> sign in -> portal must work without any
+              // admin step. isVerified / verificationStatus stay at their defaults
+              // (TC-08: no vetting verdict is minted here); the PanditProfile stays
+              // un-approved (not public) until the onboarding form is submitted.
+              if (!requireProviderApproval()) {
+                await tx.priest.upsert({
+                  where: { userId: u.id },
+                  update: {},
+                  create: { userId: u.id, displayName: fullName || 'Pandit', experienceYears: 0, status: 'active' },
+                });
+              }
               break;
             case 'STORE_OWNER':
               await tx.storeProfile.upsert({
@@ -1347,7 +1360,7 @@ export async function authRoutes(server: FastifyInstance) {
       // response and drops the brand-new admin on /dashboard, which is exactly
       // the "#211 remedy doesn't work" symptom A-014 describes.
       const effectiveRole = isAdminEmail(emailLower) ? 'admin' : role;
-      const needsApproval = effectiveRole !== 'devotee' && effectiveRole !== 'admin';
+      const needsApproval = requireProviderApproval() && effectiveRole !== 'devotee' && effectiveRole !== 'admin';
 
       return reply.code(201).send({
         session: authData.session
@@ -1366,7 +1379,9 @@ export async function authRoutes(server: FastifyInstance) {
         },
         message: needsApproval
           ? 'Account created. Your profile is pending approval.'
-          : 'Account created successfully',
+          : effectiveRole === 'devotee' || effectiveRole === 'admin'
+            ? 'Account created successfully'
+            : 'Account created. Your portal is ready; complete your profile to go live.',
       });
     } catch (err: any) {
       request.log.error({ err: err?.message, code: err?.code, email: emailLower }, 'Signup failed');
@@ -1413,11 +1428,13 @@ export async function authRoutes(server: FastifyInstance) {
           email: emailLower,
           fullName,
           role,
-          status: role === 'devotee' ? 'active' : 'pending_approval',
+          status: role === 'devotee' || !requireProviderApproval() ? 'active' : 'pending_approval',
         },
         message: role === 'devotee'
           ? 'Account created successfully (demo mode)'
-          : 'Account created. Your profile is pending approval. (demo mode)',
+          : requireProviderApproval()
+            ? 'Account created. Your profile is pending approval. (demo mode)'
+            : 'Account created. Your portal is ready. (demo mode)',
       });
     }
   };

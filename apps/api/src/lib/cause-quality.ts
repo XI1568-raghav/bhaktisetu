@@ -95,6 +95,11 @@ const REASON_TEXT: Record<CauseQualityReason, string> = {
   address_too_short: `the address needs at least ${CAUSE_QUALITY_RULES.addressMinChars} characters (full street and city)`,
 };
 
+/** The failing reasons as a plain-English list ("a; b"). */
+export function describeQualityReasons(reasons: CauseQualityReason[]): string {
+  return Array.from(new Set(reasons.map((r) => REASON_TEXT[r]))).join('; ');
+}
+
 /** Plain-English message for a failed quality check on an edit to an approved profile. */
 export function describeQualityEditFailure(reasons: CauseQualityReason[]): string {
   const items = Array.from(new Set(reasons.map((r) => REASON_TEXT[r])));

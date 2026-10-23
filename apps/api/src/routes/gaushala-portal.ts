@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { describeQualityEditFailure, qualityReasonsForEdit } from '../lib/cause-quality.js';
+import { goLive } from '../lib/go-live.js';
 
 const profileUpdateSchema = z.object({
   gaushalaName: z.string().min(1).max(150).optional(),
@@ -159,7 +160,7 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
           description: parsed.data.description,
         },
       });
-      return reply.send({ profile });
+      return reply.send({ profile: await goLive(userId, 'GAUSHALA_MANAGER', profile, () => prisma.gaushalaProfile.findUnique({ where: { userId } })) });
     }
     // The quality bar is enforced at approval; without this an approved gaushala
     // could edit itself down to junk and stay approved + public.
@@ -176,6 +177,6 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
       where: { userId },
       data: parsed.data,
     });
-    return reply.send({ profile });
+    return reply.send({ profile: await goLive(userId, 'GAUSHALA_MANAGER', profile, () => prisma.gaushalaProfile.findUnique({ where: { userId } })) });
   });
 }

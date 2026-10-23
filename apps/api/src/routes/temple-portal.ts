@@ -165,7 +165,7 @@ const TEMPLE_LINK_MESSAGE: Record<Exclude<TempleLinkReason, 'linked'>, string> =
   no_temple_profile:
     'Your temple profile is not set up yet, so offerings cannot be attached to a temple. Complete your temple profile to start listing pujas.',
   not_approved:
-    'Your temple profile is awaiting approval by the Darshya team. Once it is approved your temple will be linked and you can list pujas, see bookings and donations.',
+    'Your portal is active. Your temple is not linked to a public temple page yet: add a description and a full address to your profile, or the Darshya team confirms that you manage a temple whose name is already listed. Pujas, bookings and donations appear here once it is linked.',
   no_matching_temple:
     'Your temple profile is not connected to a public temple page on Darshya yet; the Darshya team connects it by hand, and your bookings and offerings will appear here once that is done.',
 };

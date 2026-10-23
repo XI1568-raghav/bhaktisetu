@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { httpUrl } from '../lib/http-url.js';
 import { prisma } from '../lib/prisma.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { goLive } from '../lib/go-live.js';
 
 /**
  * Store-owner self-service routes. Distinct from the public `storeRoutes`
@@ -131,8 +132,9 @@ export async function storeAdminRoutes(server: FastifyInstance) {
   });
 
   // ─── PUT /profile ───────────────────────────────────────────────────────────
-  // Create-or-update. `approved` is deliberately NOT set here — a self-created
-  // store stays unapproved until a human reviews it.
+  // Create-or-update. `approved` is not written here; goLive() activates the store
+  // through onboardingService.activateOnSubmit, which is a no-op when
+  // REQUIRE_PROVIDER_APPROVAL is set (a self-created store then waits for an admin).
 
   server.put('/profile', { preHandler: [authenticateUser] }, async (request, reply) => {
     const roles = request.currentUser!.roles ?? [];
@@ -153,7 +155,7 @@ export async function storeAdminRoutes(server: FastifyInstance) {
       : await prisma.storeProfile.create({
           data: { userId, ...parsed.data, categories: parsed.data.categories ?? [] },
         });
-    return reply.send({ profile });
+    return reply.send({ profile: await goLive(userId, 'STORE_OWNER', profile, () => prisma.storeProfile.findUnique({ where: { userId } })) });
   });
 
   // ─── GET /products ──────────────────────────────────────────────────────────

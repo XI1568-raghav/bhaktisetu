@@ -10,6 +10,7 @@ import {
   ASTROLOGER_SHARE,
 } from '../services/astrologer.service.js';
 import { isUpcomingCommission, unfinishedConsultationIds } from '../services/payout.service.js';
+import { goLive } from '../lib/go-live.js';
 
 /**
  * PAR-13. `AstrologerProfile.userId` and `Commission.providerId` are both
@@ -351,13 +352,13 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
           bio: parsed.data.bio,
         },
       });
-      return reply.send({ profile });
+      return reply.send({ profile: await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } })) });
     }
     const profile = await prisma.astrologerProfile.update({
       where: { userId },
       data: parsed.data,
     });
-    return reply.send({ profile });
+    return reply.send({ profile: await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } })) });
   });
 
   // ─── PATCH /availability ────────────────────────────────────────────────────

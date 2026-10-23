@@ -577,7 +577,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         select: { approved: true },
       });
       if (!instructorProfile?.approved) {
-        return reply.code(409).send({ error: 'This instructor is not yet approved to take bookings.' });
+        return reply.code(409).send({ error: 'This instructor has not finished setting up a profile yet, so bookings are not open.' });
       }
 
       const userId = request.currentUser!.id;

@@ -33,10 +33,26 @@ const verified = { isVerified: true, status: 'active' };
 
 describe('PriestService.getOpenRequests', () => {
   it('shows nothing, and says why, to a pandit who is not approved yet', async () => {
-    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'active' });
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'active', userId: 'u-1' });
+    prismaMock.panditProfile.findUnique.mockResolvedValue({ approved: false });
     const out = await service.getOpenRequests('priest-1');
     expect(out).toEqual({ eligible: false, requests: [] });
     expect(prismaMock.pujaBooking.findMany).not.toHaveBeenCalled();
+  });
+
+  it('REQUIRE_PROVIDER_APPROVAL off: a live pandit profile is enough, Priest.isVerified is not required (TC-08: it is never minted)', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'active', userId: 'u-1' });
+    prismaMock.panditProfile.findUnique.mockResolvedValue({ approved: true });
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    const out = await service.getOpenRequests('priest-1');
+    expect(out.eligible).toBe(true);
+  });
+
+  it('a suspended or inactive Priest row is never eligible, whatever the profile says', async () => {
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'inactive', userId: 'u-1' });
+    prismaMock.panditProfile.findUnique.mockResolvedValue({ approved: true });
+    const out = await service.getOpenRequests('priest-1');
+    expect(out).toEqual({ eligible: false, requests: [] });
   });
 
   it('shows nothing to a suspended pandit even if verified', async () => {
@@ -114,8 +130,9 @@ describe('PriestService.acceptBooking — taking an unassigned booking', () => {
 
   it('refuses a pandit who is not approved', async () => {
     prismaMock.pujaBooking.findUnique.mockResolvedValue(confirmedUnassigned);
-    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'active' });
-    await expect(service.acceptBooking('bk-1', 'priest-1')).rejects.toThrow(/not approved/i);
+    prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'active', userId: 'u-1' });
+    prismaMock.panditProfile.findUnique.mockResolvedValue({ approved: false });
+    await expect(service.acceptBooking('bk-1', 'priest-1')).rejects.toThrow(/complete your pandit profile/i);
     expect(prismaMock.pujaBooking.update).not.toHaveBeenCalled();
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });

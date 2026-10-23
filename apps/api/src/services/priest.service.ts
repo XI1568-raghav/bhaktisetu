@@ -122,6 +122,27 @@ export interface UpdatePriestProfileInput {
 
 // ─── PriestService ──────────────────────────────────────────────────────────────
 
+/**
+ * May this pandit see and take open (unassigned) bookings? An ACTIVE Priest row
+ * plus either the legacy `Priest.isVerified` (seed / admin-approved) or a live
+ * `PanditProfile.approved`. With REQUIRE_PROVIDER_APPROVAL off the second is what
+ * a self-registered pandit has; it is not a vetting claim and nothing here sets
+ * `isVerified` (TC-08). An admin un-approval clears both.
+ */
+async function isPanditLive(priestId: string): Promise<boolean> {
+  const priest = await prisma.priest.findUnique({
+    where: { id: priestId },
+    select: { isVerified: true, status: true, userId: true },
+  });
+  if (!priest || priest.status !== 'active') return false;
+  if (priest.isVerified) return true;
+  const profile = await prisma.panditProfile.findUnique({
+    where: { userId: priest.userId },
+    select: { approved: true },
+  });
+  return profile?.approved === true;
+}
+
 export class PriestService {
   private bookingService = new BookingService();
 
@@ -377,11 +398,7 @@ export class PriestService {
    * every approved pandit on the platform.
    */
   async getOpenRequests(priestId: string, limit = 50) {
-    const priest = await prisma.priest.findUnique({
-      where: { id: priestId },
-      select: { isVerified: true, status: true },
-    });
-    if (!priest || !priest.isVerified || priest.status !== 'active') {
+    if (!(await isPanditLive(priestId))) {
       return { eligible: false as const, requests: [] as OpenRequest[] };
     }
 
@@ -453,12 +470,8 @@ export class PriestService {
     // approved, active pandit. A booking already assigned to this pandit (a
     // temple pinned them) was vetted when it was assigned and is not re-checked.
     if (!booking.priestId) {
-      const picker = await prisma.priest.findUnique({
-        where: { id: priestId },
-        select: { isVerified: true, status: true },
-      });
-      if (!picker || !picker.isVerified || picker.status !== 'active') {
-        throw new Error('Your pandit profile is not approved yet, so you cannot take new bookings.');
+      if (!(await isPanditLive(priestId))) {
+        throw new Error('Complete your pandit profile (onboarding) to take new bookings. Your account must also be active.');
       }
     }
 

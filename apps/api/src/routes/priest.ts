@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
+import { requireProviderApproval } from '../lib/provider-approval.js';
 import { priestService, PujaStateConflictError } from '../services/priest.service.js';
 import { dispatchService } from '../services/dispatch.service.js';
 import { cancellationService } from '../services/cancellation.service.js';
@@ -376,7 +377,7 @@ export async function priestRoutes(server: FastifyInstance) {
         // without onboarding approval. Now backfill creates an inactive,
         // pending-verification row — requireRole('priest') blocks it until
         // an admin flips status to active.
-        status: 'inactive',
+        status: requireProviderApproval() ? 'inactive' : 'active',
         verificationStatus: 'pending',
       },
       select: { id: true },
