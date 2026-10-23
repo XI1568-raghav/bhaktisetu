@@ -15,10 +15,11 @@ import { describe, expect, it } from 'vitest';
  */
 const WEB = join(__dirname, '..');
 const cfg = JSON.parse(readFileSync(join(WEB, 'scripts/cf-static-pages.json'), 'utf8')) as {
-  legal: string[];
-  exact: string[];
-  prefixes: string[];
+  mustBeStatic: { routes: string[]; portalPrefixes: string[] };
 };
+// Server-rendered legal pages: held to the strict no-fetch / no-request-data source check below.
+// (The client portal shells in mustBeStatic are covered by cf-static-assets.test.ts.)
+const LEGAL = ['/privacy', '/privacy/v2', '/terms', '/refund', '/refunds', '/shipping', '/legal/cookies', '/legal/privacy-uk', '/data-deletion'];
 
 const strip = (src: string) =>
   src
@@ -61,12 +62,10 @@ function relativeImports(file: string, src: string): string[] {
 
 describe('legal pages stay pure static', () => {
   it('lists the real refund route (/refunds is what the footer and sitemap use)', () => {
-    expect(cfg.legal).toContain('/refunds');
-    expect(cfg.legal).toContain('/privacy');
-    expect(cfg.legal).toContain('/terms');
+    for (const route of LEGAL) expect(cfg.mustBeStatic.routes).toContain(route);
   });
 
-  for (const route of cfg.legal) {
+  for (const route of LEGAL) {
     it(`${route} reads no request data, has no revalidate and fetches nothing`, () => {
       const file = pageFile(route);
       // The page itself, plus pages it re-exports/wraps (/refund renders /refunds).
@@ -91,7 +90,7 @@ describe('legal pages stay pure static', () => {
   });
 
   it('every route the asset copier lists has a page, and tickets/darshan stay out of ISR', () => {
-    for (const route of [...cfg.legal, ...cfg.exact, ...cfg.prefixes]) expect(() => pageFile(route)).not.toThrow();
+    for (const route of [...cfg.mustBeStatic.routes, '/darshan']) expect(() => pageFile(route)).not.toThrow();
     for (const route of ['/darshan', '/darshan/[id]']) {
       const src = strip(readFileSync(join(WEB, 'app', route, 'page.tsx'), 'utf8'));
       expect(src, `${route} must not export revalidate (Worker cannot revalidate)`).not.toMatch(/export\s+const\s+revalidate\b/);

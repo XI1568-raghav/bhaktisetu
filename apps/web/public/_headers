@@ -18,6 +18,9 @@
 # runtime='edge' once middleware existed (~250 file changes). That constraint
 # is gone under @opennextjs/cloudflare (Node runtime, middleware supported),
 # but _headers remains the low-risk path so we keep it.
+/admin
+  X-Robots-Tag: noindex, nofollow
+
 /admin/*
   X-Robots-Tag: noindex, nofollow
 

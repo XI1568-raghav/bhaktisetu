@@ -29,6 +29,7 @@ import {
 } from '../instructor-sessions';
 import { countActiveOfferings, selectPriestOfferings } from '../priest-offerings';
 import { selectProviderOwnProfile } from '../provider-profile';
+import { selectAstrologerDashboard } from '../api-contracts';
 
 /**
  * Provider-portal contract audit — pandit / astrologer / wellness instructor.
@@ -494,6 +495,7 @@ describe('provider own profile', () => {
       rating: 4.4,
       priceInr: 25,
       approved: true,
+      listingNote: null,
     });
   });
 
@@ -648,5 +650,18 @@ describe('bodyless transitions never declare a JSON body', () => {
     for (const re of bodyless) {
       expect(src, `bodyless PATCH matching ${re} not found`).toMatch(re);
     }
+  });
+});
+
+describe('listing note (no approval concept unless the API says so)', () => {
+  const profile = { displayName: 'A', approved: false, pricePerMinute: '10.00', specialties: [] };
+  it("carries the API's honest listing message to the profile and dashboard view-models", () => {
+    const listing = { listed: false, approvalRequired: false, missing: ['price'], message: 'Your portal is active. Add your price and details to be listed.' };
+    expect(selectProviderOwnProfile({ profile, listing }, 'pricePerMinute')?.listingNote).toBe(listing.message);
+    expect(selectAstrologerDashboard({ profile, listing, stats: { approved: false } })?.listingNote).toBe(listing.message);
+  });
+  it('is null when an older API sends no listing block (the screen falls back to its own honest sentence)', () => {
+    expect(selectProviderOwnProfile({ profile }, 'pricePerMinute')?.listingNote).toBeNull();
+    expect(selectAstrologerDashboard({ profile, stats: { approved: false } })?.listingNote).toBeNull();
   });
 });

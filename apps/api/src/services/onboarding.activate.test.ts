@@ -129,3 +129,83 @@ describe('activateOnSubmit — REQUIRE_PROVIDER_APPROVAL=true restores the old g
     expect((await service.activateOnSubmit('u-1', 'STORE_OWNER')).activated).toBe(true);
   });
 });
+
+describe('activateOnSubmit — listing completeness (no invented prices)', () => {
+  type Row = Record<string, unknown>;
+  const priced: Array<[RoleType, 'panditProfile' | 'astrologerProfile' | 'wellnessProfile', string, number]> = [
+    ['PANDIT', 'panditProfile', 'pricePerPuja', 500],
+    ['ASTROLOGER', 'astrologerProfile', 'pricePerMinute', 10],
+    ['WELLNESS_INSTRUCTOR', 'wellnessProfile', 'pricePerSession', 500],
+  ];
+
+  function profile(model: 'panditProfile' | 'astrologerProfile' | 'wellnessProfile', row: Row) {
+    (prismaMock[model].findUnique as ReturnType<typeof vi.fn>).mockResolvedValue(row);
+  }
+
+  it.each(priced)('%s: placeholder price and nothing submitted -> portal active, NOT listed, says what is missing', async (role, model, field, placeholder) => {
+    profile(model, { [field]: placeholder, specialties: ['Yoga'] });
+    const r = await service.activateOnSubmit('u-1', role);
+    expect(r.activated).toBe(false);
+    expect(r.reason).toBe('incomplete');
+    expect(r.message).toMatch(/^Your portal is active\. Add your price/);
+    expect(r.message).not.toMatch(/approval|review/i);
+    expect(prismaMock[model].updateMany).not.toHaveBeenCalled();
+  });
+
+  it.each(priced)('%s: a submitted price (even the placeholder value) lists the profile', async (role, model, _f, _p) => {
+    profile(model, { specialties: ['Yoga'] });
+    expect((await service.activateOnSubmit('u-1', role, { priceProvided: true })).activated).toBe(true);
+    expect(prismaMock[model].updateMany).toHaveBeenCalled();
+  });
+
+  it.each(priced)('%s: a stored price that is not the placeholder counts as set', async (role, model, field, placeholder) => {
+    profile(model, { [field]: placeholder + 1, specialties: ['Yoga'] });
+    expect((await service.activateOnSubmit('u-1', role)).activated).toBe(true);
+  });
+
+  it.each(priced)('%s: no specialties -> unlisted, message names specialties', async (role, model, field) => {
+    profile(model, { [field]: 1234, specialties: [] });
+    const r = await service.activateOnSubmit('u-1', role, { priceProvided: true });
+    expect(r.reason).toBe('incomplete');
+    expect(r.message).toMatch(/specialties/);
+  });
+
+  it('PANDIT: the Priest row (portal access) is active even while the listing waits for a price', async () => {
+    profile('panditProfile', { pricePerPuja: 500, specialties: [] });
+    await service.activateOnSubmit('u-1', 'PANDIT');
+    expect(prismaMock.priest.updateMany).toHaveBeenCalledWith({
+      where: { userId: 'u-1', status: 'inactive' },
+      data: { status: 'active' },
+    });
+  });
+
+  it('STORE_OWNER has no price gate: it lists on submit', async () => {
+    expect((await service.activateOnSubmit('u-1', 'STORE_OWNER')).activated).toBe(true);
+  });
+
+  it('describeListing: never approval wording while the switch is off; approval wording when it is on', async () => {
+    profile('astrologerProfile', { approved: false, pricePerMinute: 10, specialties: ['Vedic'] });
+    const off = await service.describeListing('u-1', 'ASTROLOGER');
+    expect(off).toMatchObject({ listed: false, approvalRequired: false, missing: ['price'] });
+    expect(off.message).toBe('Your portal is active. Add your price and details to be listed.');
+
+    process.env.REQUIRE_PROVIDER_APPROVAL = 'true';
+    const on = await service.describeListing('u-1', 'ASTROLOGER');
+    expect(on.approvalRequired).toBe(true);
+    expect(on.message).toMatch(/admin approval/i);
+
+    delete process.env.REQUIRE_PROVIDER_APPROVAL;
+    profile('astrologerProfile', { approved: true });
+    expect(await service.describeListing('u-1', 'ASTROLOGER')).toMatchObject({ listed: true, message: null });
+  });
+});
+
+describe('describeListing — cause profiles say what to fix', () => {
+  it('GAUSHALA_MANAGER below the quality bar: portal active + the real reasons, no approval wording', async () => {
+    prismaMock.gaushalaProfile.findUnique.mockResolvedValue({ approved: false, gaushalaName: 'Unnamed Gaushala', description: null, address: null });
+    const d = await service.describeListing('u-1', 'GAUSHALA_MANAGER');
+    expect(d.listed).toBe(false);
+    expect(d.message).toMatch(/^Your portal is active\. To list this profile publicly, please fix:/);
+    expect(d.message).not.toMatch(/approval|review/i);
+  });
+});

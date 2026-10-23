@@ -402,6 +402,17 @@ export class OnboardingService {
       return { listed, approvalRequired, missing: [], message: 'Your profile is waiting for admin approval.' };
     }
     const missing = await this.listingGaps(userId, role).catch(() => [] as ListingGap[]);
+    if (missing.length === 0 && (role === 'GAUSHALA_MANAGER' || role === 'TEMPLE_MANAGER')) {
+      const q = await assessCauseProfile(userId, role).catch(() => null);
+      if (q && !q.ok) {
+        return {
+          listed,
+          approvalRequired,
+          missing,
+          message: `Your portal is active. To list this profile publicly, please fix: ${describeQualityReasons(q.reasons as CauseQualityReason[])}.`,
+        };
+      }
+    }
     return {
       listed,
       approvalRequired,
