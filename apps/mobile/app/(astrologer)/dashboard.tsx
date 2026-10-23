@@ -109,8 +109,7 @@ export default function AstrologerDashboard() {
           </View>
           {!dash.approved ? (
             <Text style={styles.pendingBanner}>
-              Your portal is active. Complete your profile to be listed, so
-              devotees can find and book you.
+              {dash.listingNote ?? 'Your portal is active. Add your price and details to be listed, so devotees can find and book you.'}
             </Text>
           ) : null}
         </>

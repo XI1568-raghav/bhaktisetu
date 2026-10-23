@@ -77,6 +77,9 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  const { session } = useAuth();
  const token = session?.accessToken;
  const [profile, setProfile] = useState<ProviderProfile | null>(null);
+ // What the API says is missing before the profile is listed (never approval
+ // wording unless REQUIRE_PROVIDER_APPROVAL is on: `approvalRequired`).
+ const [listing, setListing] = useState<{ approvalRequired?: boolean; message?: string | null } | null>(null);
  const publicHref = publicProfileHref(publicListingType, profile?.id);
  const [loading, setLoading] = useState(true);
  const [error, setError] = useState<string | null>(null);
@@ -122,6 +125,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  const data = await res.json();
  if (!cancelled) {
  setProfile(data.profile ?? null);
+ setListing(data.listing ?? null);
  }
  } catch (err) {
  if (!cancelled) {
@@ -229,10 +233,15 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  ) : (
  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200">
  <Clock className="w-3 h-3" />
- Not listed yet
+ {listing?.approvalRequired ? 'Admin approval needed' : 'Not listed yet'}
  </span>
  )}
  </div>
+ {!approved && (
+ <p className="text-xs text-surface-600 mb-2" data-testid="listing-note">
+ {listing?.message ?? 'Your portal is active. Add your price and details to be listed.'}
+ </p>
+ )}
  {profile.city && (
  <p className="text-xs text-surface-500 mb-2">{profile.city}</p>
  )}

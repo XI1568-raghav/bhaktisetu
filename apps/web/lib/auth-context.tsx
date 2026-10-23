@@ -1029,9 +1029,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  */
  const signUpWithCredentials = useCallback(async (data: SignUpData) => {
  try {
+ // credentials:'include' so the browser KEEPS the httpOnly session cookies this
+ // response sets (cross-origin api.* vs web): without them the first page load
+ // after signup has nothing to revive from and lands on /auth/login.
  const res = await fetchWithTimeout(`${API_BASE_URL}/auth/register`, {
  method: 'POST',
  headers: { 'Content-Type': 'application/json' },
+ credentials: 'include',
  body: JSON.stringify({ ...data, role: toApiRole(data.role) }),
  });
 

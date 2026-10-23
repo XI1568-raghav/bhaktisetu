@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
  Flame,
  Mail,
@@ -28,6 +29,7 @@ import type { LucideIcon } from 'lucide-react';
 import { z } from 'zod';
 import { useAuth, getRoleDashboardPath, type UserRole } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { useSoftNavigate } from '../../../lib/use-soft-navigate';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 
@@ -411,6 +413,12 @@ function StepIndicator({ current, total }: { current: number; total: number }) {
 
 export default function SignupPage() {
  const { signUpWithCredentials, isAuthenticated, user } = useAuth();
+ const navigate = useSoftNavigate();
+ // Set the moment a submit starts. signUpWithCredentials seeds the auth context
+ // BEFORE the provider profile call below has finished, so without this the
+ // "already signed in" effect fired mid-submit, navigated away and abandoned
+ // POST /onboarding/provider (the profile never saved).
+ const submittingRef = useRef(false);
 
  const [step, setStep] = useState(0); // 0 = role, 1 = form, 2 = confirmation
  const [selectedRole, setSelectedRole] = useState<UserRole>('devotee');
@@ -458,12 +466,13 @@ export default function SignupPage() {
  }
  }, [selectedRole, formData, step]);
 
- // Redirect if already authenticated
+ // Redirect if already authenticated (not while our own submit is in flight).
+ // Soft navigation: a full page load would drop the in-memory access token.
  useEffect(() => {
- if (isAuthenticated && user && !signupComplete) {
- window.location.href = getRoleDashboardPath(user.role);
+ if (isAuthenticated && user && !signupComplete && !submittingRef.current) {
+ navigate(getRoleDashboardPath(user.role));
  }
- }, [isAuthenticated, user, signupComplete]);
+ }, [isAuthenticated, user, signupComplete, navigate]);
 
  const currentRoleOption = roleOptions.find((r) => r.value === selectedRole);
  const isProvider = currentRoleOption?.isProvider ?? false;
@@ -541,6 +550,7 @@ export default function SignupPage() {
  if (!validateStep1()) return;
 
  setIsSubmitting(true);
+ submittingRef.current = true;
 
  // P0 #199 (2026-08-03): NEVER persist the password (or full formData, which
  // contains it) to web storage. Strip password/confirmPassword and store only
@@ -568,6 +578,7 @@ export default function SignupPage() {
  });
 
  if (!result.success) {
+ submittingRef.current = false;
  setIsSubmitting(false);
  setError(result.message);
  return;
@@ -578,6 +589,7 @@ export default function SignupPage() {
  // can't log in until they confirm their email. Don't drop them on a dead
  // "complete" screen as if they're signed in — tell them to verify email.
  if (!result.accessToken) {
+ submittingRef.current = false;
  setIsSubmitting(false);
  clearStorage();
  setAwaitingEmailConfirm(true);
@@ -585,8 +597,9 @@ export default function SignupPage() {
  return;
  }
 
- // For provider roles, immediately submit the role-specific profile so
- // an admin can review it. Demo-mode tokens are accepted by the API but
+ // For provider roles, immediately save the role-specific profile (the
+ // portal is already active; the profile is listed once it is complete).
+ // Demo-mode tokens are accepted by the API but
  // it returns 202 + demoMode:true and skips the DB write — that's fine,
  // signup still completes and the user reaches the confirmation screen.
  if (isProvider && result.accessToken) {
@@ -618,6 +631,9 @@ export default function SignupPage() {
  clearStorage();
  setSignupComplete(true);
  setStep(2);
+ // The signup response already seeded the auth context, so go straight into
+ // the portal with a soft navigation that keeps that session in memory.
+ navigate(getRoleDashboardPath(selectedRole));
  };
 
  // ─── Render: Step 0 — Role selection ──────────────────────────────────────
@@ -1149,21 +1165,21 @@ export default function SignupPage() {
 
  <div className="space-y-3">
  {onboardingPath && (
- <a
+ <Link
  href={onboardingPath}
  className={buttonClass('primary', 'lg', 'w-full')}
  >
  Complete Onboarding
  <ArrowRight className="w-4 h-4" />
- </a>
+ </Link>
  )}
- <a
+ <Link
  href={dashboardPath}
  className={buttonClass(onboardingPath ? 'secondary' : 'primary', 'lg', 'w-full')}
  >
  Go to Dashboard
  <ArrowRight className="w-4 h-4" />
- </a>
+ </Link>
  </div>
  </div>
  );

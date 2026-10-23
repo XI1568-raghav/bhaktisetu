@@ -63,6 +63,7 @@ function Content() {
   const [error, setError] = useState<string | null>(null);
 
   const token = session?.accessToken;
+  const [listingNote, setListingNote] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -77,6 +78,7 @@ function Content() {
         });
         if (r.ok) {
           const j = await r.json();
+          setListingNote(j.profile?.approved ? null : (j.listing?.message ?? null));
           if (j.profile) {
             setProfile({
               displayName: j.profile.displayName ?? user?.fullName ?? '',
@@ -134,6 +136,11 @@ function Content() {
         setError(serverErrorMessage(j, 'We could not save your profile. Please try again.'));
         return;
       }
+      const saveBody = await r.json().catch(() => null);
+      if (saveBody?.profile) {
+        setProfile((p) => ({ ...p, approved: !!saveBody.profile.approved }));
+        setListingNote(saveBody.profile.approved ? null : (saveBody.listing?.message ?? null));
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
@@ -184,6 +191,10 @@ function Content() {
           </div>
         </div>
       </div>
+
+      {listingNote && !profile.approved && (
+        <p className="text-sm px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-800" data-testid="listing-note">{listingNote}</p>
+      )}
 
       <Card title="Display Name">
         <input
