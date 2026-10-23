@@ -1,6 +1,8 @@
 import { prisma } from '../lib/prisma.js';
 import { notHiddenReviewWhere } from '../lib/review-moderation.js';
 import { CauseQualityError, gaushalaQuality, qualityReasonsForEdit, templeQuality } from '../lib/cause-quality.js';
+import { requireProviderApproval } from '../lib/provider-approval.js';
+import { getLinkedTempleId } from './temple-manager-link.service.js';
 
 /** Upper bound on approved cause profiles scanned per list call (quality filter runs in memory). */
 const CAUSE_LIST_CAP = 500;
@@ -557,7 +559,26 @@ export class ProviderService {
         if (!existing || existing.userId !== userId) return null;
         const failing = qualityReasonsForEdit('temple', existing, safeUpdates);
         if (failing) throw new CauseQualityError('TEMPLE_MANAGER', failing);
-        const updated = await prisma.templeProfile.update({ where: { id }, data: safeUpdates as Record<string, unknown> });
+        const data: Record<string, unknown> = { ...safeUpdates };
+        // With approval off a profile goes live on submit, so a rename is the way
+        // to claim a catalogue temple (the name match finds the payee for its
+        // donations and settlements). A rename onto a name that is already a
+        // Temple this manager is not explicitly linked to drops the profile back
+        // to not-live until the team confirms it.
+        const newName = typeof data.templeName === 'string' ? data.templeName.trim() : '';
+        if (
+          !requireProviderApproval() &&
+          existing.approved &&
+          newName &&
+          newName.toLowerCase() !== (existing.templeName ?? '').trim().toLowerCase()
+        ) {
+          const clash = await prisma.temple.findFirst({
+            where: { name: { equals: newName, mode: 'insensitive' } },
+            select: { id: true },
+          });
+          if (clash && (await getLinkedTempleId(userId)) !== clash.id) data.approved = false;
+        }
+        const updated = await prisma.templeProfile.update({ where: { id }, data });
         return updated as unknown as Record<string, unknown>;
       }
       default:

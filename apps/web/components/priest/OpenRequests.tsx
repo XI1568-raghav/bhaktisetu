@@ -166,11 +166,11 @@ export default function OpenRequests() {
         </div>
       ) : !eligible ? (
         <div className="rounded-xl border border-surface-200 bg-white p-5 text-sm text-surface-600">
-          <p className="font-medium text-surface-700">Your profile is waiting for approval</p>
+          <p className="font-medium text-surface-700">Complete your pandit profile to see open requests</p>
           <p className="mt-1">
-            Open requests appear here once an admin approves your pandit profile.{' '}
+            Open requests appear here once your pandit profile is submitted and your account is active.{' '}
             <Link href="/onboarding/view?role=priest" className="underline text-saffron-700">
-              Check your application
+              Complete your profile
             </Link>
           </p>
         </div>

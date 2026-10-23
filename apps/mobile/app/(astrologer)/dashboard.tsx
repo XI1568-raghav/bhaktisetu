@@ -109,8 +109,8 @@ export default function AstrologerDashboard() {
           </View>
           {!dash.approved ? (
             <Text style={styles.pendingBanner}>
-              Your astrologer listing is not approved yet, so devotees cannot
-              book you.
+              Your portal is active. Complete your profile to be listed, so
+              devotees can find and book you.
             </Text>
           ) : null}
         </>

@@ -54,10 +54,11 @@ describe('<OpenRequests />', () => {
     expect(screen.getByText(/You earn ₹2,400/)).toBeInTheDocument();
   });
 
-  it('tells a pandit who is not approved why the list is empty, instead of a bare empty state', async () => {
+  it('tells a pandit who has not finished the profile why the list is empty, with no approval wall', async () => {
     route({ 'GET /priest/open-requests': () => json(200, { eligible: false, requests: [] }) });
     render(<OpenRequests />);
-    expect(await screen.findByText(/waiting for approval/i)).toBeInTheDocument();
+    expect(await screen.findByText(/complete your pandit profile/i)).toBeInTheDocument();
+    expect(screen.queryByText(/waiting for approval|admin approves/i)).toBeNull();
     expect(screen.queryByRole('button', { name: /accept/i })).toBeNull();
   });
 

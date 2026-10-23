@@ -291,8 +291,7 @@ function StoreAdminProductsPageContent() {
           <h2 className="text-lg font-semibold text-surface-800">Finish setting up your store</h2>
           <p className="text-sm text-surface-600 mt-1 mb-4">
             Your store does not have a name yet, so products cannot be listed against it. Add it
-            here and you can start listing straight away. A reviewer approves the store before it
-            appears publicly.
+            here and you can start listing straight away.
           </p>
           <div className="flex flex-wrap gap-3">
             <input

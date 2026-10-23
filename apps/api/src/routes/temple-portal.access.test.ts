@@ -89,11 +89,13 @@ describe('an unapproved temple profile is not linked to any temple', () => {
     expect(prismaMock.templePujaOffering.create).not.toHaveBeenCalled();
   });
 
-  it('GET /pujas says the profile is awaiting approval, not that the name is wrong', async () => {
+  it('GET /pujas says the portal is active but the temple is not linked yet, not that the name is wrong', async () => {
     const res = await get('/pujas');
     const body = res.json();
     expect(body).toMatchObject({ templeLinked: false, reason: 'not_approved' });
-    expect(body.message).toMatch(/approv/i);
+    // No "awaiting approval" wall: the manager is told the portal works and what links the temple.
+    expect(body.message).toMatch(/portal is active/i);
+    expect(body.message).not.toMatch(/awaiting approval/i);
   });
 });
 

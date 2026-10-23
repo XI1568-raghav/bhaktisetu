@@ -59,3 +59,18 @@ The `poojly_` prefix is legacy from rebrand. **Do not rename** without a migrati
 ## Smoke test
 
 `node apps/api/scripts/smoke-all-roles.mjs` logs in each demo account, hits every role's dashboard + API surfaces, verifies perms enforcement + admin mutation. 88/88 green on prod 2026-05-26.
+
+## Provider approval (REQUIRE_PROVIDER_APPROVAL, default off)
+
+Non-devotee roles (pandit/priest, store owner, astrologer, wellness instructor, gaushala manager, temple manager) go live on submit with no admin action. Set `REQUIRE_PROVIDER_APPROVAL=true` on the API to restore the old admin gate. Details: `docs/env-vars.md`.
+
+| Role | Live means | Written on submit |
+|---|---|---|
+| pandit | `PanditProfile.approved` + ACTIVE `Priest` row (portal gate `requireRole('priest')`) | `approved`, `approvedAt`; `Priest.status` inactive -> active. **Never** `Priest.isVerified` / `verificationStatus` (TC-08). |
+| store owner | `StoreProfile.approved` (public store + products) | `approved` |
+| astrologer | `AstrologerProfile.approved` (directory, booking); public `verified` stays false | `approved` |
+| wellness instructor | `WellnessProfile.approved` (public + enrolments) | `approved` |
+| gaushala manager | `GaushalaProfile.approved` and the cause-quality bar | `approved` only when name/description/address pass `lib/cause-quality.ts` |
+| temple manager | `TempleProfile.approved`; a new name also gets a hidden `pending_review` Temple + `temple_manager_links` row | `approved` only when quality passes AND the name is not already a catalogue Temple (that needs an admin link, `/admin/temple-links`) |
+
+Portals open on the role assignment alone (`requireRole`/roles list); only the pandit portal also needs the active Priest row, which signup now creates. Suspension: admin Block (`User.blocked`, enforced everywhere) or un-approve (`PATCH /admin/users/:id {approved:false}`: hides the profile and, for a pandit, sets an active Priest row inactive). Un-approve is not a permanent ban: the provider re-submitting their profile re-activates it; use Block for that. Earnings stay held until performed/proved and payouts still need payout details + KYC.

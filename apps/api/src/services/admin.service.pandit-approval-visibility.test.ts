@@ -69,6 +69,18 @@ describe('approving a pandit also makes them publicly listable', () => {
     });
   });
 
+  it('suspending (approved:false) also closes the pandit portal: an active Priest row goes inactive', async () => {
+    // With REQUIRE_PROVIDER_APPROVAL off a pandit is live from registration, so an
+    // admin un-approval has to do more than hide them. Only an ACTIVE row is
+    // touched: a suspended one stays suspended, and approving reopens an inactive one.
+    await service.updateUser(USER_ID, { approved: false });
+
+    expect(prismaMock.priest.updateMany).toHaveBeenCalledWith({
+      where: { userId: USER_ID, status: 'active' },
+      data: { status: 'inactive' },
+    });
+  });
+
   it('does not touch Priest for a non-pandit approval', async () => {
     prismaMock.userRoleAssignment.findMany.mockResolvedValue([
       { userId: USER_ID, role: 'STORE_OWNER', isPrimary: true },

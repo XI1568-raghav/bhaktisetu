@@ -68,6 +68,9 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW: z.string().optional(),
   RATE_LIMIT_AUTH_MAX: z.string().optional(),
   CRON_AUTH_TOKEN: z.string().optional(),
+  // 'true' restores admin approval for new provider profiles. Unset = providers go live on submit.
+  // Read at call time by lib/provider-approval.ts.
+  REQUIRE_PROVIDER_APPROVAL: z.string().optional(),
   SENTRY_DSN: z.string().optional(),
 });
 

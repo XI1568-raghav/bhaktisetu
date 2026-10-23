@@ -278,8 +278,8 @@ export default function WellnessPage() {
 
  <ApprovedProvidersStrip
  type="wellness"
- heading="Approved instructors on Darshya"
- subheading="Approved yoga, meditation and pranayama instructors. Each profile is reviewed before going live."
+ heading="Instructors on Darshya"
+ subheading="Yoga, meditation and pranayama instructors who have listed themselves on Darshya."
  limit={8}
  />
 

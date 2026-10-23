@@ -128,7 +128,7 @@ export default function TempleDashboard() {
  const linkNotice =
   api?.templeLinked === false
    ? api.reason === 'not_approved'
-    ? 'Your temple profile is awaiting approval by the Darshya team. Bookings, donations and payouts appear here once it is approved and linked to your temple.'
+    ? 'Your portal is active. Your temple is not linked to a public temple page yet: complete the description and full address in your profile, or the Darshya team will confirm you manage a temple whose name is already listed. Bookings, donations and payouts appear here once it is linked.'
     : api.reason === 'no_matching_temple'
      ? 'Your temple profile is not connected to a public temple page on Darshya yet; the Darshya team connects it by hand, and your bookings and offerings will appear here once that is done.'
      : 'Complete your temple profile to start receiving bookings and donations.'

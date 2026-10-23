@@ -121,8 +121,8 @@ export default function WellnessProfile() {
 
       {me && !me.approved ? (
         <Text style={styles.pendingBanner}>
-          Your listing is not approved yet, so devotees cannot find or book your
-          classes.
+          Your portal is active. Complete your profile to be listed, so devotees
+          can find and book your classes.
         </Text>
       ) : null}
 

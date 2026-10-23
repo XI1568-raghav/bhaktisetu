@@ -193,6 +193,9 @@ export default function AdminApprovalsPage() {
           <p className="text-sm text-surface-500 mt-0.5">
             {loading ? 'Loading…' : `${approvals.length} pending approval${approvals.length === 1 ? '' : 's'} require review`}
           </p>
+          <p className="text-xs text-surface-400 mt-1">
+            Approval is optional review. Approve makes a profile live; Reject hides it. To remove a provider for good, block the user.
+          </p>
         </div>
       </div>
 

@@ -596,6 +596,8 @@ function OnboardingInner() {
  const [data, setData] = useState<Record<string, unknown>>({});
  const [isSubmitting, setIsSubmitting] = useState(false);
  const [isSubmitted, setIsSubmitted] = useState(false);
+ const [liveNow, setLiveNow] = useState(false);
+ const [submitNote, setSubmitNote] = useState<string | null>(null);
  const [submitError, setSubmitError] = useState<string | null>(null);
 
  // Load saved data
@@ -667,13 +669,20 @@ function OnboardingInner() {
  try {
  localStorage.setItem(
  `poojly_onboarding_${role}_submitted`,
- JSON.stringify({ ...data, submittedAt: new Date().toISOString(), status: 'pending_review' }),
+ JSON.stringify({ ...data, submittedAt: new Date().toISOString(), status: 'submitted' }),
  );
  localStorage.removeItem(getStorageKey(role));
  } catch {
  // storage unavailable
  }
 
+ try {
+ const body = (await res.json()) as { approved?: boolean; message?: string };
+ setLiveNow(body.approved === true);
+ setSubmitNote(body.approved === true ? null : (body.message ?? null));
+ } catch {
+ // a body we cannot read changes nothing: the submission itself succeeded
+ }
  setIsSubmitted(true);
  } catch (err) {
  setSubmitError(userFacingMessage(err, 'Submission failed'));
@@ -714,18 +723,18 @@ function OnboardingInner() {
  <CheckCircle2 className="w-8 h-8 text-green-600" />
  </div>
  <h2 className="text-lg font-semibold text-surface-800 mb-2">
- Submitted for Approval
+ {liveNow ? 'Your profile is live' : 'Profile submitted'}
  </h2>
  <p className="text-sm text-surface-500 mb-6">
- Your {getRoleLabel(role as UserRole)} profile has been submitted. Our team will review
- it within 24-48 hours. You will receive an email notification once approved.
+ {liveNow
+ ? `Your ${getRoleLabel(role as UserRole)} profile is saved and your portal is ready. Add your payout details to receive earnings.`
+ : `Your ${getRoleLabel(role as UserRole)} profile has been saved and your portal is ready.`}
  </p>
+ {!liveNow && submitNote && (
  <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl mb-6">
- <p className="text-sm text-amber-800 font-medium">Profile Under Review</p>
- <p className="text-xs text-amber-700 mt-1">
- You can access your dashboard, but some features will be locked until approval.
- </p>
+ <p className="text-xs text-amber-700">{submitNote}</p>
  </div>
+ )}
  <a
  href={dashPath}
  className={buttonClass('primary', 'lg', 'w-full')}
@@ -1250,7 +1259,7 @@ function OnboardingInner() {
  ) : (
  <>
  <Shield className="w-4 h-4" />
- Submit for Approval
+ Submit Profile
  </>
  )}
  </button>

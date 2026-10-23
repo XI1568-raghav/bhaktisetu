@@ -359,8 +359,8 @@ export default function GaushalaPage() {
  // Neither happens: GaushalaProfile.verified is written nowhere, nothing
  // audits a gaushala, and no endpoint publishes one's finances. Approval
  // by hand before listing is the process that actually exists.
- label: "Reviewed Gaushalas",
- sub: "Approved before they are listed",
+ label: "Listed Gaushalas",
+ sub: "Each meets a minimum profile check",
  },
  {
  icon: Camera,
@@ -618,7 +618,7 @@ export default function GaushalaPage() {
  What your gau seva pays for
  </h2>
  <p className="text-surface-400 max-w-xl mx-auto">
- Every contribution goes to a gaushala we have approved for listing, and is receipted. Here is
+ Every contribution goes to a gaushala listed on Darshya, and is receipted. Here is
  what it covers.
  </p>
  </div>
@@ -728,8 +728,8 @@ export default function GaushalaPage() {
 
  <ApprovedProvidersStrip
  type="gaushala"
- heading="Approved gaushalas on Darshya"
- subheading="Approved gaushalas you can support directly. Each one is reviewed before being listed."
+ heading="Gaushalas on Darshya"
+ subheading="Gaushalas you can support directly. Each one lists itself and must meet our minimum profile checks."
  limit={8}
  />
  </div>

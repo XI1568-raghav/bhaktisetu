@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   alternates: { canonical: 'https://darshya.online/become-astrologer' },
   title: 'Become a Darshya astrologer',
   description:
-    'Take per-minute consultations on Darshya — kundli, muhurat, gemstone and tarot. Approved astrologers only.',
+    'Take per-minute consultations on Darshya — kundli, muhurat, gemstone and tarot. Go live as soon as you submit.',
 };
 
 // TC-02 (P0, trust). PJ-02 stripped three unbackable promises from
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
 //
 // Copy below states only what ships today: a flat 80% share (the uniform
 // provider rate — ASTROLOGER_PLATFORM_RATE is 20%), a payout you request and we
-// release by hand, and approval rather than a verification badge. Restore a
+// release by hand, and no verification badge (the profile goes live on submit, unreviewed). Restore a
 // cadence claim on the day the bank rail is live, and a verification badge on
 // the day the column exists.
 const BENEFITS = [
@@ -47,8 +47,8 @@ const BENEFITS = [
     body: 'You keep 80% of every consultation — Darshya takes 20%, the same rate for every provider on the platform. Once your bank details are verified, request a payout from your dashboard and we transfer it manually while our automated bank rail is being set up.',
   },
   {
-    title: 'A reviewed profile builds trust',
-    body: 'Every astrologer profile is reviewed and approved before it goes live, so devotees browsing /astrology are only shown practitioners we have actually looked at.',
+    title: 'Live as soon as you submit',
+    body: 'Your profile and portal are active the moment you submit it, with no waiting list. A clear photo, languages and bio help devotees choose you. Darshya does not vouch for credentials, so describe your training honestly.',
   },
 ];
 

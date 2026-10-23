@@ -12,6 +12,7 @@ import {
   SIGNS,
 } from '../lib/astrology.js';
 import { prisma } from '../lib/prisma.js';
+import { requireProviderApproval } from '../lib/provider-approval.js';
 import { getAstrologerPresence } from '../services/astrologer.service.js';
 
 // Pagination clamp shared across astrologer list + reviews. Without an
@@ -83,6 +84,14 @@ const SPECIALIZATION_ICONS: Record<string, string> = {
   'Nadi Astrology': 'scroll',
 };
 
+/**
+ * `verified` is a claim that somebody reviewed the astrologer. With approval off
+ * `approved` only means "live", so it may not be reported as verified (TC-08).
+ */
+function adminReviewed(approved: boolean): boolean {
+  return requireProviderApproval() && approved;
+}
+
 async function loadApprovedAstrologers(): Promise<PublicAstrologer[]> {
   const profiles = await prisma.astrologerProfile.findMany({
     where: { approved: true },
@@ -104,7 +113,7 @@ async function loadApprovedAstrologers(): Promise<PublicAstrologer[]> {
       isOnline: presence.online,
       mode: presence.mode,
       bio: p.bio,
-      verified: p.approved,
+      verified: adminReviewed(p.approved),
     };
   });
 }
@@ -223,7 +232,7 @@ export async function astrologyRoutes(server: FastifyInstance) {
           isOnline: presence.online,
           mode: presence.mode,
           bio: p.bio,
-          verified: p.approved,
+          verified: adminReviewed(p.approved),
           source: 'live',
         },
       };

@@ -551,7 +551,7 @@ export default function SignupPage() {
  role: selectedRole,
  ...safeFormData,
  signedUpAt: new Date().toISOString(),
- status: isProvider ? 'pending_approval' : 'active',
+ status: 'active',
  };
  try {
  localStorage.setItem('poojly_profile_data', JSON.stringify(profileData));
@@ -902,7 +902,7 @@ export default function SignupPage() {
  Sign up as {currentRoleOption?.label}
  </h2>
  {isProvider && (
- <p className="text-xs text-amber-600">Provider accounts require approval</p>
+ <p className="text-xs text-surface-500">Your {currentRoleOption?.label} portal opens as soon as you sign in</p>
  )}
  </div>
  </div>
@@ -1133,12 +1133,11 @@ export default function SignupPage() {
 
  {isProvider ? (
  <div className="space-y-3 mb-6">
- <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
- <p className="text-sm text-amber-800 font-medium mb-1">Profile Pending Approval</p>
- <p className="text-xs text-amber-700 leading-relaxed">
- Your {currentRoleOption?.label} profile is under review. We will notify you
- at <span className="font-medium">{formData.email}</span> once approved.
- Meanwhile, complete your onboarding to speed up the process.
+ <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
+ <p className="text-sm text-green-800 font-medium mb-1">Your account is active</p>
+ <p className="text-xs text-green-700 leading-relaxed">
+ Your {currentRoleOption?.label} portal is ready. Complete your profile
+ to appear on Darshya, and add your payout details to receive earnings.
  </p>
  </div>
  </div>

@@ -349,7 +349,29 @@ describe('POST /signup — A-015 first-admin bootstrap', () => {
 
     expect(res.statusCode).toBe(201);
     expect(res.json().user.role).toBe('pandit');
-    expect(res.json().user.status).toBe('pending_approval');
+    // REQUIRE_PROVIDER_APPROVAL is unset: no approval step, so no pending state.
+    expect(res.json().user.status).toBe('active');
+    expect(res.json().message).not.toMatch(/pending approval/i);
     await app.close();
+  });
+
+  it('REQUIRE_PROVIDER_APPROVAL=true restores the pending_approval signup state', async () => {
+    const email = 'a015-pandit-gated@example.com';
+    process.env.ADMIN_EMAILS = 'owner@darshya.online';
+    process.env.REQUIRE_PROVIDER_APPROVAL = 'true';
+    try {
+      mockSignupOk(email, true);
+      const app = makeApp();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/signup',
+        payload: { email, password: 'hunter2pass', fullName: 'Pandit A', role: 'pandit' },
+      });
+      expect(res.statusCode).toBe(201);
+      expect(res.json().user.status).toBe('pending_approval');
+      await app.close();
+    } finally {
+      delete process.env.REQUIRE_PROVIDER_APPROVAL;
+    }
   });
 });

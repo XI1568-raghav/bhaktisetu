@@ -13,8 +13,8 @@ const BENEFITS = [
     // `verified: true` in apps/api is a mock fixture in provider.service.ts).
     // "boosts donor conversion 3-4x" is a measurement no funnel in the product
     // has ever taken. Both are replaced by the review step that does run.
-    title: 'Reviewed before you go live',
-    body: 'Submit your registration certificate once. A Darshya reviewer approves the listing before donors can see it.',
+    title: 'Live once your profile is complete',
+    body: 'Submit your registration certificate once. Donors see the listing once it passes our minimum profile checks (name, description and a full address).',
   },
   {
     title: 'Cow-count + photos',

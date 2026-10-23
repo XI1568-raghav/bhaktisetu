@@ -187,7 +187,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  Complete your {ROLE_LABEL[role]} profile
  </h2>
  <p className="text-sm text-amber-800 mb-3">
- Submit your details so an admin can review and approve your listing.
+ Submit your details to go live on Darshya.
  {error && <span className="block text-xs text-amber-700 mt-1">{error}</span>}
  </p>
  <Link
@@ -229,7 +229,7 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  ) : (
  <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-50 text-amber-700 text-xs font-medium rounded-full border border-amber-200">
  <Clock className="w-3 h-3" />
- Pending approval
+ Not listed yet
  </span>
  )}
  </div>

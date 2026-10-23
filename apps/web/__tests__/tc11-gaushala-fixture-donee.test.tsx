@@ -163,7 +163,8 @@ describe('TC-11 — /gaushala/profile/[id], the DB-backed page, says approved no
 
   it('stamps no Verified badge on a column the product never writes', () => {
     expect(src).not.toMatch(/Verified gaushala/);
-    expect(src).toMatch(/Approved gaushala/);
+    expect(src).toMatch(/Listed gaushala/);
+    expect(src).not.toMatch(/Approved gaushala/);
   });
 
   it('its meta description claims no verification and no direct settlement', () => {

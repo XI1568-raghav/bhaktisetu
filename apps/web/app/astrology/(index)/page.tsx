@@ -238,8 +238,8 @@ export default function AstrologyPage() {
 
  <ApprovedProvidersStrip
  type="astrologer"
- heading="Approved astrologers on Darshya"
- subheading="Talk to approved Vedic astrologers. Each profile is reviewed before going live."
+ heading="Astrologers on Darshya"
+ subheading="Talk to astrologers who have listed themselves on Darshya."
  limit={8}
  />
  </>
