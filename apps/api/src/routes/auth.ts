@@ -1354,6 +1354,8 @@ export async function authRoutes(server: FastifyInstance) {
       // token is minted by /login, which seeds it there.
       if (authData.session) {
         await seedRefreshTokenJti(request, authData.session.refresh_token, authData.session.user?.id);
+        // Same cookies /login sets: without them a reload after signup has no refresh credential (SEC-02) and bounces to login.
+        setAuthCookies(reply, authData.session.access_token, authData.session.refresh_token);
       }
 
       // A-015 (2026-08-10): first-admin bootstrap. `admin` is not in the signup
