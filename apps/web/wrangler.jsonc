@@ -15,5 +15,7 @@
   ],
   // Runtime (non-secret) vars. NEXT_PUBLIC_* are baked at build time, not here.
   "vars": {},
-  "observability": { "enabled": true }
+  "observability": { "enabled": true },
+  // Sourcemaps passed the 60 MiB upload limit (64.5 MiB, 2026-10-23); not needed at runtime.
+  "upload_source_maps": false
 }
