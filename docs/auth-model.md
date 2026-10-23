@@ -71,7 +71,7 @@ Non-devotee roles (pandit/priest, store owner, astrologer, wellness instructor, 
 | astrologer | `AstrologerProfile.approved` (directory, booking); public `verified` stays false | `approved` |
 | wellness instructor | `WellnessProfile.approved` (public + enrolments) | `approved` |
 | gaushala manager | `GaushalaProfile.approved` and the cause-quality bar | `approved` only when name/description/address pass `lib/cause-quality.ts` |
-| temple manager | `TempleProfile.approved`; a new name also gets a hidden `pending_review` Temple + `temple_manager_links` row | `approved` only when quality passes AND the name is not already a catalogue Temple (that needs an admin link, `/admin/temple-links`) |
+| temple manager | `TempleProfile.approved`; a new name also gets a hidden `pending_review` Temple + `temple_manager_links` row | `approved` only when quality passes (a catalogue temple name links the manager to it directly, no admin step since 2026-10-23) |
 
 Portals open on the role assignment alone (`requireRole`/roles list); only the pandit portal also needs the active Priest row, which signup now creates. Suspension: admin Block (`User.blocked`, enforced everywhere) or un-approve (`PATCH /admin/users/:id {approved:false}`: hides the profile and, for a pandit, sets an active Priest row inactive). Un-approve is not a permanent ban: the provider re-submitting their profile re-activates it; use Block for that. Earnings stay held until performed/proved and payouts still need payout details + KYC.
 

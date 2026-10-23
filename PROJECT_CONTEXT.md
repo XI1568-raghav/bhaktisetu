@@ -33,7 +33,7 @@
 3. Platform commission 20-40% per temple.
 4. Priest payout = price − commission, gated on Aadhaar. (Unchanged by `REQUIRE_PROVIDER_APPROVAL`: earnings stay held until performed/proved and a payout still needs KYC + bank details.)
 5. Cancellation up to 24h before scheduled time.
-6. Temples must be verified before live. (Catalogue `Temple.isVerified` is unchanged. Since 2026-10 a temple MANAGER profile goes live without admin approval, but only for a name that is not already a catalogue temple; claiming an existing temple still needs an admin link.)
+6. Temples must be verified before live. (Catalogue `Temple.isVerified` is unchanged. Since 2026-10 a temple MANAGER profile goes live without admin approval, and, since 2026-10-23, claiming an existing catalogue temple links the manager to it directly with no admin step.)
 7. 80G receipt requires donee 80G regn + PAN.
 
 ## Provider approval
