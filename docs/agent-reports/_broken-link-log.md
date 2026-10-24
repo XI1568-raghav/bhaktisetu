@@ -1,6 +1,8 @@
 # broken-link log
 
 
+- 2026-10-24T08:22:11.036Z — checked=200 broken=6 slow=5
+
 - 2026-10-23T08:48:10.958Z — checked=200 broken=37 slow=2
 
 - 2026-10-22T08:53:17.620Z — checked=200 broken=28 slow=6
