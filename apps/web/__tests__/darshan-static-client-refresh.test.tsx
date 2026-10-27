@@ -31,11 +31,11 @@ describe('DarshanAartiSchedule', () => {
 describe('DarshanScheduleTable', () => {
   it('shows no status cell on the first paint, then a graded one', async () => {
     const rows = [
-      { slug: 'mahakaleshwar', temple: 'Mahakaleshwar', time: '4:00 AM', event: 'Bhasma Aarti', status: 'live' as const, href: '/darshan/mahakaleshwar', minutesIST: 240 },
+      { slug: 'kashi-vishwanath', temple: 'Kashi Vishwanath', time: '2:30 AM', event: 'Mangala Aarti', status: 'live' as const, href: '/darshan/kashi-vishwanath', minutesIST: 150 },
     ];
     const { container } = render(<DarshanScheduleTable initialRows={rows} />);
     await act(async () => {});
-    expect(container.textContent).toMatch(/Mahakaleshwar/);
+    expect(container.textContent).toMatch(/Kashi Vishwanath/);
     expect(container.textContent).toMatch(/LIVE|Completed|Upcoming/);
   });
 });
