@@ -41,7 +41,6 @@ const HIGHLIGHTS: { slug: string; temple: string; event: string }[] = [
   { slug: 'kashi-vishwanath', temple: 'Kashi Vishwanath', event: 'Mangala Aarti' },
   { slug: 'tirupati', temple: 'Tirupati Balaji', event: 'Suprabhatam' },
   { slug: 'golden-temple', temple: 'Golden Temple, Amritsar', event: 'Asa di Var' },
-  { slug: 'mahakaleshwar', temple: 'Mahakaleshwar', event: 'Bhasma Aarti' },
   { slug: 'shirdi', temple: 'Shirdi Sai Baba', event: 'Kakad Aarti' },
   { slug: 'jagannath-puri', temple: 'Jagannath, Puri', event: 'Mangala Aarti' },
   { slug: 'siddhivinayak', temple: 'Siddhivinayak, Mumbai', event: 'Kakad Aarti' },
@@ -51,7 +50,6 @@ const HIGHLIGHTS: { slug: string; temple: string; event: string }[] = [
   { slug: 'golden-temple', temple: 'Golden Temple, Amritsar', event: 'Rehras Sahib' },
   { slug: 'jagannath-puri', temple: 'Jagannath, Puri', event: 'Sandhya Aarti' },
   { slug: 'kashi-vishwanath', temple: 'Kashi Vishwanath', event: 'Shayan Aarti' },
-  { slug: 'mahakaleshwar', temple: 'Mahakaleshwar', event: 'Shayan Aarti' },
 ];
 
 function to12h(time24: string): string {
