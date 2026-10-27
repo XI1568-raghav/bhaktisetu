@@ -544,3 +544,38 @@ export function loadErrorMessage(cause: unknown): string {
  }
  return "Couldn't load live data. The figures below are placeholders, not your real numbers — retry.";
 }
+
+/**
+ * Browser calls to the API default to `credentials: 'include'`.
+ *
+ * The API authenticates from the httpOnly `darshya_session` cookie when no Bearer
+ * header is present, but `fetch` omits cookies on a cross-origin call unless asked.
+ * Pages that call the API with a bare `fetch` therefore got a 401 on their first
+ * request (the in-memory token is empty after every full page load), and only then
+ * revived the session and retried, so each page paid a failed round trip plus a
+ * refresh. Giving the cookie to every API call makes that first request succeed.
+ * Calls that pass `credentials` explicitly are left alone.
+ */
+export function withApiCredentials(
+  nativeFetch: typeof fetch,
+  apiBase: string,
+): typeof fetch {
+  return ((input: RequestInfo | URL, init?: RequestInit) => {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.href : '';
+    if (url.startsWith(apiBase) && init?.credentials === undefined) {
+      return nativeFetch(input, { ...init, credentials: 'include' });
+    }
+    return nativeFetch(input, init);
+  }) as typeof fetch;
+}
+
+declare global {
+  interface Window {
+    __apiCredentialsPatched?: boolean;
+  }
+}
+
+if (typeof window !== 'undefined' && typeof window.fetch === 'function' && !window.__apiCredentialsPatched) {
+  window.__apiCredentialsPatched = true;
+  window.fetch = withApiCredentials(window.fetch.bind(window), API_BASE_URL);
+}
