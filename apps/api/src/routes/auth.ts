@@ -732,52 +732,62 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    // The suspended-account check and the JTI ledger writes are independent
+    // database round trips; run them together (every full page load waits on
+    // this endpoint, so each sequential round trip is visible as lag).
+    const userId = data.session.user.id;
+    const newJti = createHash('sha256').update(data.session.refresh_token).digest('hex');
+
+    const ledgerWrite = (async () => {
+      try {
+        // 30-day TTL for new JTI (Supabase default refresh token lifetime).
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+        // A-009 (2026-08-10): only burn the presented JTI when Supabase actually
+        // rotated. Inside GoTrue's reuse-interval a retry can return the SAME
+        // refresh token; burning it there would make the very next legitimate
+        // refresh look like a replay and family-revoke every session the user has.
+        if (knownUserId && newJti !== jti) {
+          await prisma.$executeRawUnsafe(
+            `UPDATE refresh_token_jtis SET used_at = now() WHERE jti = $1 AND used_at IS NULL`,
+            jti,
+          );
+        }
+        await prisma.$executeRawUnsafe(
+          `INSERT INTO refresh_token_jtis (jti, user_id, expires_at) VALUES ($1, $2::uuid, $3::timestamptz)
+           ON CONFLICT (jti) DO NOTHING`,
+          newJti,
+          userId,
+          expiresAt.toISOString(),
+        );
+      } catch (err) {
+        request.log.warn({ err }, 'JTI rotation write failed — refresh succeeded but ledger out of sync');
+      }
+    })();
+
     // A suspended account must not keep minting sessions. Every API call it makes
     // is refused anyway, but a live refresh loop keeps a Supabase session (and the
     // web's "session expired" sign-in loop) alive for someone who has been cut off.
-    try {
-      const refreshedUser = await prisma.user.findUnique({
-        where: { id: data.session.user.id },
-        select: { blocked: true, blockedReason: true },
-      });
-      if (refreshedUser?.blocked) {
-        clearAuthCookies(reply);
-        return reply.code(403).send({
-          error: 'Forbidden',
-          message: refreshedUser.blockedReason
-            ? `Account suspended: ${refreshedUser.blockedReason}`
-            : 'This account has been suspended.',
+    const blockedCheck = (async () => {
+      try {
+        return await prisma.user.findUnique({
+          where: { id: userId },
+          select: { blocked: true, blockedReason: true },
         });
+      } catch (err) {
+        request.log.warn({ err }, 'refresh: blocked-user check failed; allowing refresh');
+        return null;
       }
-    } catch (err) {
-      request.log.warn({ err }, 'refresh: blocked-user check failed; allowing refresh');
-    }
+    })();
 
-    // Mark old JTI used + insert new JTI for the new refresh token.
-    try {
-      const newJti = createHash('sha256').update(data.session.refresh_token).digest('hex');
-      const userId = data.session.user.id;
-      // 30-day TTL for new JTI (Supabase default refresh token lifetime).
-      const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      // A-009 (2026-08-10): only burn the presented JTI when Supabase actually
-      // rotated. Inside GoTrue's reuse-interval a retry can return the SAME
-      // refresh token; burning it there would make the very next legitimate
-      // refresh look like a replay and family-revoke every session the user has.
-      if (knownUserId && newJti !== jti) {
-        await prisma.$executeRawUnsafe(
-          `UPDATE refresh_token_jtis SET used_at = now() WHERE jti = $1 AND used_at IS NULL`,
-          jti,
-        );
-      }
-      await prisma.$executeRawUnsafe(
-        `INSERT INTO refresh_token_jtis (jti, user_id, expires_at) VALUES ($1, $2::uuid, $3::timestamptz)
-         ON CONFLICT (jti) DO NOTHING`,
-        newJti,
-        userId,
-        expiresAt.toISOString(),
-      );
-    } catch (err) {
-      request.log.warn({ err }, 'JTI rotation write failed — refresh succeeded but ledger out of sync');
+    const [refreshedUser] = await Promise.all([blockedCheck, ledgerWrite]);
+    if (refreshedUser?.blocked) {
+      clearAuthCookies(reply);
+      return reply.code(403).send({
+        error: 'Forbidden',
+        message: refreshedUser.blockedReason
+          ? `Account suspended: ${refreshedUser.blockedReason}`
+          : 'This account has been suspended.',
+      });
     }
 
     setAuthCookies(reply, data.session.access_token, data.session.refresh_token);
