@@ -31,7 +31,7 @@ API_PID=$!
 sleep 1.5
 
 # Start Web (no turbopack — known bug with pnpm workspaces + Next 15.5)
-cd "$DIR/apps/web" && npx next dev --port 3000 &
+cd "$DIR/apps/web" && npx next dev --webpack --port 3000 &
 WEB_PID=$!
 
 echo ""

@@ -10,6 +10,6 @@ import staticAssetsIncrementalCache from '@opennextjs/cloudflare/overrides/incre
 // served from the build output instead of re-rendered per request (10 ms CPU cap).
 // Trade-off: no ISR revalidation; content changes need a redeploy. See docs/runbooks/cloudflare-web-deploy.md.
 const config = defineCloudflareConfig({ incrementalCache: staticAssetsIncrementalCache });
-config.buildCommand = 'node scripts/build-search-index.mjs && next build';
+config.buildCommand = 'node scripts/build-search-index.mjs && next build --webpack';
 
 export default config;

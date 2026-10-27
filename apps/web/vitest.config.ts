@@ -49,7 +49,7 @@ export default defineConfig({
         find: 'server-only',
         replacement: path.resolve(__dirname, './__tests__/__stubs__/server-only.ts'),
       },
-      // The pnpm workspace installs multiple PHYSICAL copies of React 19.2.5:
+      // The pnpm workspace installs multiple PHYSICAL copies of React 19.3.1:
       // one under apps/web/node_modules/react and a separate one in the .pnpm
       // store that react-dom and @testing-library/react reach through their
       // peer symlinks (plus a stale 18.3.1 hoisted at the worktree root). Even
@@ -66,42 +66,42 @@ export default defineConfig({
         find: 'react-dom/client',
         replacement: path.resolve(
           __dirname,
-          '../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom/client.js',
+          '../../node_modules/.pnpm/react-dom@19.3.1_react@19.3.1/node_modules/react-dom/client.js',
         ),
       },
       {
         find: 'react-dom',
         replacement: path.resolve(
           __dirname,
-          '../../node_modules/.pnpm/react-dom@19.2.5_react@19.2.5/node_modules/react-dom',
+          '../../node_modules/.pnpm/react-dom@19.3.1_react@19.3.1/node_modules/react-dom',
         ),
       },
       {
         find: 'react/jsx-dev-runtime',
         replacement: path.resolve(
           __dirname,
-          '../../node_modules/.pnpm/react@19.2.5/node_modules/react/jsx-dev-runtime.js',
+          '../../node_modules/.pnpm/react@19.3.1/node_modules/react/jsx-dev-runtime.js',
         ),
       },
       {
         find: 'react/jsx-runtime',
         replacement: path.resolve(
           __dirname,
-          '../../node_modules/.pnpm/react@19.2.5/node_modules/react/jsx-runtime.js',
+          '../../node_modules/.pnpm/react@19.3.1/node_modules/react/jsx-runtime.js',
         ),
       },
       {
         find: 'react',
         replacement: path.resolve(
           __dirname,
-          '../../node_modules/.pnpm/react@19.2.5/node_modules/react',
+          '../../node_modules/.pnpm/react@19.3.1/node_modules/react',
         ),
       },
       {
         find: 'scheduler',
         replacement: path.resolve(
           __dirname,
-          '../../node_modules/.pnpm/scheduler@0.27.0/node_modules/scheduler',
+          '../../node_modules/.pnpm/scheduler@0.28.0/node_modules/scheduler',
         ),
       },
     ],
