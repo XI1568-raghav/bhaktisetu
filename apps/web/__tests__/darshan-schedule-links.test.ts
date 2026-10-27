@@ -60,19 +60,19 @@ describe('TD-02 /darshan daily schedule links', () => {
   });
 
   it('derives LIVE from the clock instead of a hardcoded literal', () => {
-    // Mahakaleshwar Bhasma Aarti runs 04:00–05:30 IST (90 min window).
-    const during = darshanScheduleRows(atIST(4, 30)).find(
-      (r) => r.slug === 'mahakaleshwar' && r.event === 'Bhasma Aarti',
+    // Kashi Vishwanath Mangala Aarti runs 02:30–04:00 IST (90 min window).
+    const during = darshanScheduleRows(atIST(3, 0)).find(
+      (r) => r.slug === 'kashi-vishwanath' && r.event === 'Mangala Aarti',
     );
     expect(during?.status).toBe('live');
 
     const afternoon = darshanScheduleRows(atIST(15, 0)).find(
-      (r) => r.slug === 'mahakaleshwar' && r.event === 'Bhasma Aarti',
+      (r) => r.slug === 'kashi-vishwanath' && r.event === 'Mangala Aarti',
     );
     expect(afternoon?.status).toBe('completed');
 
     const beforeDawn = darshanScheduleRows(atIST(1, 0)).find(
-      (r) => r.slug === 'mahakaleshwar' && r.event === 'Bhasma Aarti',
+      (r) => r.slug === 'kashi-vishwanath' && r.event === 'Mangala Aarti',
     );
     expect(beforeDawn?.status).toBe('upcoming');
   });
