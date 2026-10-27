@@ -163,8 +163,24 @@ export class PriestService {
    * Get priest dashboard summary: earnings, booking counts, rating stats.
    */
   async getDashboard(priestId: string) {
-    const priest = await prisma.priest.findUnique({
-      where: { id: priestId },
+    // Earnings summary and booking counts
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // One batch, not five dependent stages: each query is a database round trip
+    // (~0.4 s on prod), and none of these reads needs another's result.
+    const [
+      priest,
+      totalEarnings,
+      monthEarnings,
+      pendingPayouts,
+      totalBookings,
+      upcomingBookings,
+      completedBookings,
+      upcomingList,
+    ] = await Promise.all([
+      prisma.priest.findUnique({
+        where: { id: priestId },
       select: {
         id: true,
         displayName: true,
@@ -179,17 +195,7 @@ export class PriestService {
         isOnDuty: true,
         lastSeenAt: true,
       },
-    });
-
-    if (!priest) {
-      throw new Error('Priest not found.');
-    }
-
-    // Earnings summary
-    const now = new Date();
-    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    const [totalEarnings, monthEarnings, pendingPayouts] = await Promise.all([
+      }),
       prisma.priestPayout.aggregate({
         where: { priestId, status: 'completed' },
         _sum: { amount: true },
@@ -206,10 +212,6 @@ export class PriestService {
         where: { priestId, status: { in: ['pending', 'processing'] } },
         _sum: { amount: true },
       }),
-    ]);
-
-    // Booking counts
-    const [totalBookings, upcomingBookings, completedBookings] = await Promise.all([
       prisma.pujaBooking.count({ where: { priestId } }),
       prisma.pujaBooking.count({
         where: {
@@ -224,10 +226,7 @@ export class PriestService {
           status: { in: ['completed', 'video_uploaded', 'delivered'] },
         },
       }),
-    ]);
-
-    // Upcoming bookings (next 5)
-    const upcomingList = await prisma.pujaBooking.findMany({
+      prisma.pujaBooking.findMany({
       where: {
         priestId,
         status: { in: ['confirmed', 'priest_assigned', 'in_progress'] },
@@ -247,7 +246,12 @@ export class PriestService {
       },
       orderBy: { scheduledDate: 'asc' },
       take: 5,
-    });
+      }),
+    ]);
+
+    if (!priest) {
+      throw new Error('Priest not found.');
+    }
 
     return {
       priest: {

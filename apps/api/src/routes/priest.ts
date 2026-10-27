@@ -390,15 +390,14 @@ export async function priestRoutes(server: FastifyInstance) {
   server.get('/dashboard', { preHandler: priestAuth }, async (request, reply) => {
     try {
       const userId = request.currentUser!.id;
-      const priestId = await getPriestId(userId);
-      const dashboard = await priestService.getDashboard(priestId);
-
       // DI-05: the earnings card reads the PriestPayout sidecar rail, which a
       // temple-path pandit never has a row on. Same merge as GET /payouts, so
-      // the two screens keep agreeing (PF-12).
-      const unifiedAny = await prisma.commission.count({
-        where: unifiedBaseWhere(userId),
-      });
+      // the two screens keep agreeing (PF-12). The count does not depend on the
+      // priest id, so it runs alongside the lookup instead of after it.
+      const [dashboard, unifiedAny] = await Promise.all([
+        getPriestId(userId).then((priestId) => priestService.getDashboard(priestId)),
+        prisma.commission.count({ where: unifiedBaseWhere(userId) }),
+      ]);
       if (!(unifiedAny > 0)) return dashboard;
 
       const now = new Date();
