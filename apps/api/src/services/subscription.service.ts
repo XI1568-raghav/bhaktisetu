@@ -325,6 +325,10 @@ export interface SubscriptionActivationEvidence {
   source: 'razorpay_webhook' | 'demo_mode';
 }
 
+/** What a buyer sees when a paid plan has no billing plan behind it yet. */
+export const PLAN_NOT_OPEN_MESSAGE =
+  'This paid plan is not open for purchase yet. Your Free plan stays active and nothing has been charged. We will announce when paid plans open.';
+
 export class PaymentRequiredError extends Error {
   readonly code = 'PAYMENT_REQUIRED';
   constructor(message: string) {
@@ -588,9 +592,11 @@ export class SubscriptionService {
     // is a plan we must refuse to sell, loudly.
     const credentialsAreDemo = !keyId || keyId === 'rzp_test_demo';
     if (!credentialsAreDemo && !rzpPlanId) {
-      throw new Error(
-        `No Razorpay plan is configured for ${args.planId} — set the matching RAZORPAY_PLAN_* environment variable before selling it.`,
+      // The operator detail (which env var is missing) goes to the log, never to the buyer.
+      console.warn(
+        `[subscription] No Razorpay plan is configured for ${args.planId}: set the matching RAZORPAY_PLAN_* environment variable before selling it.`,
       );
+      throw new Error(PLAN_NOT_OPEN_MESSAGE);
     }
     const isDemo = credentialsAreDemo;
 
