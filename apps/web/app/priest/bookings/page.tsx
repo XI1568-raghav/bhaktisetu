@@ -4,7 +4,7 @@ import { formatTime } from '../../../lib/format-time-slot';
 import ProofLink from '../../../components/provider/ProofLink';
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import Link from 'next/link';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useSearchParams, usePathname } from 'next/navigation';
 import {
  Calendar,
  Clock,
@@ -117,7 +117,6 @@ export default function PriestBookingsPage() {
 function PriestBookingsInner() {
  const { session } = useAuth();
  const searchParams = useSearchParams();
- const router = useRouter();
  const pathname = usePathname();
  const initialTab = (searchParams.get('status') as TabKey) || 'all';
 
@@ -140,10 +139,16 @@ function PriestBookingsInner() {
  // literally nothing happen and had no idea why.
  const [actionError, setActionError] = useState<string | null>(null);
 
+ // Keep the tab in the URL with the History API, not router.replace: this page is a
+ // static shell, so a router navigation asks the server for an RSC payload it cannot
+ // serve, and Next answers with a full page load, which re-runs this effect (an endless
+ // reload loop on Next 16). replaceState changes the address bar and nothing else.
  useEffect(() => {
   const qs = activeTab === 'all' ? '' : `?status=${activeTab}`;
-  router.replace(`${pathname}${qs}`, { scroll: false });
- }, [activeTab, pathname, router]);
+  const next = `${pathname}${qs}`;
+  if (`${window.location.pathname}${window.location.search}` === next) return;
+  window.history.replaceState(window.history.state, '', next);
+ }, [activeTab, pathname]);
 
  // PF-07: the page used to fetch `/priest/bookings` with no page/limit, take the
  // server's 20-row default, then filter AND count that truncated array

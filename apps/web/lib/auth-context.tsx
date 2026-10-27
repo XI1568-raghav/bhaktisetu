@@ -1197,7 +1197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const renewSession = useCallback(async (): Promise<boolean> => {
  if (!session || session.accessToken.startsWith('demo-')) return false;
  try {
- const outcome = await reviveSessionFromCookieResult();
+ const outcome = await reviveSessionFromCookieResult({ fresh: true });
  if (!outcome.session) return false;
  setSession(outcome.session as AuthSession);
  return true;
