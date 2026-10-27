@@ -67,7 +67,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://hlkvfarvfblhzhhnhtbp.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: sb_publishable_PxfldFRmHZGX9gG5bpOmaw_9pTKxNjc
           NEXT_PUBLIC_SENTRY_RELEASE: ${{ env.SENTRY_RELEASE }}
-        run: pnpm exec next build
+        run: pnpm exec next build --webpack
 
       - name: Upload web sourcemaps
         if: steps.guard.outputs.enabled == 'true'
