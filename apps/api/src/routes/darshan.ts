@@ -100,19 +100,8 @@ const TEMPLE_LIVE_STREAMS = [
     peakViewers: 0,
     availability: 'Kakad Aarti 5:30 AM, Madhyanh Aarti 12 PM',
   },
-  {
-    id: 'live-mahakaleshwar',
-    templeSlug: 'mahakaleshwar-ujjain',
-    templeName: 'Mahakaleshwar Temple',
-    city: 'Ujjain',
-    deityPrimary: 'Lord Shiva',
-    youtubeChannelId: 'UC7q12ONY2mvuq066rreluhQ', // Mahakaleshwar Jyotirlinga Live Darshan — daily Bhasma Aarti
-    playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UC7q12ONY2mvuq066rreluhQ&autoplay=1',
-    thumbnailUrl: 'https://images.unsplash.com/photo-1604948501466-4e9c339b9c24?w=640&h=360&fit=crop&auto=format&q=80',
-    viewerCount: 0,
-    peakViewers: 0,
-    availability: 'Bhasma Aarti 4 AM (most sacred)',
-  },
+  // Mahakaleshwar has no verified official channel (2026-10-27): the one that was here is an
+  // astrology-content channel, not the temple committee's, and showed 'Video unavailable'.
   {
     id: 'live-vaishno-devi',
     templeSlug: 'vaishno-devi',
