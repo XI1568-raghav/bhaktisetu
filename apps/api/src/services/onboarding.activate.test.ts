@@ -75,14 +75,15 @@ describe('activateOnSubmit — switch off (default)', () => {
     expect(prismaMock.gaushalaProfile.updateMany).toHaveBeenCalled();
   });
 
-  it('TEMPLE_MANAGER: a name that is already a catalogue Temple is NOT activated (it would claim that temple\'s donations)', async () => {
+  it('TEMPLE_MANAGER: a name that is already a catalogue Temple activates and links the manager to it (no admin step)', async () => {
     prismaMock.templeProfile.findUnique.mockResolvedValue({ templeName: 'Somnath Temple', ...GOOD_TEXT });
     prismaMock.temple.findFirst.mockResolvedValue({ id: 't-real' });
-    prismaMock.$queryRawUnsafe.mockResolvedValue([]); // no explicit link for this manager
+    prismaMock.$queryRawUnsafe.mockResolvedValue([]); // not linked yet
     const r = await service.activateOnSubmit('u-1', 'TEMPLE_MANAGER');
-    expect(r).toMatchObject({ activated: false, reason: 'temple_name_taken' });
-    expect(r.message).toMatch(/team confirms/i);
-    expect(prismaMock.templeProfile.updateMany).not.toHaveBeenCalled();
+    expect(r.activated).toBe(true);
+    const linked = prismaMock.$executeRawUnsafe.mock.calls.some((c: unknown[]) => String(c[0]).includes('temple_manager_links') && c.includes('t-real'));
+    expect(linked).toBe(true);
+    expect(prismaMock.temple.create).not.toHaveBeenCalled();
   });
 
   it('TEMPLE_MANAGER: an explicit admin link to that temple lets it activate', async () => {

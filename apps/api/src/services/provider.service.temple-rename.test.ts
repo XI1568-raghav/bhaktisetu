@@ -8,8 +8,8 @@ import { ProviderService } from './provider.service.js';
 /**
  * With REQUIRE_PROVIDER_APPROVAL off a temple profile goes live on submit, so
  * renaming it onto a catalogue temple would be the way to claim that temple's
- * donations (the name match finds the payee). The rename must drop the profile
- * back to not-live unless an admin linked this manager to that temple.
+ * donations (the name match finds the payee). Product decision 2026-10-23: no admin step,
+ * so the rename links the manager to that temple and the profile stays live.
  */
 const ID = '11111111-1111-4111-8111-111111111111';
 const UID = '22222222-2222-4222-8222-222222222222';
@@ -29,10 +29,11 @@ afterEach(() => {
 });
 
 describe('temple profile rename (approval off)', () => {
-  it('renaming onto a catalogue temple un-lists the profile', async () => {
+  it('renaming onto a catalogue temple keeps it live and links the manager to that temple', async () => {
     prismaMock.temple.findFirst.mockResolvedValue({ id: 't-real' });
     await service.updateProvider('temple', ID, UID, { templeName: 'Somnath Temple' });
-    expect(prismaMock.templeProfile.update.mock.calls[0]![0].data).toMatchObject({ templeName: 'Somnath Temple', approved: false });
+    expect(prismaMock.templeProfile.update.mock.calls[0]![0].data.approved).toBeUndefined();
+    expect(prismaMock.$executeRawUnsafe.mock.calls.some((c: unknown[]) => String(c[0]).includes('temple_manager_links') && c.includes('t-real'))).toBe(true);
   });
 
   it('renaming to a name nobody has keeps it live', async () => {
