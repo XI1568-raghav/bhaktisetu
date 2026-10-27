@@ -10,7 +10,7 @@ const read = (p: string) => readFileSync(path.join(root, p), 'utf8');
 describe('validate-darshan-streams extractors', () => {
   it('finds every configured channel in darshan.ts', () => {
     const rows = extractTempleChannels(read('apps/api/src/routes/darshan.ts'));
-    expect(rows.length).toBeGreaterThanOrEqual(9);
+    expect(rows.length).toBeGreaterThanOrEqual(8);
     expect(rows.find((r: { slug: string }) => r.slug === 'kashi-vishwanath-varanasi')?.channelId).toBe('UCdMj2twWfMHXrWgX5oVdoyA');
   });
   it('ops SQL only names channel ids that are well formed and never Mahakaleshwar', () => {

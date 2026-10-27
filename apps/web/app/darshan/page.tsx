@@ -96,23 +96,6 @@ const fallbackLiveStreams: DarshanStream[] = [
  },
  },
  {
- id: 'live-4',
- templeId: 't4',
- playbackUrl: 'https://www.youtube.com/embed/sJtJdv3ecDc',
- status: 'live',
- viewerCount: 0,
- peakViewers: 0,
- isPremium: false,
- scheduledStart: null,
- temple: {
- name: 'Mahakaleshwar Temple',
- slug: 'mahakaleshwar',
- city: 'Ujjain',
- deityPrimary: 'Lord Shiva',
- images: [],
- },
- },
- {
  id: 'live-5',
  templeId: 't5',
  playbackUrl: 'https://www.youtube.com/embed/live_stream?channel=UCT1egsvA08YcdMLiEu1DTRg',
