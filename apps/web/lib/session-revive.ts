@@ -236,13 +236,37 @@ export interface ReviveResult {
  */
 let inFlightRevive: Promise<ReviveResult> | null = null;
 
-export function reviveSessionFromCookieResult(): Promise<ReviveResult> {
-  if (!inFlightRevive) {
-    inFlightRevive = reviveSessionFromCookieUncached().finally(() => {
-      inFlightRevive = null;
-    });
+/**
+ * Overlapping calls share one request (above). Sequential ones did not, so one page load
+ * (the auth provider, route guards, data hooks) paid for several back-to-back /auth/refresh
+ * round trips of ~1 s each before its first data call. A successful revive is therefore
+ * reused for a few seconds. Callers that need a genuinely new session (renewSession after
+ * a 401) pass `fresh: true`.
+ */
+export const REVIVE_REUSE_MS = 15_000;
+let lastRevive: { at: number; result: ReviveResult } | null = null;
+
+export function __resetReviveCache(): void {
+  inFlightRevive = null;
+  lastRevive = null;
+}
+
+export function reviveSessionFromCookieResult(opts: { fresh?: boolean } = {}): Promise<ReviveResult> {
+  if (!opts.fresh && lastRevive && Date.now() - lastRevive.at < REVIVE_REUSE_MS) {
+    return Promise.resolve(lastRevive.result);
   }
-  return inFlightRevive;
+  if (opts.fresh || !inFlightRevive) {
+    const pending: Promise<ReviveResult> = reviveSessionFromCookieUncached()
+      .then((result) => {
+        lastRevive = result.session ? { at: Date.now(), result } : null;
+        return result;
+      })
+      .finally(() => {
+        if (inFlightRevive === pending) inFlightRevive = null;
+      });
+    inFlightRevive = pending;
+  }
+  return inFlightRevive as Promise<ReviveResult>;
 }
 
 async function reviveSessionFromCookieUncached(): Promise<ReviveResult> {

@@ -40,7 +40,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../lib/auth-context';
-import { reviveSessionFromCookie, hasStoredProfile } from '../lib/session-revive';
+import { reviveSessionFromCookie, hasStoredProfile, __resetReviveCache } from '../lib/session-revive';
 
 const realFetch = globalThis.fetch;
 
@@ -100,6 +100,7 @@ function renderProvider() {
 }
 
 beforeEach(() => {
+  __resetReviveCache();
   localStorage.clear();
   for (const pair of document.cookie.split(';')) {
     const name = pair.split('=')[0]?.trim();
