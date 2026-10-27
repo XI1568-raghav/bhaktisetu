@@ -1,5 +1,6 @@
 'use client';
 
+import { isPendingApproval } from '../../../lib/provider-approval-status';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
@@ -448,6 +449,10 @@ export default function SignupPage() {
  // P0 #195: signup returned no session (Supabase email-confirmation on) →
  // user must verify their email before they can log in.
  const [awaitingEmailConfirm, setAwaitingEmailConfirm] = useState(false);
+ // The API answers a pending status only while
+ // REQUIRE_PROVIDER_APPROVAL is on; otherwise 'active'. The confirmation screen
+ // follows the API instead of assuming either.
+ const [pendingApproval, setPendingApproval] = useState(false);
 
  // Load saved state
  useEffect(() => {
@@ -588,6 +593,7 @@ export default function SignupPage() {
  // email-confirmation enabled → session:null). Without a session the user
  // can't log in until they confirm their email. Don't drop them on a dead
  // "complete" screen as if they're signed in — tell them to verify email.
+ setPendingApproval(isPendingApproval(result.userStatus));
  if (!result.accessToken) {
  submittingRef.current = false;
  setIsSubmitting(false);
@@ -1124,6 +1130,11 @@ export default function SignupPage() {
  <span className="font-medium text-surface-700">{formData.email}</span>. Click the link
  in that email to activate your account, then sign in.
  </p>
+ {isProvider && pendingApproval && (
+ <p className="prose-meta text-surface-500 mb-6">
+ Your {currentRoleOption?.label} profile will be reviewed by our team before it goes live.
+ </p>
+ )}
  <a
  href="/auth/login"
  className={buttonClass('primary', 'lg', 'w-full')}
@@ -1147,7 +1158,17 @@ export default function SignupPage() {
  {isProvider ? 'Account Created!' : 'Welcome to Darshya!'}
  </h2>
 
- {isProvider ? (
+ {isProvider && pendingApproval ? (
+ <div className="space-y-3 mb-6">
+ <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+ <p className="text-sm text-amber-900 font-medium mb-1">Your account is created</p>
+ <p className="prose-meta text-amber-800">
+ Your {currentRoleOption?.label} profile will be reviewed by our team before it goes live.
+ Complete your profile now so the review can start.
+ </p>
+ </div>
+ </div>
+ ) : isProvider ? (
  <div className="space-y-3 mb-6">
  <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
  <p className="text-sm text-green-800 font-medium mb-1">Your account is active</p>

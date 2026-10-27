@@ -16,6 +16,10 @@ Adding a new integration? Match this contract.
 | Var | Used by | Behavior when absent |
 |---|---|---|
 | `SENTRY_DSN` | `lib/sentry.ts` | no-op, no events sent |
+| `DB_KEEPALIVE_MS` | `lib/db-tuning.ts` (started in `server.ts` after listen) | off. When set (floor 10000), runs `SELECT 1` once at boot and every N ms so pooled connections to the remote DB never go cold. Never throws, timer is unref-ed. Suggested: `60000`. |
+| `DB_KEEPALIVE_CONNECTIONS` | `lib/db-tuning.ts` | `1`. How many pool connections each keep-alive tick touches (max 10). |
+| `DB_CONNECTION_LIMIT` / `DB_POOL_TIMEOUT` / `DB_CONNECT_TIMEOUT` | `lib/prisma.ts` via `lib/db-tuning.ts` | unset: `DATABASE_URL` is used exactly as given. When set (positive integer) each is appended as `connection_limit` / `pool_timeout` (s) / `connect_timeout` (s) ONLY if that parameter is not already in `DATABASE_URL`; the URL always wins. |
+| `DB_PGBOUNCER` | `lib/prisma.ts` via `lib/db-tuning.ts` | unset. `true` appends `pgbouncer=true` (Supabase transaction pooler, port 6543 only) unless already in the URL. |
 | `MAGIC_LINK_SECRET` | `routes/magic-link.ts` | required for HMAC; falls back to dev secret with warning |
 | `RESEND_API_KEY` | `lib/email.ts` | `sendEmail` returns `{skipped:true}`; magic-link route returns `devLink` for manual testing |
 | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | `routes/donations.ts` + booking | `isDemoPayment=true`; signature verification skipped, demo orderId returned |
