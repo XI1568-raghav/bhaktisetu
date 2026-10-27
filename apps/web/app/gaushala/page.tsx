@@ -237,8 +237,8 @@ const faqs = [
  // `approved`, and no endpoint publishes a gaushala's finances. What IS true
  // is that a gaushala is reviewed by hand before it appears in the listing.
  a: HAS_ADOPTION_EXTRAS
- ? "Photo updates of your cow are posted on the cow\'s page when the gaushala provides them; we do not promise a monthly schedule or delivery by WhatsApp or email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Each gaushala listed on Darshya is reviewed and approved by us before it goes live; we do not audit their books, so treat the updates and your own visit as the evidence."
- : "Your contribution is receipted with a numbered PDF. Photo updates of your cow, health reports and visits are coming soon; they are not part of a contribution today. Each gaushala listed on Darshya is reviewed and approved by us before it goes live, but we do not audit their books or publish their finances.",
+ ? "Photo updates of your cow are posted on the cow\'s page when the gaushala provides them; we do not promise a monthly schedule or delivery by WhatsApp or email. You can also visit the gaushala anytime during visiting hours to see your cow in person. Gaushalas list themselves on Darshya and we do not audit their books, so treat the updates and your own visit as the evidence."
+ : "Your contribution is receipted with a numbered PDF. Photo updates of your cow, health reports and visits are coming soon; they are not part of a contribution today. Gaushalas list themselves on Darshya; we do not audit their books or publish their finances.",
  },
  {
  q: HAS_ADOPTION_EXTRAS ? "Can I visit the cow I have adopted?" : "Can I visit a gaushala?",

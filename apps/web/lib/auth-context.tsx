@@ -121,7 +121,7 @@ interface AuthContextValue {
  signInWithOtp: (phone: string) => Promise<{ success: boolean; message: string }>;
  verifyOtp: (phone: string, token: string) => Promise<{ success: boolean; message: string; isNewUser?: boolean }>;
  signInWithCredentials: (email: string, password: string) => Promise<{ success: boolean; message: string }>;
- signUpWithCredentials: (data: SignUpData) => Promise<{ success: boolean; message: string; accessToken?: string; userId?: string }>;
+ signUpWithCredentials: (data: SignUpData) => Promise<{ success: boolean; message: string; accessToken?: string; userId?: string; userStatus?: string; apiMessage?: string }>;
  /**
   * AUTH-09: the argument is OPTIONAL and omitting it keeps today's behaviour
   * exactly — no `scope` on the wire, and the API's own default (global) applies.
@@ -1049,7 +1049,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  };
  }
 
- const result = await readJsonBody<{ session?: AuthSession | null; user?: AuthUser }>(res);
+ const result = await readJsonBody<{ session?: AuthSession | null; user?: AuthUser & { status?: string }; message?: string }>(res);
  if (!result?.user) {
  return { success: false, message: UNREADABLE_RESPONSE_MESSAGE };
  }
@@ -1057,7 +1057,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  // is a success the signup page already knows how to present (no accessToken),
  // not an unreadable reply.
  if (!result.session) {
- return { success: true, message: 'Account created. Please confirm your email to sign in.' };
+ return { success: true, message: 'Account created. Please confirm your email to sign in.', userStatus: result.user.status, apiMessage: result.message };
  }
 
  const newSession: AuthSession = result.session;
@@ -1075,6 +1075,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  message: 'Account created successfully',
  accessToken: newSession?.accessToken,
  userId: newUser.id,
+ userStatus: result.user.status,
+ apiMessage: result.message,
  };
  } catch {
  // P0 #195 (2026-08-03): the API is unreachable — do NOT silently mint a fake

@@ -196,23 +196,30 @@ export async function getPrimaryRoleForUser(userId: string, email?: string | nul
   // must land on /admin regardless of what role rows the account also carries.
   if (isAdminEmail(email)) return 'admin';
   try {
-    const assignments = await prisma.userRoleAssignment.findMany({
-      where: { userId },
-      orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
-    });
-    if (assignments.length === 0) return 'devotee';
-    // A-010 backstop: exactly one row should be primary, but if a demote ever
-    // half-applies we'd have two and the older DEVOTEE row would win the
-    // `createdAt asc` tiebreak — re-locking the provider out of their portal.
-    // Among equally-primary rows, prefer the non-DEVOTEE one.
-    const primaries = assignments.filter((a) => a.isPrimary);
-    const pool = primaries.length > 0 ? primaries : assignments;
-    const chosen = pool.find((a) => a.role !== 'DEVOTEE') ?? pool[0]!;
-    return chosen.role.toLowerCase();
+    return pickPrimaryRole(await findRoleAssignments(userId));
   } catch {
     // A-014: a role-table outage must not silently demote a configured admin.
     return isAdminEmail(email) ? 'admin' : 'devotee';
   }
+}
+
+function findRoleAssignments(userId: string) {
+  return prisma.userRoleAssignment.findMany({
+    where: { userId },
+    orderBy: [{ isPrimary: 'desc' }, { createdAt: 'asc' }],
+  });
+}
+
+function pickPrimaryRole(assignments: Array<{ role: string; isPrimary: boolean }>): string {
+  if (assignments.length === 0) return 'devotee';
+  // A-010 backstop: exactly one row should be primary, but if a demote ever
+  // half-applies we'd have two and the older DEVOTEE row would win the
+  // `createdAt asc` tiebreak — re-locking the provider out of their portal.
+  // Among equally-primary rows, prefer the non-DEVOTEE one.
+  const primaries = assignments.filter((a) => a.isPrimary);
+  const pool = primaries.length > 0 ? primaries : assignments;
+  const chosen = pool.find((a) => a.role !== 'DEVOTEE') ?? pool[0]!;
+  return chosen.role.toLowerCase();
 }
 
 // A-009 (2026-08-10): seed the refresh-token JTI ledger at ISSUANCE.
@@ -1090,17 +1097,24 @@ export async function authRoutes(server: FastifyInstance) {
      * route otherwise reads. Now there is exactly one source for the field:
      * the database.
      */
-    const user = await prisma.user.findUnique({
-      where: { id: currentUser.id },
-      include: {
-        addresses: true,
-        subscription: {
-          where: { status: 'active' },
-          take: 1,
-          orderBy: { createdAt: 'desc' },
+    // The role rows are keyed on the same id the profile is read by, so both
+    // reads go out together (one fewer sequential round trip to the DB). The
+    // role is then derived exactly as getPrimaryRoleForUser does: the admin
+    // allow-list first, a failed role read counting as devotee.
+    const [user, assignments] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: currentUser.id },
+        include: {
+          addresses: true,
+          subscription: {
+            where: { status: 'active' },
+            take: 1,
+            orderBy: { createdAt: 'desc' },
+          },
         },
-      },
-    });
+      }),
+      Promise.resolve(findRoleAssignments(currentUser.id)).catch(() => null),
+    ]);
 
     if (!user) {
       return reply.code(404).send({
@@ -1109,7 +1123,11 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
-    const role = await getPrimaryRoleForUser(user.id, user.email);
+    const role = isAdminEmail(user.email)
+      ? 'admin'
+      : assignments
+        ? pickPrimaryRole(assignments)
+        : 'devotee';
 
     return reply.code(200).send({
       success: true,
@@ -1394,8 +1412,31 @@ export async function authRoutes(server: FastifyInstance) {
       });
     }
 
+    // Set only when THIS request created a brand-new Supabase auth user, and
+    // cleared once the local row is committed. If anything fails in between,
+    // the catch block deletes it so no orphan auth user is left with no row.
+    let freshAuthUserId: string | null = null;
+
     try {
       const supabase = createSupabaseClient();
+
+      // Check local uniqueness BEFORE creating the Supabase user: a duplicate
+      // phone (or an email that already has a row) would otherwise fail the
+      // later insert and strand the auth user. Same 409 messages as the P2002
+      // handler below.
+      const phoneForCheck = phone && phone.trim() ? phone.trim() : null;
+      const clash = await prisma.user.findFirst({
+        where: { OR: [{ email: emailLower }, ...(phoneForCheck ? [{ phone: phoneForCheck }] : [])] },
+        select: { id: true, email: true, phone: true },
+      });
+      if (clash) {
+        return reply.code(409).send({
+          error: 'Conflict',
+          message: clash.email?.toLowerCase() !== emailLower
+            ? 'An account with this phone number already exists'
+            : 'An account with this email already exists',
+        });
+      }
 
       // Sign up via Supabase Auth
       // emailRedirectTo: without it the confirmation link lands on the Supabase
@@ -1411,6 +1452,13 @@ export async function authRoutes(server: FastifyInstance) {
       });
       let authData = signUpResult.data;
       let authError = signUpResult.error;
+      // A genuinely new auth user has identities; Supabase's anti-enumeration
+      // answer for an existing email returns a user with identities: [] that
+      // must never be deleted.
+      const createdUser = signUpResult.data?.user as { id?: string; identities?: unknown[] } | null | undefined;
+      if (!signUpResult.error && createdUser?.id && !(Array.isArray(createdUser.identities) && createdUser.identities.length === 0)) {
+        freshAuthUserId = createdUser.id;
+      }
 
       // Idempotent retry: Supabase created the auth user on an earlier attempt
       // but our DB write failed, so every retry hit "already registered" (409
@@ -1576,6 +1624,7 @@ export async function authRoutes(server: FastifyInstance) {
 
         return u;
       });
+      freshAuthUserId = null;
 
       // A-009: seed the replay ledger for the session signup hands back. With
       // Supabase email-confirm ON there is no session yet — that user's first
@@ -1619,6 +1668,17 @@ export async function authRoutes(server: FastifyInstance) {
       });
     } catch (err: any) {
       request.log.error({ err: err?.message, code: err?.code, email: emailLower }, 'Signup failed');
+
+      // Roll back the auth user this request created (best-effort): without it
+      // the person can never retry cleanly and an orphan sits in Supabase.
+      if (freshAuthUserId) {
+        try {
+          const { error: delErr } = await supabaseAdmin.auth.admin.deleteUser(freshAuthUserId);
+          if (delErr) request.log.warn({ err: delErr.message, event: 'signup_orphan_cleanup_failed' }, 'could not delete orphan auth user');
+        } catch (delErr: any) {
+          request.log.warn({ err: delErr?.message, event: 'signup_orphan_cleanup_failed' }, 'could not delete orphan auth user');
+        }
+      }
 
       // Handle duplicate email/phone
       if (err?.code === 'P2002') {
