@@ -87,6 +87,11 @@ const onlineUpdateSchema = z.object({
 
 export const __testing = { profileUpdateSchema, availabilityUpdateSchema, onlineUpdateSchema };
 
+type Settled<T> = { ok: true; value: T } | { ok: false; err: unknown };
+function settle<T>(fn: () => Promise<T>): Promise<Settled<T>> {
+  return fn().then((value) => ({ ok: true as const, value }), (err) => ({ ok: false as const, err }));
+}
+
 /**
  * The caller's consultation earnings, straight off the Commission ledger.
  *
@@ -204,9 +209,16 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     }
 
     // PAR-13: guarded — see isUuid. A miss, not a P2023 crash.
-    const profile = isUuid(userId)
-      ? await prisma.astrologerProfile.findUnique({ where: { userId } })
-      : null;
+    // Latency: the ledger is keyed on userId alone, so it is read together with
+    // the profile instead of after the whole attribution chain.
+    const [profile, ledger] = await Promise.all([
+      isUuid(userId) ? prisma.astrologerProfile.findUnique({ where: { userId } }) : null,
+      // AW-04 (2026-08-12, P1): every rupee on this dashboard now comes off the
+      // Commission ledger, the same source /astrologer-portal/earnings and
+      // payout.service.getPayoutBalance read, so the dashboard and the Earnings
+      // page can no longer state different numbers for the same day.
+      loadAstrologerLedger(userId),
+    ]);
 
     // P0 #AP-04/05 (2026-07-09): astrologer attribution. astrologer_consultations.
     // astrologer_id is TEXT and has been written as several forms over time —
@@ -220,14 +232,6 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       (v): v is string => typeof v === 'string' && v.length > 0,
     );
 
-    // AW-04 (2026-08-12, P1): every rupee on this dashboard now comes off the
-    // Commission ledger — the same source /astrologer-portal/earnings and
-    // payout.service.getPayoutBalance read — so the dashboard and the Earnings
-    // page can no longer state different numbers for the same day. The raw
-    // `astrologer_consultations` sums that used to feed these cards were GROSS
-    // (pre-20%-cut) and were rendered under the label "Paid out".
-    const ledger = await loadAstrologerLedger(userId);
-
     // Surface real bookings from raw-SQL astrologer_consultations table.
     // Safe-default empty arrays on table miss.
     let consultationsToday = 0;
@@ -236,53 +240,57 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     // which case the stored counter is the only number available. A derived 0
     // and an unreadable table must not look the same.
     let consultationsLifetime: number | null = null;
+    let listing: Awaited<ReturnType<typeof onboardingService.describeListing>> | null | undefined;
     try {
       if (astrologerIdValues.length > 0) {
         // Build an IN-list placeholder per value ($2, $3, ...) — $1 is the count
         // for Postgres ANY-array isn't needed; use ANY($1::text[]) instead so we
         // pass a single array param regardless of how many ids resolved.
         const idArray = astrologerIdValues;
-        const today = await prisma.$queryRawUnsafe<Array<{ count: string; sum: string | null }>>(
-          `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum
+        // The three reads and the listing note are independent, so they go out
+        // together. Results are applied in the original order and stop at the
+        // first failure, so a partly unreadable table leaves exactly the
+        // fields it always did.
+        const [todaySettled, lifetimeSettled, upcomingSettled, listingNote] = await Promise.all([
+          settle(() => prisma.$queryRawUnsafe<Array<{ count: string; sum: string | null }>>(
+            `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum
            FROM astrologer_consultations
            WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
              AND paid_at::date = CURRENT_DATE`,
-          idArray,
-        );
-        consultationsToday = Number(today[0]?.count ?? 0);
-
-        // AW-14 (2026-08-12, P2): the lifetime figure used to be
-        // `AstrologerProfile.totalConsultations`, a counter column NOTHING in
-        // the codebase ever incremented — so the card read 0 forever while the
-        // card beside it read "Today's Sessions 1". Count the same rows that
-        // produce `consultationsToday`, minus the date bound, so the two can
-        // never contradict each other again. 'completed' is included because a
-        // finished session is still a consultation the astrologer delivered.
-        const lifetime = await prisma.$queryRawUnsafe<Array<{ count: string | number }>>(
-          `SELECT COUNT(*)::text AS count
+            idArray,
+          )),
+          // AW-14 (2026-08-12, P2): the lifetime figure counts the same rows
+          // that produce `consultationsToday`, minus the date bound, so the two
+          // can never contradict each other. 'completed' is included because a
+          // finished session is still a consultation the astrologer delivered.
+          settle(() => prisma.$queryRawUnsafe<Array<{ count: string | number }>>(
+            `SELECT COUNT(*)::text AS count
            FROM astrologer_consultations
            WHERE astrologer_id = ANY($1::text[]) AND status IN ('confirmed', 'completed')`,
-          idArray,
-        );
-        consultationsLifetime = Number(lifetime[0]?.count ?? 0);
-
-        // AW-01 (2026-08-12, P0): the dashboard "Upcoming Sessions" panel was a
-        // hardcoded empty state, so this array was fetched and thrown away. It is
-        // now rendered — and the astrologer needs a way INTO the room, not just
-        // proof it exists, so derive the Jitsi URL here the way every other
-        // consultation endpoint does (routes/consultation.ts) rather than making
-        // the client reconstruct the meet.jit.si origin.
-        const upcomingRows = await prisma.$queryRawUnsafe<
-          Array<Record<string, unknown> & { room_name: string | null }>
-        >(
-          `SELECT id, reference, user_id, minutes, amount_inr, scheduled_at, room_name, status, created_at
+            idArray,
+          )),
+          // AW-01 (2026-08-12, P0): feeds the "Upcoming Sessions" panel; the
+          // Jitsi URL is derived here the way routes/consultation.ts does.
+          settle(() => prisma.$queryRawUnsafe<
+            Array<Record<string, unknown> & { room_name: string | null }>
+          >(
+            `SELECT id, reference, user_id, minutes, amount_inr, scheduled_at, room_name, status, created_at
            FROM astrologer_consultations
            WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
              AND (scheduled_at IS NULL OR scheduled_at >= now() - interval '1 hour')
            ORDER BY COALESCE(scheduled_at, created_at) ASC
            LIMIT 20`,
-          idArray,
-        );
+            idArray,
+          )),
+          profile ? onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) : Promise.resolve(null),
+        ]);
+        listing = listingNote;
+        if (!todaySettled.ok) throw todaySettled.err;
+        consultationsToday = Number(todaySettled.value[0]?.count ?? 0);
+        if (!lifetimeSettled.ok) throw lifetimeSettled.err;
+        consultationsLifetime = Number(lifetimeSettled.value[0]?.count ?? 0);
+        if (!upcomingSettled.ok) throw upcomingSettled.err;
+        const upcomingRows = upcomingSettled.value;
         upcomingSessions = upcomingRows.map((r) => ({
           ...r,
           jitsiUrl: r.room_name ? `https://meet.jit.si/${r.room_name}` : null,
@@ -292,8 +300,12 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       server.log.warn({ err }, 'astrologer_consultations query failed (table may not exist yet)');
     }
 
-    // Honest listing state for the profile screen (never approval wording unless the switch is on).
-    const listing = profile ? await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) : null;
+    // Honest listing state for the profile screen (never approval wording unless
+    // the switch is on). Normally read in the wave above; read here only when
+    // that wave did not run (no ids to match) or threw before assigning it.
+    if (listing === undefined) {
+      listing = profile ? await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) : null;
+    }
 
     return reply.send({
       profile,

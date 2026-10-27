@@ -324,52 +324,57 @@ export function isUpcomingCommission(
 
 /** Withdrawable balance = PENDING commissions not yet linked to a request. */
 export async function getPayoutBalance(providerId: string) {
-  const heldIds = await upcomingWellnessEnrollmentIds(prisma, providerId);
-  const heldPujaIds = [
-    ...(await unperformedPujaBookingIds(prisma, providerId)),
-    ...(await unfinishedConsultationIds(prisma, providerId)),
-  ];
-  const pending = await sumCommissionAmounts({
-    providerId,
-    status: 'PENDING',
-    payoutRequestId: null,
-    ...notHeldWellness(heldIds),
-    ...notHeldPuja(heldPujaIds),
-  });
-  // Earned but not yet withdrawable: wellness sessions and pujas not yet held.
-  const upcomingWellness = heldIds.length
-    ? await sumCommissionAmounts({
-        providerId,
-        status: 'PENDING',
-        payoutRequestId: null,
-        wellnessEnrollmentId: { in: heldIds },
-      })
-    : new Prisma.Decimal(0);
-  const upcomingPuja = heldPujaIds.length
-    ? await sumCommissionAmounts({
-        providerId,
-        status: 'PENDING',
-        payoutRequestId: null,
-        bookingId: { in: heldPujaIds },
-      })
-    : new Prisma.Decimal(0);
+  // Latency: every query here is a round trip to a remote database, so the
+  // independent reads run together (two waves instead of nine in a row).
+  // Wave 1: the held-id lookups plus every sum and lookup that does not depend
+  // on them. In-flight (requested but not yet completed) is already linked to a
+  // request, so it is NOT part of `pending`; reported for display only.
+  // batch9-review (2026-08-11): it must carry its own Commission status filter,
+  // otherwise a linked PAID/REVERSED row would count here AND in `paid`.
+  const [heldIds, unperformedIds, unfinishedIds, paid, inFlight, priestRow] = await Promise.all([
+    upcomingWellnessEnrollmentIds(prisma, providerId),
+    unperformedPujaBookingIds(prisma, providerId),
+    unfinishedConsultationIds(prisma, providerId),
+    sumCommissionAmounts({ providerId, status: 'PAID' }),
+    sumCommissionAmounts({
+      providerId,
+      status: 'PENDING',
+      payoutRequest: { status: { in: ['pending', 'processing'] } },
+    }),
+    // DI-05 legacy pandit rail lookup (see below). One indexed read that
+    // misses for a non-pandit provider.
+    prisma.priest.findUnique({ where: { userId: providerId }, select: { id: true } }),
+  ]);
+  const heldPujaIds = [...unperformedIds, ...unfinishedIds];
+
+  // Wave 2: the three sums that need the held ids. `pending` excludes held
+  // rows; `upcoming*` is earned but not yet withdrawable.
+  const [pending, upcomingWellness, upcomingPuja] = await Promise.all([
+    sumCommissionAmounts({
+      providerId,
+      status: 'PENDING',
+      payoutRequestId: null,
+      ...notHeldWellness(heldIds),
+      ...notHeldPuja(heldPujaIds),
+    }),
+    heldIds.length
+      ? sumCommissionAmounts({
+          providerId,
+          status: 'PENDING',
+          payoutRequestId: null,
+          wellnessEnrollmentId: { in: heldIds },
+        })
+      : Promise.resolve(new Prisma.Decimal(0)),
+    heldPujaIds.length
+      ? sumCommissionAmounts({
+          providerId,
+          status: 'PENDING',
+          payoutRequestId: null,
+          bookingId: { in: heldPujaIds },
+        })
+      : Promise.resolve(new Prisma.Decimal(0)),
+  ]);
   const upcoming = upcomingWellness.add(upcomingPuja);
-
-  const paid = await sumCommissionAmounts({ providerId, status: 'PAID' });
-
-  // In-flight (requested but not yet completed) — already linked to a request,
-  // so NOT part of `pending` above. Reported for display only.
-  // batch9-review (2026-08-11): this was the only one of the three queries with
-  // no filter on the Commission's own status, so any linked row that was already
-  // PAID (or REVERSED) counted here AND in `paid` below — the same ₹4,000 shown
-  // under both "Pending" and "Paid out", overstating the provider's position.
-  // Nothing reachable writes that state today, but the two sibling queries scope
-  // themselves and this one must too.
-  const inFlight = await sumCommissionAmounts({
-    providerId,
-    status: 'PENDING',
-    payoutRequest: { status: { in: ['pending', 'processing'] } },
-  });
 
   // RV-05 (2026-08-10): availableInr used to be `pending - inFlight`, but the two
   // sets are disjoint by construction — the `pending` query filters
@@ -398,11 +403,6 @@ export async function getPayoutBalance(providerId: string) {
   // The sidecar rail is settled by its own process (admin/bookings).
   //
   // Costs a non-pandit provider ONE indexed lookup that misses.
-  const priestRow = await prisma.priest.findUnique({
-    where: { userId: providerId },
-    select: { id: true },
-  });
-
   let legacyPending = new Prisma.Decimal(0);
   let legacyPaid = new Prisma.Decimal(0);
 
