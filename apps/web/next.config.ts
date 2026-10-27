@@ -182,6 +182,10 @@ const SECURITY_HEADERS: Array<{ key: string; value: string }> = [
 ];
 
 const nextConfig: NextConfig = {
+  // Next gives each static page 60 s per attempt. A build that prerenders ~2,000 pages from the live API
+  // can hit its per-IP rate limit (100 req/min), and a Retry-After wait of ~59 s then lands just over that
+  // limit on every API-backed page at once (seen on Cloudflare deploys, 2026-10-27). 180 s lets the wait finish.
+  staticPageGenerationTimeout: 180,
   // Self-host on Render (Node free tier) — OpenNext/Cloudflare Workers was
   // abandoned 2026-07-07: the OpenNext server-function bundle (5.3 MiB gzip)
   // exceeded the free Workers 3 MiB limit and the app uses no CF bindings in
