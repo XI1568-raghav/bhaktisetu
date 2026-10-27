@@ -122,6 +122,7 @@ import { dpdpRoutes } from './routes/dpdp.js';
 import { voicePanditRoutes } from './routes/voice-pandit.js';
 import { recordLatency, snapshotStats, startMetricsReporter } from './lib/route-metrics.js';
 import { prisma } from './lib/prisma.js';
+import { startDbKeepAlive } from './lib/db-tuning.js';
 import { instrumentPrisma, registerNPlusOneRequestScope } from './db/instrument-prisma.js';
 import { isJobQueueAvailable } from './services/job-queue.service.js';
 import { isJobQueueConfigured } from './lib/env.js';
@@ -587,6 +588,8 @@ async function bootstrap() {
     // stop the API from serving. See jobs/scheduler.ts for why this is
     // in-process rather than a GitHub Actions schedule.
     startOpsScheduler(server.log);
+    // Opt-in (DB_KEEPALIVE_MS): keeps pooled connections to the remote DB warm.
+    startDbKeepAlive(prisma, server.log);
     // NOTIF-03, third clause: say out loud, once per boot, which outbound
     // channels are dark. An operator should not have to curl an endpoint to
     // discover that email and web push are both off. A WARN line (plus a Sentry
