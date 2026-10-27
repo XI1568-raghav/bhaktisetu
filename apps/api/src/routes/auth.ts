@@ -2,13 +2,14 @@ import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { createSupabaseClient, supabaseAdmin } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
-import { revokeUserTokens, tokenClaims } from '../lib/token-revocation.js';
+import { revokeUserTokens, tokenClaims, isTokenRevoked } from '../lib/token-revocation.js';
 import { inspectSupabaseJwt } from '../lib/supabase-jwt.js';
 import { invalidateAuthUser } from '../lib/auth-cache.js';
 import { authenticateUser } from '../middlewares/auth.js';
 import { SIGNUP_DEFAULT_LANGUAGE } from '../lib/i18n.js';
 import { isAuthUpstreamDown, AUTH_UNAVAILABLE_BODY } from '../lib/auth-upstream.js';
 import { requireProviderApproval } from '../lib/provider-approval.js';
+import { tryFastRefresh } from '../lib/refresh-fast-path.js';
 
 // Tighter rate limit for unauthenticated credential/OTP endpoints — the
 // global 100/min is too generous for OTP-spam and credential-stuffing.
@@ -662,6 +663,33 @@ export async function authRoutes(server: FastifyInstance) {
         error: 'Unauthorized',
         message: 'Not signed in: no refresh token.',
       });
+    }
+
+    // A cookie-only revive whose access cookie is still valid needs no rotation:
+    // answer from the cookie (lib/refresh-fast-path.ts) and skip Supabase and the ledger.
+    if (!parseResult.data.refreshToken) {
+      const fast = await tryFastRefresh(
+        (request.cookies as Record<string, string | undefined> | undefined)?.darshya_session,
+        Date.now(),
+        isTokenRevoked,
+      );
+      if (fast) {
+        const fastUser = await prisma.user
+          .findUnique({ where: { id: fast.userId }, select: { blocked: true } })
+          .catch(() => null);
+        if (!fastUser?.blocked) {
+          return reply.code(200).send({
+            success: true,
+            session: {
+              accessToken: fast.accessToken,
+              refreshToken,
+              expiresIn: fast.expiresIn,
+              expiresAt: fast.expiresAt,
+              tokenType: 'bearer',
+            },
+          });
+        }
+      }
     }
 
     // Phase C P1 #4 (2026-06-08): JTI single-use replay detection.
