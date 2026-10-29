@@ -11,7 +11,12 @@ import { userFacingMessage } from '../../lib/friendly-error';
 interface Gurukul {
   id: string; slug: string; name: string; city: string; state: string;
   tradition: string; isVerified: boolean;
-  programs: { id: string; name: string; durationMonths: number }[];
+  programs?: { id: string; name: string; durationMonths: number }[];
+}
+
+/** The list endpoint may omit programs; never let that crash the portal. */
+export function programCount(g: { programs?: unknown[] }): number {
+  return Array.isArray(g.programs) ? g.programs.length : 0;
 }
 
 function apiBase(): string {
@@ -79,12 +84,12 @@ export default function GurukulPortalClient() {
               {g.isVerified ? (
                 <span className="text-xs text-emerald-700">Verified</span>
               ) : (
-                <span className="text-xs text-amber-700">Pending review</span>
+                <span className="text-xs text-amber-700">Listed, not yet verified</span>
               )}
             </div>
             <p className="text-xs text-saffron-700 font-semibold mb-1">{g.tradition}</p>
             <p className="text-xs text-surface-500 mb-2">{g.city}, {g.state}</p>
-            <p className="text-xs text-surface-600">{g.programs.length} program{g.programs.length === 1 ? '' : 's'}</p>
+            <p className="text-xs text-surface-600">{programCount(g)} program{programCount(g) === 1 ? '' : 's'}</p>
             <div className="mt-3 flex gap-2">
               <Link href={`/gurukuls/${g.slug}`} className="text-sm text-saffron-700 font-semibold">View public page</Link>
             </div>

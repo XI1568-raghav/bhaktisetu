@@ -142,7 +142,11 @@ export async function gurukulsRoutes(server: FastifyInstance) {
   server.get('/mine/list', { preHandler: authenticateUser }, async (request, reply) => {
     const userId = request.currentUser!.id;
     if (dbDisabled() || isSyntheticUserId(userId)) return reply.send({ gurukuls: [] });
-    const rows = await prisma.gurukul.findMany({ where: { ownerId: userId }, orderBy: { createdAt: 'desc' } });
-    return reply.send({ gurukuls: rows.map(serializeGurukul) });
+    const rows = await prisma.gurukul.findMany({
+      where: { ownerId: userId },
+      orderBy: { createdAt: 'desc' },
+      include: { programs: { where: { isActive: true }, select: { id: true, name: true, durationMonths: true } } },
+    });
+    return reply.send({ gurukuls: rows.map((g) => ({ ...serializeGurukul(g), programs: g.programs })) });
   });
 }
