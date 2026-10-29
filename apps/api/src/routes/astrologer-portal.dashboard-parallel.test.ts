@@ -29,7 +29,7 @@ const slow = async <T,>(v: T): Promise<T> => {
 type Kind = 'today' | 'lifetime' | 'upcoming' | 'other';
 function kindOf(sql: string): Kind {
   const s = String(sql).replace(/--[^\n]*/g, '');
-  if (/CURRENT_DATE/.test(s)) return 'today';
+  if (/Asia\/Kolkata/.test(s)) return 'today';
   if (/COUNT\(\*\)/.test(s)) return 'lifetime';
   if (/SELECT id, reference/.test(s)) return 'upcoming';
   return 'other';

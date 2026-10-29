@@ -10,6 +10,7 @@ import { useAuth } from '../../../../lib/auth-context';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import { buttonClass } from '../../../../components/ui/button-recipe';
 import { H1 } from '../../../../components/ui/heading-recipe';
+import { cancellationRefundable, formatIst } from '../../../../lib/consultation-time';
 import {
   GENERIC_ERROR_MESSAGE,
   UserFacingError,
@@ -58,6 +59,7 @@ type Consultation = {
   jitsiUrl: string | null;
   scheduledAt: string | null;
   createdAt: string;
+  paidAt?: string | null;
 };
 
 // P1#4: HttpOnly cookie `darshya_session` is canonical. Bearer header retained
@@ -76,10 +78,18 @@ function SuccessContent() {
   const [error, setError] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelNote, setCancelNote] = useState<string | null>(null);
 
   async function handleCancel() {
     if (!consultation) return;
-    if (!confirm(`Cancel ${consultation.reference}? Refund (if eligible) takes 5-7 business days.`)) return;
+    // Say what cancelling costs BEFORE it happens: inside the 24 h window the
+    // payment is forfeited, and the old prompt only said "Refund (if eligible)".
+    const refundable = cancellationRefundable(consultation);
+    if (!confirm(
+      refundable
+        ? `Cancel ${consultation.reference}? You will be refunded in full; it takes 5-7 business days.`
+        : `Cancel ${consultation.reference}? This is inside the 24-hour window, so you will NOT be refunded. Continue?`,
+    )) return;
     setCancelling(true);
     setCancelError(null);
     try {
@@ -93,6 +103,9 @@ function SuccessContent() {
         throw new UserFacingError(serverErrorText(body, statusCopy(res.status, CANCEL_FALLBACK)));
       }
       setConsultation({ ...consultation, status: 'cancelled' });
+      setCancelNote(refundable
+        ? 'Cancelled. Your refund is on its way and takes 5-7 business days.'
+        : 'Cancelled. This was inside the 24-hour window, so no refund is due.');
     } catch (e) {
       setCancelError(userFacingMessage(e, CANCEL_FALLBACK));
     } finally {
@@ -150,6 +163,28 @@ function SuccessContent() {
   }
 
   const confirmed = consultation.status === 'confirmed';
+  const completed = consultation.status === 'completed';
+  const cancelled = consultation.status === 'cancelled';
+  // Only an unpaid / under-review booking is "pending". A cancelled or completed
+  // one used to fall through to "Payment Pending - status is still being updated".
+  const heading = confirmed
+    ? 'Consultation Booked!'
+    : completed
+      ? 'Consultation Completed'
+      : cancelled
+        ? 'Consultation Cancelled'
+        : consultation.status === 'payment_review'
+          ? 'Payment Under Review'
+          : 'Payment Pending';
+  const subline = confirmed
+    ? 'Your booking is confirmed and is on your astrologer’s dashboard. Join the room below when they are online.'
+    : completed
+      ? 'This session is closed. Thank you for consulting on Darshya.'
+      : cancelled
+        ? (cancelNote ?? 'This booking was cancelled.')
+        : consultation.status === 'payment_review'
+          ? 'We are checking your payment with the gateway. If you were charged, you will hear from us; do not pay again.'
+          : 'Status is still being updated. Refresh in a moment.';
   const scheduled = consultation.scheduledAt ? new Date(consultation.scheduledAt) : null;
 
   return (
@@ -157,19 +192,15 @@ function SuccessContent() {
       <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="bg-white rounded-2xl border border-surface-100 p-8 shadow-sm">
           <div className="flex flex-col items-center text-center mb-8">
-            {confirmed ? (
+            {confirmed || completed ? (
               <CheckCircle2 className="w-16 h-16 text-emerald-500 mb-3" />
+            ) : cancelled ? (
+              <XCircle className="w-16 h-16 text-surface-400 mb-3" />
             ) : (
               <AlertCircle className="w-16 h-16 text-amber-500 mb-3" />
             )}
-            <h1 className={`${H1.portal} mb-1`}>
-              {confirmed ? 'Consultation Booked!' : 'Payment Pending'}
-            </h1>
-            <p className="text-sm text-surface-500">
-              {confirmed
-                ? 'Your booking is confirmed and is on your astrologer’s dashboard. Join the room below when they are online.'
-                : 'Status is still being updated. Refresh in a moment.'}
-            </p>
+            <h1 className={`${H1.portal} mb-1`}>{heading}</h1>
+            <p className="text-sm text-surface-500">{subline}</p>
           </div>
 
           <div className="space-y-4 mb-6">
@@ -186,14 +217,14 @@ function SuccessContent() {
               <span className="font-semibold text-surface-700">{consultation.minutes} minutes</span>
             </div>
             <div className="flex items-center justify-between text-sm py-3 border-b border-surface-100">
-              <span className="text-surface-500 flex items-center gap-1.5"><IndianRupee className="w-4 h-4" /> Paid</span>
+              <span className="text-surface-500 flex items-center gap-1.5"><IndianRupee className="w-4 h-4" /> {consultation.paidAt || confirmed || completed ? 'Paid' : 'Amount'}</span>
               <span className="font-semibold text-surface-700">₹{consultation.amountInr}</span>
             </div>
             {scheduled && (
               <div className="flex items-center justify-between text-sm py-3 border-b border-surface-100">
                 <span className="text-surface-500 flex items-center gap-1.5"><Calendar className="w-4 h-4" /> Scheduled</span>
                 <span className="font-semibold text-surface-700">
-                  {scheduled.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                  {formatIst(scheduled)}
                 </span>
               </div>
             )}
@@ -208,7 +239,7 @@ function SuccessContent() {
             >
               <Phone className="w-4 h-4" /> Join Consultation Room
             </a>
-          ) : (
+          ) : !completed && !cancelled ? (
             <button
               type="button"
               onClick={() => window.location.reload()}
@@ -216,11 +247,14 @@ function SuccessContent() {
             >
               Refresh Status
             </button>
-          )}
+          ) : null}
 
-          <p className="text-xs text-surface-400 text-center mt-4">
-            The room link is always on this page. If your astrologer does not join, cancel below for a refund, available within 24 hours of paying.
-          </p>
+          {confirmed && (
+            <p className="text-xs text-surface-400 text-center mt-4">
+              The room link is always on this page. If your astrologer does not show up, email
+              support@darshya.online for a full refund or a free reschedule.
+            </p>
+          )}
 
           {consultation.status !== 'cancelled' && consultation.status !== 'completed' && (
             <div className="mt-4 border-t border-surface-100 pt-4">
@@ -237,7 +271,8 @@ function SuccessContent() {
                 Cancel consultation
               </button>
               <p className="text-xs text-surface-400 text-center mt-2">
-                Refund eligibility: full refund up to 24h before scheduled time. Within 24h, refund only if astrologer no-show.
+                Full refund if you cancel at least 24 hours before the booked time (or within 24 hours of paying, for a
+                session with no booked time). After that the booking is not refundable.
               </p>
             </div>
           )}

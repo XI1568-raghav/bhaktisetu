@@ -70,6 +70,11 @@ export function resolveRateLimitPolicy(url: string, authMax: number): RateLimitP
     return { max: 30, timeWindow: WINDOW };
   }
   if (underPrefix(path, '/donations/create-order')) return { max: 10, timeWindow: WINDOW };
+  // Opens a live gateway order + a pending row per call; it sat on the global
+  // 100/min with no money-path cap while its siblings above were capped.
+  if (underPrefix(path, '/consultation/book') || underPrefix(path, '/consultation/verify-payment')) {
+    return { max: 30, timeWindow: WINDOW };
+  }
 
   // /digest/unsubscribe is unauthenticated by design — the link lands from an
   // email, possibly signed out — and it WRITES. Signing the identifier (CT-CONSENT-1)

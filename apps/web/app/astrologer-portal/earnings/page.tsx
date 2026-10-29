@@ -15,6 +15,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { UserFacingError, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { formatIstDate } from '../../../lib/consultation-time';
 
 interface EarningRow {
   id: string;
@@ -24,6 +25,24 @@ interface EarningRow {
   grossAmountInr: number;
   platformCutInr: number;
   earningsInr: number;
+  /** upcoming | payable | paid | reversed | ... (older servers omit it). */
+  releaseStatus?: string;
+  /** True once the row is inside a payout request. */
+  requested?: boolean;
+}
+
+/**
+ * Every non-PAID row used to read "Pending" - including a REVERSED row (a
+ * refunded consultation whose earning was clawed back) and an upcoming row whose
+ * session has not happened, so the list said money was on its way when it was not.
+ */
+function rowBadge(r: EarningRow): { label: string; cls: string } {
+  if (r.status === 'PAID') return { label: 'Paid', cls: 'bg-green-100 text-green-700' };
+  if (r.status === 'REVERSED' || r.releaseStatus === 'reversed') return { label: 'Refunded', cls: 'bg-surface-100 text-surface-500' };
+  if (r.releaseStatus === 'upcoming') return { label: 'After session', cls: 'bg-surface-100 text-surface-600' };
+  if (r.requested) return { label: 'Requested', cls: 'bg-blue-100 text-blue-700' };
+  if (r.releaseStatus === 'payable') return { label: 'Ready', cls: 'bg-amber-100 text-amber-700' };
+  return { label: 'Pending', cls: 'bg-amber-100 text-amber-700' };
 }
 
 interface Summary {
@@ -187,17 +206,20 @@ export default function AstrologerEarningsPage() {
                       {formatINR(r.earningsInr)} <span className="text-surface-400 font-normal">earned</span>
                     </p>
                     <p className="text-xs text-surface-500">
-                      {new Date(r.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      {formatIstDate(r.createdAt)}
                       {' · '}gross {formatINR(r.grossAmountInr)}
                     </p>
                   </div>
-                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${
-                    r.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                  }`}>
-                    {r.status === 'PAID' ? 'Paid' : 'Pending'}
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full shrink-0 ${rowBadge(r).cls}`}>
+                    {rowBadge(r).label}
                   </span>
                 </div>
               ))}
+              {rows.length >= 100 && (
+                <p className="prose-meta text-surface-400">
+                  Showing your latest 100 consultations. The totals above include every consultation.
+                </p>
+              )}
             </div>
           )}
         </div>

@@ -14,6 +14,7 @@ import {
 import { prisma } from '../lib/prisma.js';
 import { requireProviderApproval } from '../lib/provider-approval.js';
 import { getAstrologerPresence } from '../services/astrologer.service.js';
+import { publicAvailability } from '../lib/astrologer-availability.js';
 
 // Pagination clamp shared across astrologer list + reviews. Without an
 // upper bound, anyone hitting GET /astrologers?limit=99999 forces a full
@@ -233,6 +234,10 @@ export async function astrologyRoutes(server: FastifyInstance) {
           mode: presence.mode,
           bio: p.bio,
           verified: adminReviewed(p.approved),
+          // The hours the astrologer set in the portal (IST), so the booking page
+          // can show them and POST /consultation/book can enforce them. null =
+          // no schedule on file = any time may be requested.
+          availability: publicAvailability(p.availability),
           source: 'live',
         },
       };

@@ -147,7 +147,9 @@ beforeEach(() => {
   prismaMock.commission.createMany.mockResolvedValue({ count: 1 } as never);
   // DDL from ensureConsultationTables, plus the confirming UPDATEs. 1 = claimed.
   prismaMock.$executeRawUnsafe.mockResolvedValue(1 as never);
-  prismaMock.$queryRawUnsafe.mockResolvedValue([pendingRow()] as never);
+  // Everything answers the pending row except the idempotency probe, which finds no open order.
+  prismaMock.$queryRawUnsafe.mockImplementation((async (sql: string) =>
+    /status = 'pending_payment' AND razorpay_order_id IS NOT NULL/.test(String(sql)) ? [] : [pendingRow()]) as never);
 });
 
 afterEach(() => {

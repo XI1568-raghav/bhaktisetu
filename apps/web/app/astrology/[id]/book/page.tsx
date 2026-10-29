@@ -15,6 +15,12 @@ import { H1 } from '../../../../components/ui/heading-recipe';
 import { userFacingMessage, UserFacingError, serverErrorText } from '../../../../lib/friendly-error';
 
 import { preloadRazorpayCheckout } from '../../../../lib/razorpay-loader';
+import {
+  availabilitySummary,
+  isSlotAvailable,
+  type PublicAvailability,
+} from '../../../../lib/astrologer-availability';
+import { formatIst, localDateTimeMin } from '../../../../lib/consultation-time';
 type Astrologer = {
   id: string;
   name: string;
@@ -24,7 +30,12 @@ type Astrologer = {
   rating: number;
   isOnline: boolean;
   isBusy: boolean;
+  /** The astrologer's weekly hours (IST). null = none saved, any time may be requested. */
+  availability?: PublicAvailability | null;
 };
+
+/** POST /consultation/book refuses a slot further out than this. */
+const MAX_DAYS_AHEAD = 60;
 
 const MINUTE_PRESETS = [5, 10, 15, 20, 30, 45, 60] as const;
 
@@ -73,6 +84,9 @@ function BookContent() {
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [minutes, setMinutes] = useState<number>(15);
   const [scheduledAt, setScheduledAt] = useState<string>('');
+  // DateTimeInput keeps its own date/time text and has no way to empty itself;
+  // remounting it is how "Clear" works.
+  const [slotKey, setSlotKey] = useState(0);
   const [placing, setPlacing] = useState(false);
   const [placeError, setPlaceError] = useState<string | null>(null);
 
@@ -105,8 +119,24 @@ function BookContent() {
 
   const amountInr = astrologer ? Math.round(astrologer.perMinuteRate * minutes) : 0;
 
+  // A requested slot is checked here first so the devotee is told BEFORE the pay
+  // button, not by a refusal after it. The server enforces the same rule.
+  const slotDate = scheduledAt ? new Date(scheduledAt) : null;
+  const slotProblem: string | null = (() => {
+    if (!slotDate || !astrologer) return null;
+    if (Number.isNaN(slotDate.getTime())) return 'That date and time is not valid.';
+    if (slotDate.getTime() <= Date.now()) return 'Pick a time in the future.';
+    if (slotDate.getTime() > Date.now() + MAX_DAYS_AHEAD * 86_400_000) {
+      return `Slots can be booked up to ${MAX_DAYS_AHEAD} days ahead.`;
+    }
+    if (!isSlotAvailable(astrologer.availability, slotDate, minutes)) {
+      return `${astrologer.name} is not available for the whole ${minutes} minutes from ${formatIst(slotDate)}. Choose a time inside their hours, or clear the slot.`;
+    }
+    return null;
+  })();
+
   async function handleBook() {
-    if (!astrologer) return;
+    if (!astrologer || slotProblem) return;
     setPlacing(true);
     setPlaceError(null);
     let paymentCaptured = false;
@@ -333,10 +363,42 @@ function BookContent() {
               Preferred slot <span className="text-xs font-normal text-surface-400">(optional — leave blank to start as soon as the astrologer joins)</span>
             </label>
             <DateTimeInput
+              key={slotKey}
               value={scheduledAt}
               onChange={(v) => setScheduledAt(v)}
-              min={new Date().toISOString().slice(0, 16)}
+              min={localDateTimeMin()}
+              max={localDateTimeMin(new Date(Date.now() + MAX_DAYS_AHEAD * 86_400_000))}
             />
+            {slotDate && !Number.isNaN(slotDate.getTime()) && (
+              <p className="prose-meta mt-2 text-surface-600">
+                That is <span className="font-semibold">{formatIst(slotDate)}</span> (India time).{' '}
+                <button
+                  type="button"
+                  onClick={() => { setScheduledAt(''); setSlotKey((k) => k + 1); }}
+                  className="font-medium text-saffron-700 underline"
+                >
+                  Clear slot
+                </button>
+              </p>
+            )}
+            {slotProblem && (
+              <p role="alert" className="mt-2 text-sm text-red-700">{slotProblem}</p>
+            )}
+            {astrologer.availability && availabilitySummary(astrologer.availability).length > 0 && (
+              <div className="mt-3 rounded-lg border border-surface-100 bg-surface-50 p-3">
+                <p className="prose-meta font-semibold text-surface-700">Hours for booked slots (IST)</p>
+                <ul className="prose-meta mt-1 text-surface-600">
+                  {availabilitySummary(astrologer.availability).map((r) => (
+                    <li key={r.day}><span className="font-medium">{r.day.slice(0, 3)}</span> {r.text}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {astrologer.availability && availabilitySummary(astrologer.availability).length === 0 && (
+              <p className="prose-meta mt-2 text-surface-600">
+                {astrologer.name} is not taking booked time slots right now. You can still request a session that starts when they join.
+              </p>
+            )}
           </div>
 
           {/* Summary */}
@@ -359,7 +421,7 @@ function BookContent() {
 
           <button
             type="button"
-            disabled={placing}
+            disabled={placing || !!slotProblem}
             onClick={handleBook}
             className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-r from-emerald-500 to-green-500 text-white font-bold rounded-xl shadow-md shadow-emerald-500/25 hover:from-emerald-600 hover:to-green-600 disabled:opacity-60 disabled:cursor-not-allowed"
           >
@@ -371,7 +433,7 @@ function BookContent() {
           </button>
 
           <p className="text-xs text-surface-400 text-center mt-3">
-            <Sparkles className="inline w-3 h-3 text-amber-500" /> Secure Razorpay checkout. Refund if astrologer doesn't join within 10 min.
+            <Sparkles className="inline w-3 h-3 text-amber-500" /> Secure Razorpay checkout. Cancel at least 24 hours before a booked slot for a full refund. If the astrologer does not show up, email support@darshya.online for a refund or a free reschedule (see our Refunds page).
           </p>
         </div>
       </div>

@@ -100,7 +100,8 @@ beforeEach(() => {
     if (args.where.email === 'devotee@demo.com') return DEMO_DEVOTEE;
     return null;
   });
-  prismaMock.$executeRawUnsafe.mockResolvedValue(0 as never);
+  // The status flip is a compare-and-set: it reports 1 row. Everything else (the refund reservation) stays 0.
+  prismaMock.$executeRawUnsafe.mockImplementation((async (sql: string) => (/SET status = 'cancelled'/.test(String(sql)) ? 1 : 0)) as never);
   prismaMock.commission.updateMany.mockResolvedValue({ count: 1 } as never);
   prismaMock.templePayout.updateMany.mockResolvedValue({ count: 0 } as never);
   prismaMock.pujaBooking.update.mockResolvedValue({} as never);

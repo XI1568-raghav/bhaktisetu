@@ -13,6 +13,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { formatIst } from '../../../lib/consultation-time';
 
 /**
  * AW-01 (2026-08-12, P0) — this page could never show a consultation the
@@ -62,11 +63,16 @@ function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 }
 
+// IST, labelled: this used the browser's zone with no label, so the time an
+// astrologer read could differ from the one the devotee booked in.
 function formatDateTime(dateStr: string | null | undefined): string {
-  if (!dateStr) return 'Time to be agreed';
-  const d = new Date(dateStr);
-  if (Number.isNaN(d.getTime())) return 'Time to be agreed';
-  return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  return formatIst(dateStr, 'Time to be agreed');
+}
+
+/** The instant a row is "for": its slot, else when it was paid, else created. */
+function sortKey(c: Consultation): number {
+  const t = new Date(c.scheduledAt ?? c.paidAt ?? c.createdAt ?? 0).getTime();
+  return Number.isFinite(t) ? t : 0;
 }
 
 function getStatusConfig(status: string) {
@@ -136,6 +142,9 @@ export default function AstrologerConsultationsPage() {
   }
 
   async function handleComplete(c: Consultation) {
+    // Ending a session releases the earning for payout and cannot be taken back,
+    // and the button sits next to Join: one stray click used to be final.
+    if (!window.confirm(`Mark ${c.reference} as completed? This releases your earning and cannot be undone.`)) return;
     setActionId(c.id);
     setActionError(null);
     try {
@@ -161,8 +170,16 @@ export default function AstrologerConsultationsPage() {
     }
   }
 
-  const upcoming = consultations.filter((c) => c.status === 'confirmed' || c.status === 'pending_payment');
-  const past = consultations.filter((c) => c.status === 'completed' || c.status === 'cancelled');
+  // Only sessions a devotee actually paid for. An older API still returns
+  // abandoned checkouts (pending_payment) here, and they read "Devotee paid".
+  // Upcoming runs soonest-first (the API list is newest-first, so the next
+  // session used to be at the bottom); past runs most-recent-first.
+  const upcoming = consultations
+    .filter((c) => c.status === 'confirmed')
+    .sort((x, y) => sortKey(x) - sortKey(y));
+  const past = consultations
+    .filter((c) => c.status === 'completed' || (c.status === 'cancelled' && !!c.paidAt))
+    .sort((x, y) => sortKey(y) - sortKey(x));
   const displayed = activeTab === 'upcoming' ? upcoming : past;
 
   const tabs = [
@@ -174,7 +191,7 @@ export default function AstrologerConsultationsPage() {
     <div className="space-y-6 max-w-5xl">
       <div>
         <h1 className={H1.portal}>Consultations</h1>
-        <p className="text-surface-500 mt-1">Manage your upcoming and past sessions</p>
+        <p className="text-surface-500 mt-1">Manage your upcoming and past sessions. All times are IST.</p>
       </div>
 
       {error && (
