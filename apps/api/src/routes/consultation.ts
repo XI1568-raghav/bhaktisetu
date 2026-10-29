@@ -5,6 +5,7 @@ import {
   ASTROLOGER_PLATFORM_RATE,
   notifyAstrologerNewConsult,
   notifyDevoteeConsultConfirmed,
+  openConsultationThread,
 } from '../services/astrologer.service.js';
 import { z } from 'zod';
 import crypto from 'node:crypto';
@@ -480,6 +481,14 @@ export async function finalizeConsultationPaymentFromWebhook(
       devoteeUserId: row.user_id,
       astrologerName: row.astrologer_name ?? 'Your astrologer',
       minutes: row.minutes ?? 0,
+      consultationId: row.id,
+    }),
+    openConsultationThread({
+      astrologerRef: row.astrologer_id,
+      devoteeUserId: row.user_id,
+      astrologerName: row.astrologer_name ?? 'Your astrologer',
+      minutes: row.minutes ?? 0,
+      reference: row.reference,
       consultationId: row.id,
     }),
   ], 'consult-notify');
@@ -991,6 +1000,14 @@ export async function consultationRoutes(server: FastifyInstance) {
         devoteeUserId: userId,
         astrologerName: row.astrologer_name ?? 'Your astrologer',
         minutes: row.minutes ?? 0,
+        consultationId,
+      }),
+      openConsultationThread({
+        astrologerRef: row.astrologer_id,
+        devoteeUserId: userId,
+        astrologerName: row.astrologer_name ?? 'Your astrologer',
+        minutes: row.minutes ?? 0,
+        reference: row.reference,
         consultationId,
       }),
     ], 'consult-notify');
