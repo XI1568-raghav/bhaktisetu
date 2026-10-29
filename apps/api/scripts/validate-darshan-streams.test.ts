@@ -15,7 +15,8 @@ describe('validate-darshan-streams extractors', () => {
   });
   it('ops SQL only names channel ids that are well formed and never Mahakaleshwar', () => {
     const rows = extractSqlChannels(read('ops/sql/darshan-channels-2026-10.sql'));
-    expect(rows.length).toBe(11);
+    expect(rows.length).toBe(15);
+    for (const s of ['govind-dev-ji-jaipur', 'banke-bihari-vrindavan', 'ram-mandir-ayodhya', 'omkareshwar']) expect(rows.some((r: { slug: string }) => r.slug === s), s).toBe(true);
     expect(rows.some((r: { slug: string }) => r.slug === 'badrinath-uttarakhand')).toBe(true);
     for (const r of rows) expect(r.channelId).toMatch(/^UC[\w-]{22}$/);
     expect(rows.some((r: { slug: string }) => /mahakal/.test(r.slug))).toBe(false);

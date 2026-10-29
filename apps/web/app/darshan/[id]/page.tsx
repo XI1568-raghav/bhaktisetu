@@ -21,6 +21,8 @@ export function generateStaticParams() {
     // stream yet. Prerendered here so /darshan/<slug> resolves to the honest
     // "Coming soon" panel (200) instead of 404 under @cloudflare/next-on-pages.
     'rameshwaram', 'baidyanath-dham', 'dwarkadhish',
+    // Verified official channels added 2026-10-29.
+    'banke-bihari-vrindavan', 'banke-bihari', 'ram-mandir-ayodhya', 'ram-mandir', 'omkareshwar', 'govind-dev-ji-jaipur', 'govind-dev-ji',
   ].map((id) => ({ id }));
 }
 import type { Metadata } from 'next';
@@ -78,6 +80,14 @@ const CHANNEL_BY_SLUG: Record<string, string> = {
  'vaishno-devi': 'UCFYQr1l7ereS27SrLJ8bBtw',
  'vaishno-devi-katra': 'UCFYQr1l7ereS27SrLJ8bBtw',
  'jagannath-puri': 'UCstacpPsNLSiGcYe7qbF14Q',
+ // Added 2026-10-29: official channels verified against each temple's own site (see ops/sql/darshan-channels-2026-10.sql).
+ 'banke-bihari-vrindavan': 'UCwh96MUAk0m81vEXaHVm6Ng',
+ 'banke-bihari': 'UCwh96MUAk0m81vEXaHVm6Ng',
+ 'ram-mandir-ayodhya': 'UCIbhcJEGjI7fRfKiG_p0Mqg',
+ 'ram-mandir': 'UCIbhcJEGjI7fRfKiG_p0Mqg',
+ 'omkareshwar': 'UCsIZ3yYwCW4316fPX3V-4lg',
+ 'govind-dev-ji-jaipur': 'UCGqf8XY3-ONj_M9tf1DdckA',
+ 'govind-dev-ji': 'UCGqf8XY3-ONj_M9tf1DdckA',
 };
 
 const YOUTUBE_STREAMS: Record<string, string> = {
@@ -95,6 +105,13 @@ const YOUTUBE_STREAMS: Record<string, string> = {
  'siddhivinayak': ytEmbed('UCF9FdiMBENIbM6jb44zWmCQ'),
  'vaishno-devi': ytEmbed('UCFYQr1l7ereS27SrLJ8bBtw'),
  'jagannath-puri': ytEmbed('UCstacpPsNLSiGcYe7qbF14Q'),
+ 'banke-bihari-vrindavan': ytEmbed('UCwh96MUAk0m81vEXaHVm6Ng'),
+ 'banke-bihari': ytEmbed('UCwh96MUAk0m81vEXaHVm6Ng'),
+ 'ram-mandir-ayodhya': ytEmbed('UCIbhcJEGjI7fRfKiG_p0Mqg'),
+ 'ram-mandir': ytEmbed('UCIbhcJEGjI7fRfKiG_p0Mqg'),
+ 'omkareshwar': ytEmbed('UCsIZ3yYwCW4316fPX3V-4lg'),
+ 'govind-dev-ji-jaipur': ytEmbed('UCGqf8XY3-ONj_M9tf1DdckA'),
+ 'govind-dev-ji': ytEmbed('UCGqf8XY3-ONj_M9tf1DdckA'),
  // Bonus extras for related-temples links
  // ISKCON Vrindavan — UCAA6IsLVfbHrP1I_lzxv09Q (verified 2026-05-02, daily "Live Darshan" + SB classes).
  // Replaced UCvjJr9LuZcvKMGldK7e631Q which had only 1 video from June 2025.
@@ -250,6 +267,86 @@ const FALLBACK_TEMPLE_LIBRARY: Record<string, DarshanStream> = {
  images: [],
  },
  },
+ 'banke-bihari-vrindavan': {
+ id: 'live-banke-bihari',
+ templeId: 'temple-banke-bihari-vrindavan',
+ playbackUrl: ytEmbed('UCwh96MUAk0m81vEXaHVm6Ng'),
+ // Not claimed live: the page probes the channel in the browser (DarshanChannelPlayerLive).
+ status: 'offline',
+ viewerCount: 0,
+ peakViewers: 0,
+ isPremium: false,
+ scheduledStart: null,
+ youtubeChannelId: 'UCwh96MUAk0m81vEXaHVm6Ng',
+ attribution: 'Thakurji Shri Banke Bihari ji',
+ temple: {
+ name: 'Banke Bihari Temple',
+ slug: 'banke-bihari-vrindavan',
+ city: 'Vrindavan',
+ deityPrimary: 'Lord Krishna',
+ images: [],
+ },
+ },
+ 'ram-mandir-ayodhya': {
+ id: 'live-ram-mandir',
+ templeId: 'temple-ram-mandir-ayodhya',
+ playbackUrl: ytEmbed('UCIbhcJEGjI7fRfKiG_p0Mqg'),
+ // Not claimed live: the page probes the channel in the browser (DarshanChannelPlayerLive).
+ status: 'offline',
+ viewerCount: 0,
+ peakViewers: 0,
+ isPremium: false,
+ scheduledStart: null,
+ youtubeChannelId: 'UCIbhcJEGjI7fRfKiG_p0Mqg',
+ attribution: 'Shri Ram Janmbhoomi Teerth Kshetra',
+ temple: {
+ name: 'Shri Ram Janmbhoomi Mandir',
+ slug: 'ram-mandir-ayodhya',
+ city: 'Ayodhya',
+ deityPrimary: 'Lord Ram',
+ images: [],
+ },
+ },
+ 'omkareshwar': {
+ id: 'live-omkareshwar',
+ templeId: 'temple-omkareshwar',
+ playbackUrl: ytEmbed('UCsIZ3yYwCW4316fPX3V-4lg'),
+ // Not claimed live: the page probes the channel in the browser (DarshanChannelPlayerLive).
+ status: 'offline',
+ viewerCount: 0,
+ peakViewers: 0,
+ isPremium: false,
+ scheduledStart: null,
+ youtubeChannelId: 'UCsIZ3yYwCW4316fPX3V-4lg',
+ attribution: 'Shri Omkareshwar Jyotirlinga Official',
+ temple: {
+ name: 'Omkareshwar Jyotirlinga',
+ slug: 'omkareshwar',
+ city: 'Omkareshwar',
+ deityPrimary: 'Lord Shiva',
+ images: [],
+ },
+ },
+ 'govind-dev-ji-jaipur': {
+ id: 'live-govind-dev-ji',
+ templeId: 'temple-govind-dev-ji-jaipur',
+ playbackUrl: ytEmbed('UCGqf8XY3-ONj_M9tf1DdckA'),
+ // Not claimed live: the page probes the channel in the browser (DarshanChannelPlayerLive).
+ status: 'offline',
+ viewerCount: 0,
+ peakViewers: 0,
+ isPremium: false,
+ scheduledStart: null,
+ youtubeChannelId: 'UCGqf8XY3-ONj_M9tf1DdckA',
+ attribution: 'Mandir Shri Govind Devji Utsav Darshan',
+ temple: {
+ name: 'Govind Dev Ji Temple',
+ slug: 'govind-dev-ji-jaipur',
+ city: 'Jaipur',
+ deityPrimary: 'Lord Krishna',
+ images: [],
+ },
+ },
 };
 
 const FALLBACK_KEY_BY_SLUG: Record<string, keyof typeof FALLBACK_TEMPLE_LIBRARY> = {
@@ -267,6 +364,13 @@ const FALLBACK_KEY_BY_SLUG: Record<string, keyof typeof FALLBACK_TEMPLE_LIBRARY>
  'siddhivinayak-mumbai': 'siddhivinayak',
  'vaishno-devi': 'vaishno-devi',
  'jagannath-puri': 'jagannath-puri',
+ 'banke-bihari-vrindavan': 'banke-bihari-vrindavan',
+ 'banke-bihari': 'banke-bihari-vrindavan',
+ 'ram-mandir-ayodhya': 'ram-mandir-ayodhya',
+ 'ram-mandir': 'ram-mandir-ayodhya',
+ 'omkareshwar': 'omkareshwar',
+ 'govind-dev-ji-jaipur': 'govind-dev-ji-jaipur',
+ 'govind-dev-ji': 'govind-dev-ji-jaipur',
 };
 
 const fallbackSchedule = [

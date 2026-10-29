@@ -19,7 +19,11 @@
 --   * NOT included, deliberately (no official channel confirmed): Mahakaleshwar
 --     (the existing channel "Mahakaleshwar Jyotirlinga Live Darshan" is not
 --     confirmed as the Mandir Samiti's), Dwarkadhish, Baidyanath Dham,
---     Ramanathaswamy, Govind Dev Ji, Meenakshi, and the remaining seeded temples.
+--     Ramanathaswamy, Meenakshi, and the remaining seeded temples.
+--   * 2026-10-29: Govind Dev Ji (Jaipur), Banke Bihari (Vrindavan), Ram Mandir (Ayodhya) and
+--     Omkareshwar are now listed (provenance A, read from each temple's own site; see the rows).
+--     Caveats: Govind Dev Ji's channel streams katha/utsav only; Banke Bihari's site is run by a
+--     Goswami trust that says it is independent of the temple management committee.
 --
 -- Channel provenance (checked 2026-10-18 against youtube.com/feeds/videos.xml,
 -- 200 + uploads dated 2026-10-03 or later):
@@ -55,7 +59,26 @@ INSERT INTO _darshan_channels (slug, channel_id, label, provenance) VALUES
   ('tirumala-tirupati',           'UCS2Y83GD-fc7qqgNW5uj41g', 'SVBC TTD',                                     'B'),
   ('kashi-vishwanath-varanasi',   'UCdMj2twWfMHXrWgX5oVdoyA', 'Shree Kashi Vishwanath Mandir Trust',          'B'),
   ('jagannath-puri',              'UCstacpPsNLSiGcYe7qbF14Q', 'Shree Jagannatha Temple Administration, Puri', 'B'),
-  ('badrinath-uttarakhand',       'UCfBDZKKj8GmkCSB7b8zNl_A', 'Badrinath-Kedarnath Temple Committee (BKTC)',  'A* badrinath-kedarnath.gov.in -> youtube.com/@bktcofficial');
+  ('badrinath-uttarakhand',       'UCfBDZKKj8GmkCSB7b8zNl_A', 'Badrinath-Kedarnath Temple Committee (BKTC)',  'A* badrinath-kedarnath.gov.in -> youtube.com/@bktcofficial'),
+  ('govind-dev-ji-jaipur',        'UCGqf8XY3-ONj_M9tf1DdckA', 'Mandir Shri Govind Devji Utsav Darshan',       'A mandirshrigovinddevjijaipur.org (embeds this channel; katha/utsav streams only, NOT a 24x7 feed)'),
+  ('banke-bihari-vrindavan',      'UCwh96MUAk0m81vEXaHVm6Ng', 'Thakurji Shri Banke Bihari ji',                'A bihariji.org (run by Banke Bihari Consciousness Organization, a Goswami trust)'),
+  ('ram-mandir-ayodhya',          'UCIbhcJEGjI7fRfKiG_p0Mqg', 'Shri Ram Janmbhoomi Teerth Kshetra',           'A srjbtkshetra.org footer'),
+  ('omkareshwar',                 'UCsIZ3yYwCW4316fPX3V-4lg', 'Shri Omkareshwar Jyotirlinga Official',        'A shriomkareshwar.org (Mandir Trust) homepage embed');
+
+-- 0. Temple rows for the three verified channels whose temple is not in `temples` yet
+--    (banke-bihari-vrindavan, ram-mandir-ayodhya, omkareshwar). They are inserted with the
+--    schema default status (pending_review) and live_darshan_enabled = false, so nothing
+--    appears on the public lists until someone reviews and enables them; the web detail page
+--    /darshan/<slug> resolves from the code map regardless. Coordinates are the towns' public
+--    figures (Wikipedia), not surveyed gate positions. Re-running inserts nothing.
+INSERT INTO temples (id, name, slug, description, deity_primary, deities, address_line, city, state, pincode, lat, lng, website_url, created_at, updated_at)
+SELECT gen_random_uuid(), v.name, v.slug, v.description, v.deity, v.deities, v.addr, v.city, v.state, v.pin, v.lat, v.lng, v.site, now(), now()
+FROM (VALUES
+  ('Banke Bihari Temple',       'banke-bihari-vrindavan', 'Krishna temple in Vrindavan, Mathura district, Uttar Pradesh, dedicated to Banke Bihari.',        'Lord Krishna', ARRAY['Krishna']::text[], 'Vrindavan',  'Vrindavan',  'Uttar Pradesh',  '281121', 27.5817::float8, 77.6967::float8, 'https://bihariji.org'),
+  ('Shri Ram Janmbhoomi Mandir','ram-mandir-ayodhya',     'Ram temple at Ayodhya, Uttar Pradesh, managed by the Shri Ram Janmbhoomi Teerth Kshetra trust.',     'Lord Ram',     ARRAY['Ram']::text[],     'Ayodhya',    'Ayodhya',    'Uttar Pradesh',  '224123', 26.7956::float8, 82.1945::float8, 'https://srjbtkshetra.org'),
+  ('Omkareshwar Jyotirlinga',   'omkareshwar',            'Jyotirlinga temple on Mandhata island on the Narmada, Khandwa district, Madhya Pradesh.',            'Lord Shiva',   ARRAY['Shiva']::text[],   'Omkareshwar','Omkareshwar','Madhya Pradesh','450554', 22.2446::float8, 76.1503::float8, 'https://shriomkareshwar.org')
+) AS v(name, slug, description, deity, deities, addr, city, state, pin, lat, lng, site)
+WHERE NOT EXISTS (SELECT 1 FROM temples t WHERE t.slug = v.slug);
 
 -- 1. Existing stream rows.
 UPDATE live_darshan_streams s
@@ -100,7 +123,6 @@ ORDER BY t.slug;
 --                          then a line above, after the feed check.
 --   dwarkadhish-dwarka     dwarkadhish.org has a "Live Streaming" heading but no YouTube link.
 --   baidyanath             babadham.org mentions a 24x7 YouTube stream but links none; no seeded row.
---   govind-dev-ji-jaipur   govinddevji.net / .org link Twitter/Facebook/Instagram only.
 --   somnath-gujarat        listed above as B: somnath.org links no YouTube channel at all.
 --   dakshineswar-kolkata   dakshineswarkalitemple.org (the seeded websiteUrl) now serves a
 --                          gambling/shopping spam page: do not trust it, and replace the URL.
