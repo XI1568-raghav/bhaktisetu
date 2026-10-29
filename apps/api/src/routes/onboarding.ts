@@ -353,7 +353,7 @@ export async function onboardingRoutes(server: FastifyInstance) {
         role as typeof ONBOARDING_ROLES[number],
       );
       const listing = profile
-        ? await onboardingService.describeListing(userId, role as typeof ONBOARDING_ROLES[number]).catch(() => null)
+        ? await onboardingService.describeListing(userId, role as typeof ONBOARDING_ROLES[number], profile).catch(() => null)
         : null;
       return reply.send({ profile, ...(listing ? { listing } : {}) });
     } catch (err) {

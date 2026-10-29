@@ -5,6 +5,7 @@ import { getCachedAuth, setCachedAuth } from '../lib/auth-cache.js';
 import { inspectSupabaseJwt, inspectSupabaseAsymmetricJwt } from '../lib/supabase-jwt.js';
 import { stopWhenAnswered } from '../lib/stop-when-answered.js';
 import { isTokenRevoked } from '../lib/token-revocation.js';
+import { forgetPriestId, rememberPriestId } from '../lib/priest-id-cache.js';
 import {
   AUTH_REASON_HEADER,
   AUTH_REASON_BODY_FIELD,
@@ -461,9 +462,44 @@ async function authenticateUserInner(
     // `User.id = supabaseUser.id`, so id-match is authoritative.
     // Fall back to email (email/password signups) and finally phone
     // (legacy OTP signups) so any signup path resolves.
-    let dbUser = await prisma.user.findUnique({
-      where: { id: supabaseUser.id },
-    });
+    //
+    // Latency: this is the cold path, taken by the first request on every fresh
+    // access token (i.e. every page load, right after /auth/refresh), and each
+    // statement is a ~0.4 s round trip to a remote database. The user row, the
+    // revocation cutoff and the role rows are all keyed on the same id in the
+    // normal case (`User.id = supabaseUser.id`), so they are read together
+    // instead of one after the other. The decisions below are taken in exactly
+    // the order they always were: not found, blocked, revoked, then roles.
+    const readRoles = async (userId: string): Promise<MarketplaceRole[]> => {
+      let found: MarketplaceRole[] = ['DEVOTEE'];
+      try {
+        const roleAssignments = await prisma.userRoleAssignment.findMany({
+          where: { userId },
+        });
+        if (roleAssignments.length > 0) {
+          found = roleAssignments.map((ra) => ra.role as MarketplaceRole);
+          if (!found.includes('DEVOTEE')) found.push('DEVOTEE');
+        }
+      } catch (roleErr) {
+        // Role table miss = silently downgrading to DEVOTEE-only masked a real
+        // outage once. Log it so ops can tell "user is devotee" from "DB error
+        // forced devotee fallback". Keep the fallback for cold-boot resilience.
+        const rErrName = roleErr instanceof Error ? roleErr.name : 'UnknownRoleErr';
+        const rErrMsg = roleErr instanceof Error ? roleErr.message : String(roleErr);
+        request.log.warn(
+          { rErrName, rErrMsg, userId },
+          'UserRoleAssignment lookup failed — falling back to DEVOTEE-only',
+        );
+      }
+      return found;
+    };
+
+    const [byId, revokedEarly, rolesEarly] = await Promise.all([
+      prisma.user.findUnique({ where: { id: supabaseUser.id } }),
+      isTokenRevoked(supabaseUser.id, token),
+      readRoles(supabaseUser.id),
+    ]);
+    let dbUser = byId;
     if (!dbUser && supabaseUser.email) {
       dbUser = await prisma.user.findUnique({
         where: { email: supabaseUser.email.toLowerCase() },
@@ -492,33 +528,17 @@ async function authenticateUserInner(
 
     // Token revocation: a token minted before this user's logout-all / password
     // reset / block cutoff (or belonging to a signed-out session) is dead even
-    // though its signature and `exp` are still good.
-    if (await isTokenRevoked(dbUser.id, token)) {
+    // though its signature and `exp` are still good. The early read above only
+    // answers for the account it was keyed on; a user found by email or phone
+    // under a different id is checked on its own id.
+    const sameAccount = dbUser.id === supabaseUser.id;
+    if (sameAccount ? revokedEarly : await isTokenRevoked(dbUser.id, token)) {
       denyUnauthenticated(reply, 'session_revoked', 'Session revoked. Please sign in again.');
       return;
     }
 
     // Fetch user roles
-    let roles: MarketplaceRole[] = ['DEVOTEE'];
-    try {
-      const roleAssignments = await prisma.userRoleAssignment.findMany({
-        where: { userId: dbUser.id },
-      });
-      if (roleAssignments.length > 0) {
-        roles = roleAssignments.map((ra) => ra.role as MarketplaceRole);
-        if (!roles.includes('DEVOTEE')) roles.push('DEVOTEE');
-      }
-    } catch (roleErr) {
-      // Role table miss = silently downgrading to DEVOTEE-only masked a real
-      // outage once. Log it so ops can tell "user is devotee" from "DB error
-      // forced devotee fallback". Keep the fallback for cold-boot resilience.
-      const rErrName = roleErr instanceof Error ? roleErr.name : 'UnknownRoleErr';
-      const rErrMsg = roleErr instanceof Error ? roleErr.message : String(roleErr);
-      request.log.warn(
-        { rErrName, rErrMsg, userId: dbUser.id },
-        'UserRoleAssignment lookup failed — falling back to DEVOTEE-only',
-      );
-    }
+    const roles: MarketplaceRole[] = sameAccount ? rolesEarly : await readRoles(dbUser.id);
 
     // Check admin email allowlist as fallback
     const adminEmails = (process.env.ADMIN_EMAILS || '').split(',').map((e) => e.trim().toLowerCase());
@@ -598,17 +618,22 @@ export function requireRole(role: 'priest' | 'admin' | MarketplaceRole) {
         return;
       }
 
+      // Only the status and id are used from here on; selecting just them keeps
+      // the payload small and lets the handler reuse the id (lib/priest-id-cache).
       const priest = await prisma.priest.findUnique({
         where: { userId },
+        select: { id: true, status: true },
       });
 
       if (!priest || priest.status !== 'active') {
+        forgetPriestId(userId);
         reply.code(403).send({
           error: 'Forbidden',
           message: 'This route requires an active priest account.',
         });
         return;
       }
+      rememberPriestId(userId, priest.id);
       return;
     }
 

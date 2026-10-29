@@ -372,10 +372,16 @@ export class OnboardingService {
    * schema placeholder. Specialties must be non-empty for the three roles that
    * are searched by them.
    */
-  async listingGaps(userId: string, role: RoleType, opts: { priceProvided?: boolean } = {}): Promise<ListingGap[]> {
+  async listingGaps(
+    userId: string,
+    role: RoleType,
+    opts: { priceProvided?: boolean; profile?: Record<string, unknown> | null } = {},
+  ): Promise<ListingGap[]> {
     const placeholder = PRICE_PLACEHOLDER[role];
     if (!placeholder) return [];
-    const profile = (await this.getProviderProfile(userId, role)) as Record<string, unknown> | null;
+    // `profile` lets a caller that already read the row hand it over instead of
+    // paying another round trip to the database for the same row.
+    const profile = (opts.profile !== undefined ? opts.profile : await this.getProviderProfile(userId, role)) as Record<string, unknown> | null;
     if (!profile) return [];
     const gaps: ListingGap[] = [];
     const stored = Number(profile[placeholder.field]);
@@ -386,15 +392,19 @@ export class OnboardingService {
   }
 
   /** Listing state for the portal screens: never approval wording unless the switch is on. */
-  async describeListing(userId: string, role: RoleType): Promise<ListingStatus> {
+  async describeListing(
+    userId: string,
+    role: RoleType,
+    known?: Record<string, unknown> | null,
+  ): Promise<ListingStatus> {
     const approvalRequired = requireProviderApproval();
-    const profile = (await this.getProviderProfile(userId, role)) as { approved?: boolean } | null;
+    const profile = (known !== undefined ? known : await this.getProviderProfile(userId, role)) as { approved?: boolean } | null;
     const listed = profile?.approved === true;
     if (listed) return { listed, approvalRequired, missing: [], message: null };
     if (approvalRequired) {
       return { listed, approvalRequired, missing: [], message: 'Your profile is waiting for admin approval.' };
     }
-    const missing = await this.listingGaps(userId, role).catch(() => [] as ListingGap[]);
+    const missing = await this.listingGaps(userId, role, { profile: profile as Record<string, unknown> | null }).catch(() => [] as ListingGap[]);
     if (missing.length === 0 && (role === 'GAUSHALA_MANAGER' || role === 'TEMPLE_MANAGER')) {
       const q = await assessCauseProfile(userId, role).catch(() => null);
       if (q && !q.ok) {

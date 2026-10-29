@@ -127,12 +127,26 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'WELLNESS_INSTRUCTOR role required' });
     }
 
-    const profile = await prisma.wellnessProfile.findUnique({ where: { userId } });
+    // Latency: every read on this screen is keyed on the user id, so they all
+    // start together. The listing state needs the profile row, so it starts the
+    // moment that row lands (and is handed it, instead of re-reading it twice);
+    // the payout split is independent of both.
+    const profileRead = prisma.wellnessProfile.findUnique({ where: { userId } });
+    // Honest listing state for the profile screen (never approval wording unless the switch is on).
+    const listingRead = profileRead.then((p) =>
+      p ? onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR', p as unknown as Record<string, unknown>).catch(() => null) : null,
+    );
+    // AW-10: the settled/unsettled split the "Paid out" and "Pending payout"
+    // cards needed. See loadInstructorPayoutSplit.
+    const payoutSplitRead = loadInstructorPayoutSplit(userId);
 
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalSessions, upcomingSessions, completedSessions, paidEnrollments, monthEnrollments, recent] = await Promise.all([
+    const [profile, listing, payoutSplit, totalSessions, upcomingSessions, completedSessions, paidEnrollments, monthEnrollments, recent] = await Promise.all([
+      profileRead,
+      listingRead,
+      payoutSplitRead,
       prisma.wellnessSession.count({ where: { instructorId: userId } }),
       prisma.wellnessSession.findMany({
         where: { instructorId: userId, scheduledAt: { gte: now }, status: { in: ['SCHEDULED', 'LIVE'] } },
@@ -179,13 +193,6 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
     const totalEarnings = Math.round(grossTotal * share * 100) / 100;
     const monthEarnings = Math.round(grossMonth * share * 100) / 100;
     const uniqueStudents = new Set(paidEnrollments.map((e) => e.userId)).size;
-
-    // AW-10: the settled/unsettled split the "Paid out" and "Pending payout"
-    // cards needed. See loadInstructorPayoutSplit.
-    const payoutSplit = await loadInstructorPayoutSplit(userId);
-
-    // Honest listing state for the profile screen (never approval wording unless the switch is on).
-    const listing = profile ? await onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR').catch(() => null) : null;
 
     return reply.send({
       profile,

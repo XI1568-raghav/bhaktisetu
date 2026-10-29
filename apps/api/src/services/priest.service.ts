@@ -402,14 +402,13 @@ export class PriestService {
    * every approved pandit on the platform.
    */
   async getOpenRequests(priestId: string, limit = 50) {
-    if (!(await isPanditLive(priestId))) {
-      return { eligible: false as const, requests: [] as OpenRequest[] };
-    }
-
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);
 
-    const rows = await prisma.pujaBooking.findMany({
+    // Latency: the eligibility check (two reads) and the list are independent, so
+    // they run together; an ineligible pandit still gets exactly the empty answer
+    // and the rows are dropped unread.
+    const [live, rows] = await Promise.all([isPanditLive(priestId), prisma.pujaBooking.findMany({
       where: { status: 'confirmed', priestId: null, scheduledDate: { gte: startOfToday } },
       orderBy: [{ scheduledDate: 'asc' }, { createdAt: 'asc' }],
       take: Math.min(Math.max(limit, 1), 100),
@@ -423,7 +422,11 @@ export class PriestService {
         pujaType: { select: { name: true } },
         temple: { select: { name: true, city: true, state: true } },
       },
-    });
+    })]);
+
+    if (!live) {
+      return { eligible: false as const, requests: [] as OpenRequest[] };
+    }
 
     return {
       eligible: true as const,
@@ -849,7 +852,10 @@ export class PriestService {
 
     const skip = (page - 1) * limit;
 
-    const [payouts, total, summary] = await Promise.all([
+    // Latency: all five reads are independent, so they share one round trip
+    // instead of three in a row (the pending sum and the last payout used to
+    // wait for the first three).
+    const [payouts, total, summary, pendingAgg, lastPayout] = await Promise.all([
       prisma.priestPayout.findMany({
         where,
         select: {
@@ -884,20 +890,18 @@ export class PriestService {
         where: { priestId, status: 'completed' },
         _sum: { amount: true },
       }),
+      // Pending amount
+      prisma.priestPayout.aggregate({
+        where: { priestId, status: { in: ['pending', 'processing'] } },
+        _sum: { amount: true },
+      }),
+      // Last completed payout
+      prisma.priestPayout.findFirst({
+        where: { priestId, status: 'completed' },
+        orderBy: { processedAt: 'desc' },
+        select: { amount: true, processedAt: true },
+      }),
     ]);
-
-    // Pending amount
-    const pendingAgg = await prisma.priestPayout.aggregate({
-      where: { priestId, status: { in: ['pending', 'processing'] } },
-      _sum: { amount: true },
-    });
-
-    // Last completed payout
-    const lastPayout = await prisma.priestPayout.findFirst({
-      where: { priestId, status: 'completed' },
-      orderBy: { processedAt: 'desc' },
-      select: { amount: true, processedAt: true },
-    });
 
     return {
       payouts,

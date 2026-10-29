@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { notHiddenReviewWhere } from '../lib/review-moderation.js';
+import { memoProfileId } from '../lib/profile-id-memo.js';
 import { z } from 'zod';
 import { httpUrl } from '../lib/http-url.js';
 import { inspectOwnPhoto, attachFailureMessage } from '../lib/upload-inspect.js';
@@ -73,11 +74,13 @@ async function findProductById(id: string) {
 // Resolve the StoreProfile that belongs to the authenticated user. Returns
 // null when the user has no profile — caller maps that to 400.
 async function resolveStoreProfileId(userId: string): Promise<string | null> {
-  const profile = await prisma.storeProfile.findUnique({
-    where: { userId },
-    select: { id: true },
+  return memoProfileId('store', userId, async () => {
+    const profile = await prisma.storeProfile.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+    return profile?.id ?? null;
   });
-  return profile?.id ?? null;
 }
 
 /**
@@ -416,10 +419,15 @@ export async function storeAdminRoutes(server: FastifyInstance) {
   async function walkStoreOrders<T extends { id: string }>(
     fetchPage: (cursor: string | undefined, take: number) => Promise<T[]>,
     visit: (order: T) => void,
+    // Something `visit` depends on that is being read at the same time (the
+    // store's product ids). The first page is fetched while it loads; nothing is
+    // visited until it has.
+    ready?: Promise<unknown>,
   ): Promise<void> {
     let cursor: string | undefined;
     for (;;) {
       const page = await fetchPage(cursor, ORDER_PAGE_SIZE);
+      if (ready) await ready;
       if (page.length === 0) return;
       for (const order of page) visit(order);
       if (page.length < ORDER_PAGE_SIZE) return;
@@ -451,22 +459,30 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         recentOrders: [],
       });
     }
-    const products = await prisma.storeProduct.findMany({
+    // Latency: the catalogue read and the first page of orders are independent,
+    // so they run together (see walkStoreOrders' `ready`); `products` and
+    // `productIds` are filled in before any order is visited.
+    const productsRead = prisma.storeProduct.findMany({
       where: { storeProfileId },
       select: { id: true, stock: true, deletedAt: true },
     });
+    let products: Array<{ id: string; stock: number; deletedAt: Date | null }> = [];
+    let productIds = new Set<string>();
+    const productsReady = productsRead.then((rows) => {
+      products = rows;
+      productIds = new Set(rows.map((p) => p.id));
+    });
+    productsReady.catch(() => undefined);
     // The `where` stays unfiltered on purpose. `productIds` is what attributes
     // historical order lines to this store (attributeOrderToStore), so dropping
     // deleted rows here would move a deleted product's past revenue out of
     // todaySales/monthSales — the exact loss soft delete exists to prevent.
     // Only lowStock describes the CURRENT catalogue, so only lowStock filters.
-    const productIds = new Set(products.map((p) => p.id));
     // Soft delete forces stock to 0, so an unfiltered count charges every
     // deletion to this number permanently and it only ever grows: measured on
     // prod 2026-09-08, an owner whose catalogue read `{"products":[],"total":0}`
     // was told `lowStock: 3` — a restock prompt for three products that no
-    // longer exist.
-    const lowStock = products.filter((p) => !p.deletedAt && p.stock <= 5).length;
+    // longer exist. (Computed below, once the catalogue has been read.)
 
     const now = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -545,7 +561,10 @@ export async function storeAdminRoutes(server: FastifyInstance) {
           });
         }
       },
+      productsReady,
     );
+    await productsReady;
+    const lowStock = products.filter((p) => !p.deletedAt && p.stock <= 5).length;
 
     // One lookup for the at-most-ten buyers actually shown.
     if (recentOrders.length > 0) {
@@ -638,12 +657,19 @@ export async function storeAdminRoutes(server: FastifyInstance) {
         cashOnDelivery: { todayInr: 0, monthInr: 0, yearInr: 0 },
       });
     }
-    const products = await prisma.storeProduct.findMany({
-      where: { storeProfileId },
-      select: { id: true, name: true },
-    });
-    const productIds = new Set(products.map((p) => p.id));
-    const productNameMap = new Map(products.map((p) => [p.id, p.name]));
+    // Latency: the catalogue read overlaps the first page of orders.
+    let productIds = new Set<string>();
+    let productNameMap = new Map<string, string>();
+    const productsReady = prisma.storeProduct
+      .findMany({
+        where: { storeProfileId },
+        select: { id: true, name: true },
+      })
+      .then((products) => {
+        productIds = new Set(products.map((p) => p.id));
+        productNameMap = new Map(products.map((p) => [p.id, p.name]));
+      });
+    productsReady.catch(() => undefined);
 
     const now = new Date();
     const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -693,7 +719,9 @@ export async function storeAdminRoutes(server: FastifyInstance) {
           perProduct.set(line.productId, acc);
         }
       },
+      productsReady,
     );
+    await productsReady;
 
     const topProducts = Array.from(perProduct.entries())
       .map(([id, v]) => ({

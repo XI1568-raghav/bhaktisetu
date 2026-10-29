@@ -282,7 +282,7 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
            LIMIT 20`,
             idArray,
           )),
-          profile ? onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) : Promise.resolve(null),
+          profile ? onboardingService.describeListing(userId, 'ASTROLOGER', profile as unknown as Record<string, unknown>).catch(() => null) : Promise.resolve(null),
         ]);
         listing = listingNote;
         if (!todaySettled.ok) throw todaySettled.err;
@@ -304,7 +304,7 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
     // the switch is on). Normally read in the wave above; read here only when
     // that wave did not run (no ids to match) or threw before assigning it.
     if (listing === undefined) {
-      listing = profile ? await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) : null;
+      listing = profile ? await onboardingService.describeListing(userId, 'ASTROLOGER', profile as unknown as Record<string, unknown>).catch(() => null) : null;
     }
 
     return reply.send({

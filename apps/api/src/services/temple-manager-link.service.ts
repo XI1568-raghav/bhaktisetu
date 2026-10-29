@@ -1,4 +1,5 @@
 import { prisma } from '../lib/prisma.js';
+import { forgetProfileId } from '../lib/profile-id-memo.js';
 
 /**
  * Explicit link between a temple manager (User) and the public Temple row they
@@ -56,6 +57,7 @@ export async function setTempleManagerLink(userId: string, templeId: string): Pr
     userId,
     templeId,
   );
+  forgetProfileId('temple-link', userId);
 }
 
 export function slugifyTempleName(name: string): string {

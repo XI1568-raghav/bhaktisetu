@@ -8,6 +8,7 @@ import { donorContactMap } from '../lib/donation-contact.js';
 import { doneeTaxSchema, maskTaxId, readDoneeTax, taxInfoView, writeDoneeTax } from '../lib/donee-tax.js';
 import { provedBookingIds, shareRelease } from '../lib/temple-share-release.js';
 import { getLinkedTempleId } from '../services/temple-manager-link.service.js';
+import { memoProfileId } from '../lib/profile-id-memo.js';
 import { cancelInvite, createInvite, listInvitesForTemple } from '../services/temple-priest-invite.service.js';
 
 /**
@@ -140,13 +141,32 @@ export type TempleLinkReason = 'linked' | 'no_temple_profile' | 'not_approved' |
 async function resolveManagerTemple(
   userId: string,
 ): Promise<{ templeId: string | null; reason: TempleLinkReason }> {
+  // Nearly every temple-portal tab starts here, and the lookup below is up to
+  // three round trips to the remote database in a row. A manager's linked temple
+  // is remembered for 30 s (setTempleManagerLink forgets it at once); a manager
+  // who is NOT linked yet is never cached, so linking takes effect immediately.
+  let fresh: { templeId: string | null; reason: TempleLinkReason } | null = null;
+  const cached = await memoProfileId('temple-link', userId, async () => {
+    fresh = await resolveManagerTempleUncached(userId);
+    return fresh.reason === 'linked' ? fresh.templeId : null;
+  }, 30_000);
+  if (cached) return { templeId: cached, reason: 'linked' };
+  return fresh ?? (await resolveManagerTempleUncached(userId));
+}
+
+async function resolveManagerTempleUncached(
+  userId: string,
+): Promise<{ templeId: string | null; reason: TempleLinkReason }> {
   // An admin's explicit link (temple_manager_links) wins over the name match.
-  const explicit = await getLinkedTempleId(userId);
+  // The profile read does not depend on it, so both start together.
+  const [explicit, profile] = await Promise.all([
+    getLinkedTempleId(userId),
+    prisma.templeProfile.findUnique({
+      where: { userId },
+      select: { templeName: true, approved: true },
+    }),
+  ]);
   if (explicit) return { templeId: explicit, reason: 'linked' };
-  const profile = await prisma.templeProfile.findUnique({
-    where: { userId },
-    select: { templeName: true, approved: true },
-  });
   if (!profile) return { templeId: null, reason: 'no_temple_profile' };
   // Anyone can sign up as a temple manager and type any temple's name into
   // their profile. Until an admin has approved that profile the name is just a
