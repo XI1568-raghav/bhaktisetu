@@ -185,10 +185,19 @@ export default function StoreAdminDashboard() {
        // Phase B Store P0-3 fix (2026-06-08): prefer server-aggregated
        // /store-admin/revenue (scales past 100 orders) over client reduce.
        // Falls back to /admin/revenue then client aggregation if both miss.
+       // Latency: the three reads do not depend on each other, so all three go out
+       // now (they used to run one after another, ~3 round trips of waiting on top
+       // of each one's own work). Each is still handled exactly as before below.
+       const revenueFetch = fetch(`${API_BASE_URL}/store-admin/revenue`, { headers });
+       const ordersFetch = fetch(`${API_BASE_URL}/store/orders`, { headers });
+       const productsFetch = fetch(`${API_BASE_URL}/store-admin/products`, { headers });
+       revenueFetch.catch(() => undefined);
+       ordersFetch.catch(() => undefined);
+       productsFetch.catch(() => undefined);
        let revenue: DashboardData['revenue'] | null = null;
        let serverTopProducts: DashboardData['topProducts'] | null = null;
        try {
-         const rev = await fetch(`${API_BASE_URL}/store-admin/revenue`, { headers });
+         const rev = await revenueFetch;
          if (rev.ok) {
            const j = await rev.json();
            if (j?.totals) {
@@ -228,7 +237,7 @@ export default function StoreAdminDashboard() {
          }
        }
 
-       const ordersRes = await fetch(`${API_BASE_URL}/store/orders`, { headers });
+       const ordersRes = await ordersFetch;
        if (!ordersRes.ok) throw new Error(`Orders ${ordersRes.status}`);
        const ordersJson = await ordersRes.json();
        // GET /store/orders answers { data: [...] } with totalAmountInr / UPPERCASE status;
@@ -262,7 +271,7 @@ export default function StoreAdminDashboard() {
          // endpoint (the owner's own inventory), NOT the public /store/products
          // catalog — the old call reported catalog totals, not the owner's
          // stock, so Total/Active/Out-of-stock were wrong for multi-vendor.
-         const pRes = await fetch(`${API_BASE_URL}/store-admin/products`, { headers });
+         const pRes = await productsFetch;
          if (pRes.ok) {
            const pJson = await pRes.json();
            const list: Array<{
@@ -327,10 +336,28 @@ export default function StoreAdminDashboard() {
  }, [session?.accessToken]);
 
  if (loading) {
+   // Same outer shape (and the profile card in the same slot) as the loaded view
+   // below, so the card mounts now and fetches while the figures load, instead of
+   // starting its own request only after everything else has finished.
    return (
-     <div className="flex items-center justify-center py-20">
-       <Loader2 className="w-8 h-8 animate-spin text-saffron-500" />
-       <span className="ml-3 text-surface-500">Loading dashboard...</span>
+     <div className="space-y-6 max-w-5xl">
+       <div>
+         <h1 className={H1.portal}>
+           Store Dashboard
+         </h1>
+         <p className="text-surface-500 mt-1">
+           Manage your products, orders, and revenue.
+         </p>
+       </div>
+
+       {null}
+
+       <MyProviderProfileCard role="STORE_OWNER" onboardingSlug="store_owner" publicListingType={null} />
+
+       <div className="flex items-center justify-center py-20">
+         <Loader2 className="w-8 h-8 animate-spin text-saffron-500" />
+         <span className="ml-3 text-surface-500">Loading dashboard...</span>
+       </div>
      </div>
    );
  }
