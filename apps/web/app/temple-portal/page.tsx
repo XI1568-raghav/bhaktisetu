@@ -25,6 +25,8 @@ import {
 } from 'lucide-react';
 import { H1 } from '../../components/ui/heading-recipe';
 import LoadErrorBanner from '../../components/LoadErrorBanner';
+import { getMyDonations, type TempleDonation } from '../../lib/temple-api';
+import { templeBookingStatus } from '../../lib/temple-booking-status';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
@@ -32,14 +34,6 @@ function formatCurrency(amount: number): string {
  return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
 }
 
-function getStatusBadge(status: string) {
- const map: Record<string, { label: string; cls: string }> = {
- confirmed: { label: 'Confirmed', cls: 'bg-blue-100 text-blue-700' },
- in_progress: { label: 'In Progress', cls: 'bg-saffron-100 text-saffron-700' },
- completed: { label: 'Completed', cls: 'bg-green-100 text-green-700' },
- };
- return map[status] ?? { label: status, cls: 'bg-surface-100 text-surface-600' };
-}
 
 // ─── API types ──────────────────────────────────────────────────
 
@@ -72,6 +66,8 @@ type ApiDashboard = {
   totalStreams: number;
  };
  recentBookings: ApiBooking[];
+ /** Whether devotees can find and book the temple (the catalogue row is verified by the Darshya team). */
+ publicListing?: { verified: boolean; status: string; slug: string } | null;
 };
 
 // ─── Component ──────────────────────────────────────────────────
@@ -118,6 +114,19 @@ export default function TempleDashboard() {
  }, [session?.accessToken]);
 
  useEffect(() => { void load(); }, [load]);
+
+ // Latest donations for the card below. A failed read says so; it never reads as 'no donations'.
+ const [donations, setDonations] = useState<TempleDonation[] | null>(null);
+ const [donationsFailed, setDonationsFailed] = useState(false);
+ useEffect(() => {
+  if (!session?.accessToken) return;
+  let cancelled = false;
+  getMyDonations(session.accessToken).then(
+   (rows) => { if (!cancelled) { setDonations(rows); setDonationsFailed(false); } },
+   () => { if (!cancelled) setDonationsFailed(true); },
+  );
+  return () => { cancelled = true; };
+ }, [session?.accessToken]);
 
  const liveStats = api?.stats;
  const liveBookings: ApiBooking[] = api?.recentBookings ?? [];
@@ -193,6 +202,16 @@ export default function TempleDashboard() {
  </div>
  )}
 
+ {api?.publicListing && !api.publicListing.verified && (
+  <div role="status" data-testid="listing-unverified" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+   <p className="font-medium">Your temple page is not public yet</p>
+   <p className="mt-0.5">
+    Devotees cannot find this temple or book pujas here until the Darshya team verifies it. Everything you set up in this portal
+    (pujas, pandits, schedule, streams) is saved and starts working as soon as it is verified.
+   </p>
+  </div>
+ )}
+
  <MyProviderProfileCard role="TEMPLE_MANAGER" onboardingSlug="temple_manager" publicListingType="temple" />
 
  {/* Stats */}
@@ -219,7 +238,7 @@ export default function TempleDashboard() {
  <div className="bg-white rounded-xl border border-surface-100">
  <div className="flex items-center justify-between px-5 py-4 border-b border-surface-100">
  <h2 className="font-semibold text-surface-800">Recent Puja Bookings</h2>
- <Link href="/temple-portal/pujas" className="text-sm text-saffron-600 hover:text-saffron-700 font-medium inline-flex items-center gap-1">
+ <Link href="/temple-portal/bookings" className="text-sm text-saffron-600 hover:text-saffron-700 font-medium inline-flex items-center gap-1">
  View All <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
@@ -233,7 +252,7 @@ export default function TempleDashboard() {
    <p className="text-xs text-surface-400 mt-1">{loadError ? 'We could not read your bookings — retry above.' : 'Puja bookings will appear here.'}</p>
   </div>
  ) : liveBookings.map((b) => {
-   const badge = getStatusBadge(b.status);
+   const badge = templeBookingStatus(b.status);
    const d = new Date(b.scheduledDate);
    return (
     <div key={b.id} className="flex items-center gap-4 px-5 py-3 hover:bg-surface-50 transition-colors">
@@ -266,11 +285,41 @@ export default function TempleDashboard() {
  View All <ArrowRight className="w-3.5 h-3.5" />
  </Link>
  </div>
- <div className="px-5 py-8 text-center">
- <Heart className="w-10 h-10 text-surface-300 mx-auto mb-3" />
- <p className="text-sm text-surface-500">Live donations feed pending</p>
- <p className="text-xs text-surface-400 mt-1">Visit the donations page for the full list.</p>
- </div>
+ {donations && donations.length > 0 ? (
+  <div className="divide-y divide-surface-50" data-testid="dashboard-donations">
+   {donations.slice(0, 5).map((d) => (
+    <div key={d.id} className="flex items-center gap-4 px-5 py-3">
+     <div className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center shrink-0">
+      <Heart className="w-4 h-4 text-red-400" />
+     </div>
+     <div className="flex-1 min-w-0">
+      <h3 className="text-sm font-medium text-surface-800 truncate">{d.donor}</h3>
+      <p className="text-xs text-surface-400">
+       {new Date(d.paidAt ?? d.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+      </p>
+     </div>
+     <div className="text-right shrink-0">
+      <p className="text-sm font-semibold text-surface-800">{formatCurrency(d.amountInr)}</p>
+      <span className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${d.status === 'paid' ? 'bg-green-100 text-green-700' : d.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>
+       {d.status === 'paid' ? 'Received' : d.status === 'failed' ? 'Failed' : 'Not completed'}
+      </span>
+     </div>
+    </div>
+   ))}
+  </div>
+ ) : (
+  <div className="px-5 py-8 text-center">
+   <Heart className="w-10 h-10 text-surface-300 mx-auto mb-3" />
+   <p className="text-sm text-surface-500">
+    {donationsFailed ? 'Donations unavailable' : donations === null ? 'Loading donations…' : 'No donations yet'}
+   </p>
+   <p className="text-xs text-surface-400 mt-1">
+    {donationsFailed
+     ? 'We could not read your donations. Open the donations page to try again.'
+     : 'Donations made to your temple appear here once devotees complete payment.'}
+   </p>
+  </div>
+ )}
  </div>
  </div>
 

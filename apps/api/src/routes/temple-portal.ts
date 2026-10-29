@@ -182,6 +182,18 @@ function notLinked(reply: FastifyReply, reason: TempleLinkReason) {
   });
 }
 
+async function publicListingOf(templeId: string): Promise<{ verified: boolean; status: string; slug: string } | null> {
+  try {
+    const t = await prisma.temple.findUnique({
+      where: { id: templeId },
+      select: { isVerified: true, status: true, slug: true },
+    });
+    return t ? { verified: t.isVerified === true, status: String(t.status), slug: t.slug } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Upper bound on TemplePayout rows read for the dashboard's released/upcoming split. */
 const DASHBOARD_SHARE_SCAN_CAP = 5000;
 
@@ -340,6 +352,11 @@ export async function templePortalRoutes(server: FastifyInstance) {
         monthUpcomingInr: r2(upcomingMonth),
         totalStreams: profile.totalStreams,
       },
+      // Whether devotees can actually find and book this temple. The manager's
+      // portal goes live on submit, but the catalogue row stays hidden (and
+      // bookings are refused: TEMPLE_NOT_VERIFIED) until the Darshya team
+      // verifies it, and nothing on screen said so.
+      publicListing: await publicListingOf(templeId),
       recentBookings: recent.map((b) => ({
         id: b.id,
         bookingNumber: b.bookingNumber,
