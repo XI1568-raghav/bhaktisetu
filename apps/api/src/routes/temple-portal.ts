@@ -756,7 +756,7 @@ export async function templePortalRoutes(server: FastifyInstance) {
     const templeId = await resolveManagerTempleId(request.currentUser!.id);
     if (!templeId) return reply.send({ candidates: [] });
     const [onRoster, invites] = await Promise.all([
-      prisma.templePriest.findMany({ where: { templeId }, select: { priestId: true } }),
+      prisma.templePriest.findMany({ where: { templeId }, select: { priestId: true }, take: 500 }),
       listInvitesForTemple(templeId),
     ]);
     const pending = new Set(invites.filter((i) => i.status === 'pending').map((i) => i.priestId));
