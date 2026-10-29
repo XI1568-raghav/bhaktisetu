@@ -290,6 +290,49 @@ export async function listPublicPriests(): Promise<PublicPriestSummary[]> {
   return body.priests ?? [];
 }
 
+// ─── Temple roster (pandits who accepted this temple's invitation) ──────────
+
+export interface TempleRosterPriest {
+  id: string;
+  priestId: string;
+  displayName: string;
+  isPrimary: boolean;
+}
+
+/**
+ * The pandits this temple may assign to a puja. The API refuses any pandit who
+ * is not on the roster, so this (not the public directory) is the only honest
+ * source for the "assigned priest" control. Throws on failure: an empty list
+ * must mean "nobody has accepted yet", never "the request failed".
+ */
+export async function listTempleRoster(token: string | undefined): Promise<TempleRosterPriest[]> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/priests`, {
+    headers: authHeaders(token),
+  }, DATA_FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load your pandit roster'), res.status);
+  const body = (await res.json()) as { priests?: TempleRosterPriest[] };
+  return body.priests ?? [];
+}
+
+export interface InviteCandidate {
+  id: string;
+  displayName: string;
+  specializations: string[];
+  experienceYears: number;
+  isVerified: boolean;
+  invited: boolean;
+}
+
+/** Live pandits this temple can invite (not gated on Priest.isVerified). */
+export async function listInviteCandidates(token: string | undefined): Promise<InviteCandidate[]> {
+  const res = await fetchWithTimeout(`${API_BASE_URL}/temple-portal/priests/candidates`, {
+    headers: authHeaders(token),
+  }, DATA_FETCH_TIMEOUT_MS);
+  if (!res.ok) throw new UserFacingError(await describeFailure(res, 'Failed to load pandits'), res.status);
+  const body = (await res.json()) as { candidates?: InviteCandidate[] };
+  return body.candidates ?? [];
+}
+
 export interface PujaTypeSummary {
   id: string;
   slug: string;

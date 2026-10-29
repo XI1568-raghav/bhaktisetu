@@ -38,7 +38,7 @@ describe('temple manager roster page', () => {
     stubFetch((url) =>
       url.endsWith('/temple-portal/priests')
         ? { status: 200, body: rosterBody }
-        : { status: 200, body: { priests: [{ id: 'p9', displayName: 'Pandit Hari' }] } },
+        : { status: 200, body: { candidates: [{ id: 'p9', displayName: 'Pandit Hari' }] } },
     );
     render(<TemplePriestsPage />);
     await waitFor(() => expect(screen.getByText('Pandit Ramesh')).toBeTruthy());
@@ -52,7 +52,7 @@ describe('temple manager roster page', () => {
     const fetchFn = stubFetch((url, init) => {
       if (init?.method === 'POST') return { status: 201, body: { ok: true, invited: true, status: 'pending' } };
       if (url.endsWith('/temple-portal/priests')) return { status: 200, body: { priests: [], invitations: [] } };
-      return { status: 200, body: { priests: [{ id: 'p9', displayName: 'Pandit Hari' }] } };
+      return { status: 200, body: { candidates: [{ id: 'p9', displayName: 'Pandit Hari', specializations: [], invited: false }] } };
     });
     render(<TemplePriestsPage />);
     await waitFor(() => expect(screen.getByRole('option', { name: 'Pandit Hari' })).toBeTruthy());

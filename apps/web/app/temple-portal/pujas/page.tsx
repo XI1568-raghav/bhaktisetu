@@ -13,6 +13,7 @@ import {
   UserCircle,
   AlertCircle,
 } from 'lucide-react';
+import Link from 'next/link';
 import AuthGuard from '../../../components/AuthGuard';
 import { useAuth } from '../../../lib/auth-context';
 import { userFacingMessage } from '../../../lib/friendly-error';
@@ -21,11 +22,11 @@ import {
   createTemplePuja,
   updateTemplePuja,
   deleteTemplePuja,
-  listPublicPriests,
+  listTempleRoster,
   listPujaTypes,
   type TemplePujaOffering,
   type CreateTemplePujaInput,
-  type PublicPriestSummary,
+  type TempleRosterPriest,
   type PujaTypeSummary,
 } from '../../../lib/temple-api';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -56,7 +57,11 @@ function TemplePujasPageContent() {
   const token = session?.accessToken;
 
   const [pujas, setPujas] = useState<TemplePujaOffering[]>([]);
-  const [priests, setPriests] = useState<PublicPriestSummary[]>([]);
+  const [priests, setPriests] = useState<TempleRosterPriest[]>([]);
+  const [rosterFailed, setRosterFailed] = useState(false);
+  // Save errors belong next to the form's Save button. The page-level banner
+  // offers "Retry", which reloads the list and would not retry a failed save.
+  const [formError, setFormError] = useState<string | null>(null);
   const [pujaTypes, setPujaTypes] = useState<PujaTypeSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,8 +92,8 @@ function TemplePujasPageContent() {
   }, [pujaTypes]);
 
   const priestById = useMemo(() => {
-    const m = new Map<string, PublicPriestSummary>();
-    priests.forEach((p) => m.set(p.id, p));
+    const m = new Map<string, TempleRosterPriest>();
+    priests.forEach((p) => m.set(p.priestId, p));
     return m;
   }, [priests]);
 
@@ -99,14 +104,15 @@ function TemplePujasPageContent() {
     try {
       const [pujaResult, priestList, typeList] = await Promise.all([
         listTemplePujasWithLinkState(token),
-        listPublicPriests(),
+        listTempleRoster(token).then((r) => ({ ok: true as const, r }), () => ({ ok: false as const, r: [] as TempleRosterPriest[] })),
         listPujaTypes(),
       ]);
       setPujas(pujaResult.offerings);
       // S-06: an unlinked temple account cannot save any offering. Say so
       // instead of showing an empty list that looks like "nothing added yet".
       setTempleLinkIssue(pujaResult.templeLinked ? null : (pujaResult.linkMessage ?? 'This account is not linked to a temple yet, so offerings cannot be saved.'));
-      setPriests(priestList);
+      setPriests(priestList.r);
+      setRosterFailed(!priestList.ok);
       setPujaTypes(typeList);
     } catch (err) {
       setError(userFacingMessage(err, 'We could not load your pujas. Please try again.'));
@@ -128,6 +134,7 @@ function TemplePujasPageContent() {
     setFormMaxBookings('5');
     setFormSlots('');
     setEditingId(null);
+    setFormError(null);
     setShowForm(false);
   }
 
@@ -149,8 +156,17 @@ function TemplePujasPageContent() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!token || !formPujaTypeId) return;
-    setSaving(true);
     setError(null);
+    setFormError(null);
+    const badSlot = formSlots
+      .split(/[\s,]+/)
+      .filter(Boolean)
+      .find((s) => !/^([01]?\d|2[0-3]):[0-5]\d$/.test(s));
+    if (badSlot) {
+      setFormError(`"${badSlot}" is not a valid time. Use 24-hour times such as 06:00, 10:00, 18:00.`);
+      return;
+    }
+    setSaving(true);
     const body: CreateTemplePujaInput = {
       pujaTypeId: formPujaTypeId,
       priceOverride: formPrice ? Number(formPrice) : null,
@@ -174,7 +190,7 @@ function TemplePujasPageContent() {
       }
       resetForm();
     } catch (err) {
-      setError(userFacingMessage(err, 'We could not save that puja. Please try again.'));
+      setFormError(userFacingMessage(err, 'We could not save that puja. Please try again.'));
     } finally {
       setSaving(false);
     }
@@ -363,15 +379,44 @@ function TemplePujasPageContent() {
                 onChange={(e) => setFormPriestId(e.target.value)}
                 className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 bg-white"
               >
-                <option value="">Unassigned</option>
+                <option value="">No priest yet</option>
+                {formPriestId && !priestById.has(formPriestId) && (
+                  <option value={formPriestId}>Currently assigned pandit (not on your roster)</option>
+                )}
                 {priests.map((p) => (
-                  <option key={p.id} value={p.id}>
+                  <option key={p.priestId} value={p.priestId}>
                     {p.displayName}
-                    {p.isVerified ? ' (verified)' : ''}
+                    {p.isPrimary ? ' (primary)' : ''}
                   </option>
                 ))}
               </select>
+              <p className="prose-meta text-surface-500 mt-1" data-testid="priest-help">
+                {rosterFailed ? (
+                  'We could not load your roster, so you can only save this puja without a priest for now. Reload the page to try again.'
+                ) : priests.length === 0 ? (
+                  <>
+                    No pandit has joined your roster yet, so this puja is saved without a priest and bookings are
+                    matched to an available pandit. To name your own pandit,{' '}
+                    <Link href="/temple-portal/priests" className="underline text-saffron-700">
+                      invite a pandit
+                    </Link>
+                    ; they appear here once they accept.
+                  </>
+                ) : (
+                  <>
+                    Only pandits who accepted your invitation are listed.{' '}
+                    <Link href="/temple-portal/priests" className="underline text-saffron-700">
+                      Invite another pandit
+                    </Link>
+                  </>
+                )}
+              </p>
             </div>
+            {formError && (
+              <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {formError}
+              </p>
+            )}
             <div>
               <label className="block text-sm font-medium text-surface-700 mb-1.5">
                 Available Time Slots
@@ -475,7 +520,7 @@ function TemplePujasPageContent() {
                       )}
                       <span className="flex items-center gap-1">
                         <UserCircle className="w-3.5 h-3.5" />
-                        {priest?.displayName ?? 'Unassigned'}
+                        {priest?.displayName ?? (puja.assignedPriestId ? 'Assigned pandit' : 'No priest yet')}
                       </span>
                       <span className="text-xs text-surface-400">
                         Max {puja.maxBookingsPerSlot}/slot

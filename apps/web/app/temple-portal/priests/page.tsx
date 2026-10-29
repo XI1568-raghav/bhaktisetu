@@ -23,6 +23,9 @@ interface InvitationRow {
 interface PanditOption {
   id: string;
   displayName: string;
+  specializations?: string[];
+  experienceYears?: number;
+  invited?: boolean;
 }
 
 /**
@@ -36,6 +39,7 @@ export default function TemplePriestsPage() {
   const [roster, setRoster] = useState<RosterRow[]>([]);
   const [invitations, setInvitations] = useState<InvitationRow[]>([]);
   const [pandits, setPandits] = useState<PanditOption[]>([]);
+  const [panditsFailed, setPanditsFailed] = useState(false);
   const [selected, setSelected] = useState('');
   const [primary, setPrimary] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -59,6 +63,22 @@ export default function TemplePriestsPage() {
       const data = await res.json();
       setRoster(data.priests ?? []);
       setInvitations(data.invitations ?? []);
+      // The picker lists every live pandit not yet on the roster. It is a
+      // separate request so a failure here never hides the roster itself.
+      try {
+        const cRes = await fetchWithTimeout(
+          `${API_BASE_URL}/temple-portal/priests/candidates`,
+          { headers: { Authorization: `Bearer ${token}` } },
+          DATA_FETCH_TIMEOUT_MS,
+        );
+        if (!cRes.ok) throw new Error('bad status');
+        const cData = await cRes.json();
+        setPandits(cData.candidates ?? []);
+        setPanditsFailed(false);
+      } catch {
+        setPandits([]);
+        setPanditsFailed(true);
+      }
     } catch {
       setError('We could not load your roster. Please try again.');
     } finally {
@@ -69,23 +89,6 @@ export default function TemplePriestsPage() {
   useEffect(() => {
     void load();
   }, [load]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetchWithTimeout(`${API_BASE_URL}/priests`, {}, DATA_FETCH_TIMEOUT_MS);
-        if (!res.ok) return;
-        const data = await res.json();
-        if (!cancelled) setPandits(data.priests ?? []);
-      } catch {
-        /* the picker stays empty; the roster itself still works */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   async function invite() {
     if (!selected || !headers) return;
@@ -117,8 +120,9 @@ export default function TemplePriestsPage() {
     }
   }
 
-  async function remove(path: string) {
+  async function remove(path: string, confirmText?: string) {
     if (!headers) return;
+    if (confirmText && !window.confirm(confirmText)) return;
     setNotice(null);
     try {
       const res = await fetchWithTimeout(
@@ -135,6 +139,7 @@ export default function TemplePriestsPage() {
 
   const onRosterIds = new Set(roster.map((r) => r.priestId));
   const options = pandits.filter((p) => !onRosterIds.has(p.id));
+  const selectedOption = options.find((p) => p.id === selected);
 
   return (
     <div className="max-w-3xl space-y-6">
@@ -159,7 +164,11 @@ export default function TemplePriestsPage() {
           >
             <option value="">Choose a pandit…</option>
             {options.map((p) => (
-              <option key={p.id} value={p.id}>{p.displayName}</option>
+              <option key={p.id} value={p.id} disabled={p.invited}>
+                {p.displayName}
+                {p.specializations && p.specializations.length > 0 ? ` — ${p.specializations.slice(0, 2).join(', ')}` : ''}
+                {p.invited ? ' (already invited)' : ''}
+              </option>
             ))}
           </select>
           <label className="flex items-center gap-2 text-sm text-surface-700">
@@ -170,6 +179,19 @@ export default function TemplePriestsPage() {
             {busy ? 'Sending…' : 'Send invitation'}
           </button>
         </div>
+        {!loading && panditsFailed && (
+          <p className="prose-meta mt-2 text-red-700">We could not load the list of pandits. Reload the page to try again.</p>
+        )}
+        {!loading && !panditsFailed && options.length === 0 && (
+          <p className="prose-meta mt-2 text-surface-500">
+            There is no pandit to invite right now. Pandits show up here once they have a live pandit account on Darshya.
+          </p>
+        )}
+        {selectedOption && (
+          <p className="prose-meta mt-2 text-surface-500">
+            {selectedOption.displayName} gets your invitation on their pandit dashboard and joins your roster only if they accept.
+          </p>
+        )}
       </section>
 
       <section className="rounded-xl border border-[var(--color-border)] bg-white p-4">
@@ -177,7 +199,7 @@ export default function TemplePriestsPage() {
         {loading ? (
           <p className="mt-3 text-sm text-surface-500">Loading…</p>
         ) : roster.length === 0 ? (
-          <p className="mt-3 text-sm text-surface-500">No pandits have accepted yet.</p>
+          <p className="mt-3 text-sm text-surface-500">No pandits have accepted yet. Invite one above; once they accept, you can assign them to your pujas.</p>
         ) : (
           <ul className="mt-3 divide-y divide-[var(--color-border)]">
             {roster.map((r) => (
@@ -187,7 +209,13 @@ export default function TemplePriestsPage() {
                   {r.isPrimary && <span className="ml-2 rounded bg-saffron-50 px-1.5 py-0.5 text-xs text-saffron-700">Primary</span>}
                   <span className="ml-2 text-xs text-green-700">On your roster</span>
                 </span>
-                <button type="button" onClick={() => remove(r.id)} className="text-xs text-red-600 hover:underline">Remove</button>
+                <button
+                  type="button"
+                  onClick={() => remove(r.id, `Remove ${r.displayName} from your roster? Any puja offering assigned to them will have its pandit cleared.`)}
+                  className="text-xs text-red-600 hover:underline"
+                >
+                  Remove
+                </button>
               </li>
             ))}
           </ul>
