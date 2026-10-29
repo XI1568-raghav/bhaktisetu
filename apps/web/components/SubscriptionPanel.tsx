@@ -301,6 +301,10 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  (current.planId === plan.id ||
  (!!plan.tier && current.planId === plan.tier));
  const busy = actionPlanId === plan.id;
+ // A priced plan the server cannot charge for yet: say so up front instead of
+ // offering a button that can only end in an error. Free plans, the current
+ // plan and Cancel are never affected.
+ const opensSoon = plan.priceMonthly > 0 && plan.purchasable === false && !isCurrent;
  return (
  <div
  key={plan.id}
@@ -351,17 +355,23 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  </li>
  ))}
  </ul>
+ {opensSoon && (
+ <p className="mt-auto mb-2 text-xs text-surface-500" data-testid="plan-opens-soon-note">
+ Paid plans are not open yet. Your Free plan stays active and nothing is charged.
+ </p>
+ )}
  <button
  onClick={() => handleSubscribe(plan)}
- disabled={busy || isCurrent}
- className={`mt-auto w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
- isCurrent
+ disabled={busy || isCurrent || opensSoon}
+ aria-disabled={busy || isCurrent || opensSoon}
+ className={`${opensSoon ? '' : 'mt-auto '}w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors disabled:opacity-60 ${
+ isCurrent || opensSoon
  ? 'bg-surface-100 text-surface-500 cursor-not-allowed'
  : 'bg-saffron-600 hover:bg-saffron-700 text-white'
  }`}
  >
  {busy && <Loader2 className="w-4 h-4 animate-spin" />}
- {isCurrent ? 'Current plan' : busy ? 'Starting…' : 'Subscribe'}
+ {isCurrent ? 'Current plan' : opensSoon ? 'Opens soon' : busy ? 'Starting…' : 'Subscribe'}
  </button>
  </div>
  );

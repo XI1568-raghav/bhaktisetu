@@ -55,6 +55,12 @@ export interface SubscriptionPlan {
   features: string[];
   popular?: boolean;
   razorpayPlanId?: string | null;
+  /**
+   * False when the API says this priced plan cannot be charged yet. An absent
+   * value (an older API) counts as purchasable, so nothing is hidden by a missing
+   * field; only an explicit `false` turns Subscribe into "Opens soon".
+   */
+  purchasable?: boolean;
 }
 
 export interface MarketplaceSubscription {
@@ -187,6 +193,7 @@ export function normalizePlan(raw: unknown): SubscriptionPlan | null {
     popular: r.popular === true,
     razorpayPlanId:
       typeof r.razorpayPlanId === 'string' ? r.razorpayPlanId : null,
+    purchasable: r.purchasable === false ? false : true,
   };
 }
 

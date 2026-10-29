@@ -47,7 +47,9 @@ export async function subscriptionRoutes(server: FastifyInstance) {
 
   server.get('/plans', async (request, reply) => {
     const { role } = request.query as { role?: string };
-    const plans = subscriptionService.getPlans(role);
+    // `purchasable` is false for a priced plan that cannot be charged yet, so the
+    // page can show "Opens soon" instead of a Subscribe button that errors.
+    const plans = subscriptionService.getPlansWithAvailability(role);
     return { plans };
   });
 
