@@ -73,7 +73,7 @@ describe('temple schedule editor without a typed slug', () => {
     }));
     render(<TempleScheduleEditor />);
 
-    await waitFor(() => expect(screen.getByDisplayValue('04:00 - 05:00')).toBeTruthy());
+    await waitFor(() => expect(screen.getByDisplayValue('04:00')).toBeTruthy());
     expect(screen.getByText('Somnath Temple')).toBeTruthy();
     expect(fetchFn.mock.calls[0]![0]).toBe(`${API_BASE_URL}/temple-portal/schedule`);
     expect(document.body.textContent ?? '').not.toMatch(/\?slug=/);
@@ -89,7 +89,7 @@ describe('temple schedule editor without a typed slug', () => {
           },
     );
     render(<TempleScheduleEditor />);
-    await waitFor(() => expect(screen.getByDisplayValue('04:00 - 05:00')).toBeTruthy());
+    await waitFor(() => expect(screen.getByDisplayValue('04:00')).toBeTruthy());
 
     screen.getByRole('button', { name: /save schedule/i }).click();
     await waitFor(() => expect(fetchFn.mock.calls.length).toBe(2));
