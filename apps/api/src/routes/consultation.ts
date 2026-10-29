@@ -15,6 +15,12 @@ import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
 import { sendEmail, consultationCancelledEmail } from '../lib/email.js';
 import { ensureConsultationRefundColumns, isRefundRetryable, refundConsultation } from '../services/consultation-refund.service.js';
 import { prisma } from '../lib/prisma.js';
+import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
+import {
+  describeAvailability,
+  isWithinAvailability,
+  parseWeeklyAvailability,
+} from '../lib/astrologer-availability.js';
 import { authenticateUser, requireRole } from '../middlewares/auth.js';
 import { assertNotProductionDemo } from '../lib/payment-mode.js';
 import {
@@ -50,7 +56,31 @@ const razorpay = isDemoPayment
   ? null
   : withGatewayTimeout(new Razorpay({ key_id: razorpayKeyId, key_secret: razorpayKeySecret }));
 
-async function ensureConsultationTables() {
+/**
+ * Every handler awaits this, and it is five DDL statements (CREATE TABLE, three
+ * CREATE INDEX, ALTER TABLE ... ADD COLUMN IF NOT EXISTS). Measured on prod
+ * 2026-10-29: GET /consultation/mine took ~2.0 s for an empty result, almost all
+ * of it these statements (each remote round trip is ~0.4 s) - and the ALTER
+ * takes a table lock on every call even when the columns exist. The schema does
+ * not change while the process runs, so do it once per process. A failure clears
+ * the memo so the next request retries instead of caching the failure.
+ */
+let consultationTablesReady: Promise<void> | null = null;
+export function ensureConsultationTables(): Promise<void> {
+  if (!consultationTablesReady) {
+    consultationTablesReady = createConsultationTables().catch((err) => {
+      consultationTablesReady = null;
+      throw err;
+    });
+  }
+  return consultationTablesReady;
+}
+/** Test seam: forget that the DDL ran. */
+export function __resetConsultationTablesMemo(): void {
+  consultationTablesReady = null;
+}
+
+async function createConsultationTables() {
   await prisma.$executeRawUnsafe(`
     CREATE TABLE IF NOT EXISTS astrologer_consultations (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -111,6 +141,12 @@ function nextConsultRef(): string {
   return `AC-${ymd}-${randomBytes(3).toString('hex').toUpperCase()}`;
 }
 
+// A real uuid shape. `/^[0-9a-f-]{36}$/` also matched 36 hyphens, which then failed the
+// `$1::uuid` cast inside Postgres and answered 500 instead of 400.
+const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const MAX_BOOKING_HORIZON_MS = 60 * 24 * 60 * 60 * 1000;
+
 const bookSchema = z.object({
   astrologerId: z.string().min(1).max(64),
   minutes: z.number().int().min(5).max(60),
@@ -118,6 +154,11 @@ const bookSchema = z.object({
 }).refine(
   (v) => !v.scheduledAt || new Date(v.scheduledAt).getTime() > Date.now(),
   { message: 'scheduledAt must be in the future', path: ['scheduledAt'] },
+).refine(
+  // A slot years out is never a real booking (2099 was accepted on prod) and the
+  // 24 h refund window would be meaningless for it.
+  (v) => !v.scheduledAt || new Date(v.scheduledAt).getTime() <= Date.now() + MAX_BOOKING_HORIZON_MS,
+  { message: 'scheduledAt must be within the next 60 days', path: ['scheduledAt'] },
 );
 
 const verifySchema = z.object({
@@ -575,7 +616,7 @@ export async function consultationRoutes(server: FastifyInstance) {
     // trip before the same refusal — worse, it would imply the fixtures are one
     // admin action away from being bookable, which they are not: they are
     // invented people. Supply must be onboarded, not mapped.
-    let astrologer: { name: string; perMinuteRate: number; userId: string } | null = null;
+    let astrologer: { name: string; perMinuteRate: number; userId: string; availability: unknown } | null = null;
     const looksLikeProfileId =
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(astrologerId);
     if (!looksLikeProfileId) {
@@ -595,10 +636,34 @@ export async function consultationRoutes(server: FastifyInstance) {
         name: p.displayName,
         perMinuteRate: Number(p.pricePerMinute),
         userId: p.userId,
+        availability: p.availability,
       };
     }
     if (!astrologer) {
       return reply.code(404).send({ error: 'Astrologer not found.' });
+    }
+
+    // An astrologer paying themselves would mint a "completed consultation" (and
+    // an 80% commission, a rating counter bump) out of nothing.
+    if (astrologer.userId === userId) {
+      return reply.code(409).send({
+        code: 'SELF_BOOKING',
+        error: 'You cannot book a consultation with yourself.',
+      });
+    }
+
+    // The portal promises "devotees can book only during your available slots".
+    // Enforce it for a requested slot. No `scheduledAt` (start when the astrologer
+    // joins) is not a slot and is not restricted; an astrologer with no schedule
+    // on file is not restricted either.
+    if (scheduledAt) {
+      const schedule = parseWeeklyAvailability(astrologer.availability);
+      if (schedule && !isWithinAvailability(schedule, new Date(scheduledAt), minutes)) {
+        return reply.code(409).send({
+          code: 'OUTSIDE_AVAILABILITY',
+          error: `${astrologer.name} is not taking bookings for that time. Their hours: ${describeAvailability(schedule)}. Pick a time inside those hours, or leave the slot blank.`,
+        });
+      }
     }
 
     const perMinuteRate = Number(astrologer.perMinuteRate);
@@ -612,6 +677,42 @@ export async function consultationRoutes(server: FastifyInstance) {
     const amountInPaise = amountInr * 100;
 
     await ensureConsultationTables();
+
+    // Idempotency. Closing the Razorpay window and pressing Pay again (or a
+    // double click that beat the disabled button) opened a NEW gateway order and a
+    // NEW pending row every time, leaving the old ones for the expiry job. The same
+    // devotee asking for the same astrologer, length, slot and price within 15
+    // minutes gets the order they already have.
+    const openOrders = await prisma.$queryRawUnsafe<ConsultationRow[]>(
+      `SELECT * FROM astrologer_consultations
+        WHERE user_id = $1::uuid AND astrologer_id = $2 AND minutes = $3
+          AND status = 'pending_payment' AND razorpay_order_id IS NOT NULL
+          AND amount_inr = $4 AND scheduled_at IS NOT DISTINCT FROM $5::timestamptz
+          AND created_at > now() - interval '15 minutes'
+        ORDER BY created_at DESC LIMIT 1;`,
+      userId,
+      astrologerId,
+      minutes,
+      amountInr,
+      scheduledAt ?? null,
+    );
+    const reusable = Array.isArray(openOrders) ? openOrders[0] : undefined;
+    if (reusable?.id && reusable.razorpay_order_id) {
+      return reply.code(200).send({
+        consultationId: reusable.id,
+        reference: reusable.reference,
+        astrologerName: reusable.astrologer_name,
+        minutes: reusable.minutes,
+        amountInr,
+        amountInPaise,
+        currency: 'INR',
+        razorpayOrderId: reusable.razorpay_order_id,
+        razorpayKeyId: isDemoPayment ? null : razorpayKeyId,
+        demo: isDemoPayment,
+        reused: true,
+      });
+    }
+
     const reference = nextConsultRef();
 
     let razorpayOrderId: string | null = null;
@@ -631,8 +732,17 @@ export async function consultationRoutes(server: FastifyInstance) {
         });
         razorpayOrderId = order.id;
       } catch (err: any) {
-        server.log.error({ err }, 'razorpay.orders.create failed (consultation)');
-        return reply.code(502).send({ error: 'Payment gateway unavailable. Please retry.' });
+        // Same structured fields the other rails log, so an operator can tell a
+        // rejected key from a network fault. Never the keys.
+        const f = describeGatewayFailure(err);
+        server.log.error(
+          { gatewayStatus: f.status, gatewayCode: f.code, gatewayReason: f.reason },
+          'razorpay.orders.create failed (consultation)',
+        );
+        return reply.code(502).send({
+          error: 'We could not open the payment page right now. Nothing has been charged. Please try again in a few minutes.',
+          code: 'PAYMENT_GATEWAY_UNAVAILABLE',
+        });
       }
     } else {
       // Demo mode — synthetic order id, so the demo-pay fallback button works.
@@ -940,7 +1050,7 @@ export async function consultationRoutes(server: FastifyInstance) {
   // executed via Razorpay dashboard — this endpoint only flips the row.
   server.post('/:id/cancel', { preHandler: [authenticateUser] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    if (!UUID_SHAPE.test(id)) {
       return reply.code(400).send({ error: 'Invalid consultation id.' });
     }
     await ensureConsultationTables();
@@ -1007,17 +1117,32 @@ export async function consultationRoutes(server: FastifyInstance) {
       alreadySettled: 0,
     };
     const cancelReason = `consultation cancelled by devotee (${row.reference})`;
+    // The flip is conditional on the status this handler decided on. It used to
+    // be `WHERE id = $1`, so a cancel racing the astrologer's "End" (or a second
+    // cancel) overwrote 'completed' with 'cancelled' - after the earning had been
+    // released - and ran the ledger reversal against a finished consultation.
+    let flipped = 1;
     await prisma.$transaction(async (tx) => {
-      await tx.$executeRawUnsafe(
-        `UPDATE astrologer_consultations
-         SET status = 'cancelled'
-         WHERE id = $1::uuid;`,
-        id,
+      flipped = Number(
+        await tx.$executeRawUnsafe(
+          `UPDATE astrologer_consultations
+           SET status = 'cancelled'
+           WHERE id = $1::uuid AND status = $2;`,
+          id,
+          row.status,
+        ),
       );
+      if (flipped === 0) return;
       if (refundEligible) {
         reversal = await reverseBookingLedger(tx, row.id, cancelReason);
       }
     });
+    if (flipped === 0) {
+      return reply.code(409).send({
+        code: 'CONSULTATION_STATE_CHANGED',
+        error: 'This consultation was just updated. Refresh the page and check its status.',
+      });
+    }
 
     // OPS-05 — the third refund rail, which until now emitted NOTHING.
     //
@@ -1161,7 +1286,7 @@ export async function consultationRoutes(server: FastifyInstance) {
   // refuses with 409.
   server.patch('/:id/complete', { preHandler: [authenticateUser] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    if (!UUID_SHAPE.test(id)) {
       return reply.code(400).send({ error: 'Invalid consultation id.' });
     }
     await ensureConsultationTables();
@@ -1208,10 +1333,26 @@ export async function consultationRoutes(server: FastifyInstance) {
         return reply.code(409).send({ error: early, code: TOO_EARLY_TO_COMPLETE });
       }
     }
-    await prisma.$executeRawUnsafe(
-      `UPDATE astrologer_consultations SET status = 'completed' WHERE id = $1::uuid;`,
-      id,
+    // Compare-and-set: only a row that is still 'confirmed' completes. A cancel
+    // that landed between the read above and this write must not be overwritten
+    // (the devotee has been told "refund on its way"), and a double click on End
+    // must answer like the first one did.
+    const completedRows = Number(
+      await prisma.$executeRawUnsafe(
+        `UPDATE astrologer_consultations SET status = 'completed' WHERE id = $1::uuid AND status = 'confirmed';`,
+        id,
+      ),
     );
+    if (completedRows === 0) {
+      const now = await prisma.$queryRawUnsafe<Array<{ status: string }>>(
+        `SELECT status FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
+        id,
+      );
+      if (now[0]?.status === 'completed') {
+        return reply.send({ completed: true, alreadyCompleted: true, consultationId: row.id });
+      }
+      return reply.code(409).send({ error: `Cannot complete a ${now[0]?.status ?? 'missing'} consultation.` });
+    }
     return reply.send({ completed: true, consultationId: row.id, reference: row.reference });
   });
 
@@ -1219,7 +1360,7 @@ export async function consultationRoutes(server: FastifyInstance) {
   // Fetch single consultation (success page + portal).
   server.get('/:id', { preHandler: [authenticateUser] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (!/^[0-9a-f-]{36}$/i.test(id)) {
+    if (!UUID_SHAPE.test(id)) {
       return reply.code(400).send({ error: 'Invalid consultation id.' });
     }
     await ensureConsultationTables();
@@ -1310,6 +1451,13 @@ export async function consultationRoutes(server: FastifyInstance) {
       if (status) {
         params.push(status);
         whereSql += ` AND status = $${params.length}`;
+      } else {
+        // An astrologer's list is the sessions devotees actually paid for. Rows
+        // that never got paid (an abandoned checkout, a payment held for review,
+        // a pending order the devotee cancelled) are not bookings: they showed up
+        // under "Upcoming" labelled "Devotee paid" with a Join/End pair that could
+        // not work. An explicit ?status= still returns whatever was asked for.
+        whereSql += ` AND (status IN ('confirmed', 'completed') OR (status = 'cancelled' AND paid_at IS NOT NULL))`;
       }
       params.push(limit);
       params.push(offset);
@@ -1330,7 +1478,9 @@ export async function consultationRoutes(server: FastifyInstance) {
         consultations: rows.map((row) => ({
           id: row.id,
           reference: row.reference,
-          userId: row.user_id,
+          // No devotee account id: GET /:id already withholds it from the assigned
+          // astrologer ("astrologers see room + booking meta, not the underlying
+          // account id") and this list handed it over for every row.
           astrologerId: row.astrologer_id,
           astrologerName: row.astrologer_name,
           minutes: row.minutes,
@@ -1354,7 +1504,7 @@ export async function consultationRoutes(server: FastifyInstance) {
   // (no refund id, older than CONSULTATION_REFUND_STALE_MIN) is retried like 'failed'.
   server.post('/admin/:id/refund', { preHandler: [authenticateUser, requireRole('admin')] }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    if (!/^[0-9a-f-]{36}$/i.test(id)) return reply.code(400).send({ error: 'Invalid consultation id.' });
+    if (!UUID_SHAPE.test(id)) return reply.code(400).send({ error: 'Invalid consultation id.' });
     await ensureConsultationTables();
     const rows = await prisma.$queryRawUnsafe<ConsultationRow[]>(
       `SELECT * FROM astrologer_consultations WHERE id = $1::uuid LIMIT 1;`,
