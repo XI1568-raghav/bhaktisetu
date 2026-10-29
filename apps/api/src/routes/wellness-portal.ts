@@ -6,7 +6,7 @@ import { goLive } from '../lib/go-live.js';
 import { onboardingService } from '../services/onboarding.service.js';
 
 const profileUpdateSchema = z.object({
-  displayName: z.string().min(1).max(100).optional(),
+  displayName: z.string().trim().min(1).max(100).optional(),
   specialties: z.array(z.string().max(50)).max(20).optional(),
   certifications: z.array(z.string().max(100)).max(20).optional(),
   experience: z.number().int().min(0).max(80).optional(),
