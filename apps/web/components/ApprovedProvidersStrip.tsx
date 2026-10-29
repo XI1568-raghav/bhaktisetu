@@ -53,7 +53,10 @@ function getPriceLabel(type: ProviderListingType, p: ApprovedProvider): string |
  switch (type) {
  case 'pandit': return fmt(p.pricePerPuja, ' / puja');
  case 'astrologer': return fmt(p.pricePerMinute, ' / min');
- case 'wellness': return fmt(p.pricePerSession, ' / session');
+ // Wellness: no price on the card. The profile's own rate is a self-set figure that need not match
+ // what any class actually costs (each class has its own price, shown on the class and instructor
+ // pages), so printing it here put two different prices on one instructor.
+ case 'wellness': return null;
  default: return null;
  }
 }

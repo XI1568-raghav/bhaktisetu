@@ -181,7 +181,7 @@ describe('AW-07 — GET /wellness/sessions/:id carries the same facts as the lis
 
     const arg = prismaMock.wellnessSession.findUnique.mock.calls[0]?.[0] as any;
     const where = arg?.include?._count?.select?.enrollments?.where;
-    expect(where?.status?.in).toEqual(['PAID', 'PENDING_PAYMENT']);
+    expect(where?.status?.in).toEqual(['PAID', 'ATTENDED', 'PENDING_PAYMENT']);
   });
 
   it('never reports negative seats on the detail payload either', async () => {

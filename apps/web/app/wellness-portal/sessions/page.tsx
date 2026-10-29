@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import {
  CalendarDays,
  Plus,
@@ -34,6 +34,8 @@ import {
  type WellnessSessionStatus,
 } from '../../../lib/wellness-api';
 import { DateTimeInput } from '../../../components/ui/DateInput';
+import { formatIstDateTime } from '../../../lib/wellness-time';
+import { fromLocalInput, toLocalInput, validateSessionForm } from '../../../lib/wellness-session-form';
 import { H1 } from '../../../components/ui/heading-recipe';
 import {
  describeAttendanceError,
@@ -69,28 +71,7 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDateTime(iso: string): string {
- try {
-  return new Date(iso).toLocaleString('en-IN', {
-   day: 'numeric',
-   month: 'short',
-   year: 'numeric',
-   hour: '2-digit',
-   minute: '2-digit',
-  });
- } catch {
-  return iso;
- }
-}
-
-// <input type="datetime-local"> expects "YYYY-MM-DDTHH:mm" in local time,
-// whereas the API returns ISO 8601 in UTC. Convert without dragging in
-// date-fns just to handle the offset.
-function toLocalInput(iso: string | undefined): string {
- if (!iso) return '';
- const d = new Date(iso);
- if (isNaN(d.getTime())) return '';
- const pad = (n: number) => String(n).padStart(2, '0');
- return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+ return formatIstDateTime(iso);
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -145,23 +126,31 @@ function WellnessSessionsPageContent() {
  const [cancelRosterError, setCancelRosterError] = useState<string | null>(null);
  const [notice, setNotice] = useState<string | null>(null);
 
+ // Latest-request-wins: opening roster A then B quickly must not let A's slow answer overwrite B's.
+ const rosterRequest = useRef(0);
+
  async function openRoster(id: string) {
   if (!token) return;
   if (rosterOpenId === id) {
+   rosterRequest.current += 1;
    setRosterOpenId(null);
    return;
   }
+  const mine = ++rosterRequest.current;
   setRosterOpenId(id);
   setRoster(null);
   setRosterError(null);
   setRosterNote(null);
   setRosterLoading(true);
   try {
-   setRoster(await getSessionRoster(token, id));
+   const rows = await getSessionRoster(token, id);
+   if (mine === rosterRequest.current) setRoster(rows);
   } catch (err) {
-   setRosterError(userFacingMessage(err, 'We could not load the roster. Please try again.'));
+   if (mine === rosterRequest.current) {
+    setRosterError(userFacingMessage(err, 'We could not load the roster. Please try again.'));
+   }
   } finally {
-   setRosterLoading(false);
+   if (mine === rosterRequest.current) setRosterLoading(false);
   }
  }
 
@@ -263,11 +252,22 @@ function WellnessSessionsPageContent() {
  async function handleSubmit(e: React.FormEvent) {
   e.preventDefault();
   if (!token) return;
-  if (!formTitle.trim() || !formDesc.trim() || !formScheduledAt || !formDuration || !formCapacity) {
+  const invalid = validateSessionForm({
+   title: formTitle,
+   description: formDesc,
+   scheduledAt: formScheduledAt,
+   duration: formDuration,
+   price: formPrice,
+   capacity: formCapacity,
+   editing: !!editingId,
+   minCapacity: editingId ? sessions.find((x) => x.id === editingId)?.enrolled ?? 0 : 0,
+  });
+  if (invalid) {
+   setError(invalid);
    return;
   }
 
-  const scheduledIso = new Date(formScheduledAt).toISOString();
+  const scheduledIso = fromLocalInput(formScheduledAt).toISOString();
   setSaving(true);
   setError(null);
   try {
@@ -277,9 +277,9 @@ function WellnessSessionsPageContent() {
      description: formDesc.trim(),
      type: formType,
      scheduledAt: scheduledIso,
-     durationMinutes: parseInt(formDuration, 10) || 0,
-     capacity: parseInt(formCapacity, 10) || 1,
-     priceInr: parseFloat(formPrice) || 0,
+     durationMinutes: parseInt(formDuration, 10),
+     capacity: parseInt(formCapacity, 10),
+     priceInr: Number(formPrice),
      status: formStatus,
     });
     setSessions((prev) => prev.map((s) => (s.id === editingId ? updated : s)));
@@ -289,9 +289,9 @@ function WellnessSessionsPageContent() {
      description: formDesc.trim(),
      type: formType,
      scheduledAt: scheduledIso,
-     durationMinutes: parseInt(formDuration, 10) || 0,
-     capacity: parseInt(formCapacity, 10) || 1,
-     priceInr: parseFloat(formPrice) || 0,
+     durationMinutes: parseInt(formDuration, 10),
+     capacity: parseInt(formCapacity, 10),
+     priceInr: Number(formPrice),
     });
     setSessions((prev) => [created, ...prev]);
    }
@@ -364,6 +364,10 @@ function WellnessSessionsPageContent() {
    setRoomSaving(false);
   }
  }
+
+ const editingSession = editingId ? sessions.find((x) => x.id === editingId) : undefined;
+ const lockedEnrolled = editingSession?.enrolled ?? 0;
+ const priceLocked = !!editingSession && lockedEnrolled > 0;
 
  const activeCount = sessions.filter((s) => s.status === 'SCHEDULED' || s.status === 'LIVE').length;
 
@@ -458,7 +462,7 @@ function WellnessSessionsPageContent() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
        <div>
-        <label className="block text-sm font-medium text-surface-700 mb-1.5">Scheduled At *</label>
+        <label className="block text-sm font-medium text-surface-700 mb-1.5">Scheduled At * <span className="prose-meta text-surface-500">(India time, IST)</span></label>
         <DateTimeInput
          value={formScheduledAt}
          onChange={(v) => setFormScheduledAt(v)}
@@ -491,10 +495,18 @@ function WellnessSessionsPageContent() {
           className="w-full pl-9 pr-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
           placeholder="200"
           min="0"
+          max="1000000"
           step="1"
           required
+          disabled={priceLocked}
+          aria-describedby={priceLocked ? 'price-locked-note' : undefined}
          />
         </div>
+        {priceLocked && (
+         <p id="price-locked-note" className="prose-meta text-surface-500 mt-1.5">
+          Price is locked because {lockedEnrolled} {lockedEnrolled === 1 ? 'learner has' : 'learners have'} enrolled.
+         </p>
+        )}
        </div>
        <div>
         <label className="block text-sm font-medium text-surface-700 mb-1.5">Duration (min) *</label>
@@ -506,6 +518,7 @@ function WellnessSessionsPageContent() {
          placeholder="60"
          min="5"
          max="600"
+         step="1"
          required
         />
        </div>
@@ -517,7 +530,7 @@ function WellnessSessionsPageContent() {
          onChange={(e) => setFormCapacity(e.target.value)}
          className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200 focus:border-emerald-300"
          placeholder="20"
-         min="1"
+         min={Math.max(1, lockedEnrolled)}
          max="10000"
          required
         />
@@ -659,7 +672,7 @@ function WellnessSessionsPageContent() {
             ) : rosterError ? (
              <p role="alert" className="text-xs text-red-700">{rosterError}</p>
             ) : !roster || roster.length === 0 ? (
-             <p className="text-xs text-surface-500">No paid learners yet.</p>
+             <p className="text-xs text-surface-500" data-testid="roster-empty">No students enrolled yet.</p>
             ) : (
              <ul className="divide-y divide-surface-100">
               {roster.map((r) => (
