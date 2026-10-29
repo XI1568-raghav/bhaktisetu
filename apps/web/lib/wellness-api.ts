@@ -34,7 +34,13 @@ async function describeFailure(res: Response, fallback: string): Promise<string>
   // friendly copy for the status. Never `fallback (HTTP status): raw detail`.
   const friendly = userFacingMessage(new Error(`HTTP ${res.status}`), fallback);
   try {
-    return serverErrorMessage(await res.json(), friendly);
+    const msg = serverErrorMessage(await res.json(), friendly);
+    // Fastify's own 404 ("Route GET:/api/v1/... not found") means the server we reached does not
+    // have this endpoint yet. That is a deployment gap, not something a user can act on or read.
+    if (/^Route [A-Z]+:\S* not found$/.test(msg)) {
+      return `${fallback}. This feature is not available on our server yet; please try again later.`;
+    }
+    return msg;
   } catch {
     return friendly;
   }

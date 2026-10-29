@@ -21,6 +21,7 @@ import Link from 'next/link';
 import { Calendar, Clock, Users, Loader2, AlertCircle, Leaf } from 'lucide-react';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { formatIstWhen } from '../../../lib/wellness-time';
 
 export interface WellnessClass {
   id: string;
@@ -50,15 +51,7 @@ export function formatClassPrice(priceInr: string | number): string {
 }
 
 export function formatClassWhen(scheduledAt: string): string {
-  const d = new Date(scheduledAt);
-  if (Number.isNaN(d.getTime())) return 'Time to be confirmed';
-  return d.toLocaleString('en-IN', {
-    weekday: 'short',
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return formatIstWhen(scheduledAt) ?? 'Time to be confirmed';
 }
 
 export async function fetchWellnessClasses(): Promise<WellnessClass[]> {

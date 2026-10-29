@@ -96,7 +96,9 @@ const razorpay = isDemoPayment
  * behaviour is strictly better than failing every enrolment, and the
  * session+user unique index still catches the same-user double-tap below.
  */
-const HELD_STATUSES = ['PAID', 'PENDING_PAYMENT'] as const;
+// ATTENDED keeps its seat: a learner the instructor has ticked off still occupies the room, and
+// dropping it from this set let a LIVE class refill past capacity and re-enrol the same person.
+const HELD_STATUSES = ['PAID', 'ATTENDED', 'PENDING_PAYMENT'] as const;
 
 /** The devotee already holds a PAID enrolment on this session. */
 class AlreadyEnrolledError extends Error {
@@ -182,7 +184,7 @@ async function enrollUnderCapacityLock(opts: {
     const current = await tx.wellnessEnrollment.findUnique({
       where: { sessionId_userId: { sessionId: opts.sessionId, userId: opts.userId } },
     });
-    if (current && current.status === 'PAID') throw new AlreadyEnrolledError();
+    if (current && (current.status === 'PAID' || current.status === 'ATTENDED')) throw new AlreadyEnrolledError();
 
     // Re-enrolling an existing held row does not consume a NEW spot, so only the
     // create path is gated — the same rule the pre-fix code applied, now taken
@@ -329,6 +331,12 @@ function isAdmin(req: { currentUser?: { roles?: string[] } }): boolean {
   return Array.isArray(req.currentUser?.roles) && req.currentUser.roles.includes('ADMIN');
 }
 
+function withoutCount<T extends { _count?: unknown }>(s: T): Omit<T, '_count'> {
+  const { _count: _omit, ...rest } = s;
+  void _omit;
+  return rest;
+}
+
 function serializeSession(s: any) {
   return {
     ...s,
@@ -344,7 +352,7 @@ function serializeSession(s: any) {
 // full" — the class of defect where the UI invites a payment the server has
 // already decided not to accept. Both the listing and the detail route include
 // this exact clause so they can never drift apart.
-const SEAT_HOLDING_STATUSES: ('PAID' | 'PENDING_PAYMENT')[] = ['PAID', 'PENDING_PAYMENT'];
+const SEAT_HOLDING_STATUSES: ('PAID' | 'ATTENDED' | 'PENDING_PAYMENT')[] = ['PAID', 'ATTENDED', 'PENDING_PAYMENT'];
 const seatCountInclude = {
   instructor: { select: { id: true, fullName: true } },
   _count: { select: { enrollments: { where: { status: { in: SEAT_HOLDING_STATUSES } } } } },
@@ -356,7 +364,7 @@ const seatCountInclude = {
  * are left. `roomUrl` is removed here unconditionally — a caller that is
  * entitled to it re-attaches it after its own entitlement check.
  */
-function publicSession(row: any) {
+function publicSession(row: any, names?: Map<string, string>) {
   const { roomUrl: _omitRoomUrl, instructor, _count, ...rest } = row as {
     roomUrl?: string | null;
     instructor?: { id: string; fullName: string | null } | null;
@@ -367,11 +375,33 @@ function publicSession(row: any) {
   const capacity = Number((rest as { capacity?: unknown }).capacity ?? 0);
   return {
     ...serializeSession(rest),
-    instructorName: instructor?.fullName ?? null,
+    instructorName: (instructor?.id ? names?.get(instructor.id) : undefined) ?? instructor?.fullName ?? null,
     enrolledCount,
     // Never negative: an over-held class reads "0 left", not "-3 left".
     spotsLeft: Math.max(0, capacity - enrolledCount),
   };
+}
+
+/**
+ * The name an instructor chose for students ("Test Yoga Guru") lives on WellnessProfile.displayName;
+ * User.fullName is the account name. Catalogue, detail and My classes showed the account name, so the
+ * class page disagreed with the portal profile. Best effort: any failure falls back to User.fullName.
+ */
+async function instructorDisplayNames(ids: string[]): Promise<Map<string, string>> {
+  const out = new Map<string, string>();
+  const unique = [...new Set(ids.filter(Boolean))];
+  if (unique.length === 0) return out;
+  try {
+    const rows = await prisma.wellnessProfile.findMany({
+      where: { userId: { in: unique } },
+      select: { userId: true, displayName: true },
+      take: unique.length,
+    });
+    for (const r of rows ?? []) if (r.displayName?.trim()) out.set(r.userId, r.displayName.trim());
+  } catch {
+    // fall back to the account name
+  }
+  return out;
 }
 
 export async function wellnessSessionRoutes(server: FastifyInstance) {
@@ -418,7 +448,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         include: { _count: { select: { enrollments: { where: { status: { in: ['PAID', 'ATTENDED'] } } } } } },
       });
       const data = sessions.map((s) => ({
-        ...serializeSession(s),
+        ...serializeSession(withoutCount(s)),
         enrolled: s._count.enrollments,
       }));
       return reply.send({ data });
@@ -486,6 +516,30 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           code: 'session_already_completed',
         });
       }
+      // Capacity and price are promises already made to enrolled learners. A capacity below the
+      // seats held would leave an over-booked class; a price change after payment makes the
+      // refund (computed from the session's CURRENT price) and the instructor's recorded share
+      // disagree with what was actually charged. Both are refused once anyone holds a seat.
+      const capacityChanges = body.data.capacity !== undefined && body.data.capacity !== session.capacity;
+      const priceChanges =
+        body.data.priceInr !== undefined && Number(body.data.priceInr) !== Number(session.priceInr);
+      if (capacityChanges || priceChanges) {
+        const held = await prisma.wellnessEnrollment.count({
+          where: { sessionId: session.id, status: { in: [...HELD_STATUSES] } },
+        });
+        if (priceChanges && held > 0) {
+          return reply.code(409).send({
+            error: 'The price cannot be changed once learners have enrolled. Cancel the session and create a new one instead.',
+            code: 'price_locked_by_enrolments',
+          });
+        }
+        if (capacityChanges && body.data.capacity! < held) {
+          return reply.code(409).send({
+            error: `${held} ${held === 1 ? 'learner holds a seat' : 'learners hold seats'} in this session, so the capacity cannot be lower than ${held}.`,
+            code: 'capacity_below_enrolled',
+          });
+        }
+      }
       const updated = await prisma.wellnessSession.update({ where: { id: session.id }, data });
       // Cancelling a session refunds every paid enrolment (intent), reverses the
       // instructor's held earnings, releases unpaid seats and notifies devotees. It
@@ -521,8 +575,10 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       }
       // Deleting a session with money attached erased the devotees' paid
       // enrolments (and their audit trail) with no refund. Cancel it instead.
+      // PENDING_PAYMENT counts too: that learner may be mid-checkout, and a capture after the
+      // row is gone has nothing to attach to (money taken, no enrolment, no refund path).
       const paidCount = await prisma.wellnessEnrollment.count({
-        where: { sessionId: session.id, status: { in: ['PAID', 'ATTENDED'] } },
+        where: { sessionId: session.id, status: { in: ['PENDING_PAYMENT', 'PAID', 'ATTENDED'] } },
       });
       if (paidCount > 0 && Number(session.priceInr) > 0) {
         return reply.code(409).send({
@@ -556,7 +612,8 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       include: seatCountInclude,
     });
     // Strip roomUrl from public listing — only enrolled paid users / instructor see it.
-    const stripped = sessions.map(publicSession);
+    const names = await instructorDisplayNames(sessions.map((s) => s.instructorId));
+    const stripped = sessions.map((s) => publicSession(s, names));
     return reply.send({ data: stripped });
   });
 
@@ -595,14 +652,15 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
           const enrollment = await prisma.wellnessEnrollment.findUnique({
             where: { sessionId_userId: { sessionId: session.id, userId } },
           });
-          if (enrollment && enrollment.status === 'PAID') canSeeRoom = true;
+          if (enrollment && (enrollment.status === 'PAID' || enrollment.status === 'ATTENDED')) canSeeRoom = true;
         }
       }
     }
 
     // publicSession always drops roomUrl; it is re-attached only for a caller
     // the server itself has decided is entitled to it.
-    const out: { roomUrl?: string | null } & Record<string, unknown> = publicSession(session);
+    const names = await instructorDisplayNames([session.instructorId]);
+    const out: { roomUrl?: string | null } & Record<string, unknown> = publicSession(session, names);
     if (canSeeRoom) out.roomUrl = (session as { roomUrl?: string | null }).roomUrl ?? null;
     return reply.send({ data: out });
   });
@@ -652,7 +710,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       const existing = await prisma.wellnessEnrollment.findUnique({
         where: { sessionId_userId: { sessionId: session.id, userId } },
       });
-      if (existing && existing.status === 'PAID') {
+      if (existing && (existing.status === 'PAID' || existing.status === 'ATTENDED')) {
         return reply.code(409).send({ error: 'You are already enrolled' });
       }
 
@@ -817,6 +875,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
       },
     });
 
+    const names = await instructorDisplayNames(rows.map((r) => r.session.instructor?.id ?? ''));
     const data = rows.map((row) => {
       const { session, ...enrollment } = row as typeof row & {
         session: {
@@ -831,7 +890,7 @@ export async function wellnessSessionRoutes(server: FastifyInstance) {
         ...enrollment,
         session: {
           ...serializeSession(restOfSession),
-          instructorName: instructor?.fullName ?? null,
+          instructorName: (instructor?.id ? names.get(instructor.id) : undefined) ?? instructor?.fullName ?? null,
           // Withheld unless the money actually landed.
           roomUrl: paid ? roomUrl ?? null : null,
         },

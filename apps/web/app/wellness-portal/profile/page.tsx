@@ -219,8 +219,10 @@ function Content() {
         <div className="flex items-center gap-3">
           <input
             type="number"
+            min={0}
+            max={80}
             value={profile.experience}
-            onChange={(e) => updateField('experience', Math.max(0, parseInt(e.target.value) || 0))}
+            onChange={(e) => updateField('experience', Math.min(80, Math.max(0, parseInt(e.target.value) || 0)))}
             className="w-24 px-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-emerald-200"
           />
           <span className="text-sm text-surface-600">years</span>
@@ -233,13 +235,19 @@ function Content() {
             <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
             <input
               type="number"
+              min={0}
+              max={1000000}
               value={profile.pricePerSession}
-              onChange={(e) => updateField('pricePerSession', Math.max(0, parseFloat(e.target.value) || 0))}
+              onChange={(e) => updateField('pricePerSession', Math.min(1_000_000, Math.max(0, parseFloat(e.target.value) || 0)))}
               className="w-32 pl-9 pr-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-emerald-200"
             />
           </div>
           <span className="text-sm text-surface-600">per session (INR)</span>
         </div>
+        <p className="prose-meta text-surface-500 mt-2">
+          Your general rate. Each live class you schedule has its own price, set on the Sessions page, and that
+          is what learners pay.
+        </p>
       </Card>
 
       <Card title="Certifications" icon={Award}>
