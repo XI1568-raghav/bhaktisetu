@@ -26,6 +26,7 @@ import {
  loadErrorIsReauth,
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
+import { formatIstDate, formatIstTime } from '../../lib/wellness-time';
 import LoadErrorBanner from '../../components/LoadErrorBanner';
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -35,13 +36,11 @@ function formatCurrency(amount: number): string {
 }
 
 function formatTime(dateStr: string): string {
- const d = new Date(dateStr);
- return d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+ return formatIstTime(dateStr);
 }
 
 function formatDate(dateStr: string): string {
- const d = new Date(dateStr);
- return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+ return formatIstDate(dateStr);
 }
 
 // ─── Component ──────────────────────────────────────────────────

@@ -6,7 +6,7 @@ import { goLive } from '../lib/go-live.js';
 import { onboardingService } from '../services/onboarding.service.js';
 
 const profileUpdateSchema = z.object({
-  displayName: z.string().min(1).max(100).optional(),
+  displayName: z.string().trim().min(1).max(100).optional(),
   specialties: z.array(z.string().max(50)).max(20).optional(),
   certifications: z.array(z.string().max(100)).max(20).optional(),
   experience: z.number().int().min(0).max(80).optional(),
@@ -127,12 +127,15 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'WELLNESS_INSTRUCTOR role required' });
     }
 
-    const profile = await prisma.wellnessProfile.findUnique({ where: { userId } });
-
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [totalSessions, upcomingSessions, completedSessions, paidEnrollments, monthEnrollments, recent] = await Promise.all([
+    // Every read is independent (each DB round trip is ~0.4 s on prod), so they all go out together;
+    // the listing note is computed unconditionally and dropped below when there is no profile.
+    const [profile, payoutSplit, listingNote, totalSessions, upcomingSessions, completedSessions, paidEnrollments, monthEnrollments, recent] = await Promise.all([
+      prisma.wellnessProfile.findUnique({ where: { userId } }),
+      loadInstructorPayoutSplit(userId),
+      onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR').catch(() => null),
       prisma.wellnessSession.count({ where: { instructorId: userId } }),
       prisma.wellnessSession.findMany({
         where: { instructorId: userId, scheduledAt: { gte: now }, status: { in: ['SCHEDULED', 'LIVE'] } },
@@ -181,11 +184,10 @@ export async function wellnessPortalRoutes(server: FastifyInstance) {
     const uniqueStudents = new Set(paidEnrollments.map((e) => e.userId)).size;
 
     // AW-10: the settled/unsettled split the "Paid out" and "Pending payout"
-    // cards needed. See loadInstructorPayoutSplit.
-    const payoutSplit = await loadInstructorPayoutSplit(userId);
+    // cards needed. See loadInstructorPayoutSplit (fetched above, with the rest).
 
     // Honest listing state for the profile screen (never approval wording unless the switch is on).
-    const listing = profile ? await onboardingService.describeListing(userId, 'WELLNESS_INSTRUCTOR').catch(() => null) : null;
+    const listing = profile ? listingNote : null;
 
     return reply.send({
       profile,

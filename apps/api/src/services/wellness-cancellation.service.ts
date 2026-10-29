@@ -549,26 +549,35 @@ export async function cancelWellnessSessionEnrollments(opts: {
   let refunded = 0;
   let refundOwedInr = 0;
   let ledgerManualReview = 0;
-  for (const r of rows ?? []) {
-    try {
-      const res = await cancelWellnessEnrollment({
-        enrollmentId: r.id,
-        actorType: opts.actorType,
-        actorId: opts.actorId,
-        instructorFault: true,
-        reason: 'session cancelled',
-      });
-      if (!res || res.outcome !== 'cancelled') continue;
-      if (r.status === 'PAID') {
-        refunded += 1;
-        refundOwedInr = round2(refundOwedInr + res.refundOwedInr);
-      } else {
-        released += 1;
-      }
-      ledgerManualReview += res.ledgerManualReview;
-    } catch (err) {
-      console.error('[wellness-cancel] enrolment sweep failed', r.id, err);
-    }
+  // Each enrolment settles independently (single-winner claim, own refund reservation), and one
+  // takes several ~0.4 s round trips, so a full class swept one at a time outlasts the request.
+  // Small batches keep the pool from being flooded while cutting the wall time ~5x.
+  const BATCH = 5;
+  const list = rows ?? [];
+  for (let i = 0; i < list.length; i += BATCH) {
+    await Promise.all(
+      list.slice(i, i + BATCH).map(async (r) => {
+        try {
+          const res = await cancelWellnessEnrollment({
+            enrollmentId: r.id,
+            actorType: opts.actorType,
+            actorId: opts.actorId,
+            instructorFault: true,
+            reason: 'session cancelled',
+          });
+          if (!res || res.outcome !== 'cancelled') return;
+          if (r.status === 'PAID') {
+            refunded += 1;
+            refundOwedInr = round2(refundOwedInr + res.refundOwedInr);
+          } else {
+            released += 1;
+          }
+          ledgerManualReview += res.ledgerManualReview;
+        } catch (err) {
+          console.error('[wellness-cancel] enrolment sweep failed', r.id, err);
+        }
+      }),
+    );
   }
   return { released, refunded, refundOwedInr, ledgerManualReview };
 }
