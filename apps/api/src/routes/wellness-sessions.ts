@@ -395,6 +395,7 @@ async function instructorDisplayNames(ids: string[]): Promise<Map<string, string
     const rows = await prisma.wellnessProfile.findMany({
       where: { userId: { in: unique } },
       select: { userId: true, displayName: true },
+      take: unique.length,
     });
     for (const r of rows ?? []) if (r.displayName?.trim()) out.set(r.userId, r.displayName.trim());
   } catch {

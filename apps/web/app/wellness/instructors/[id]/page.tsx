@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import {
  Star,
  Calendar,
@@ -17,6 +18,7 @@ import WellnessEnrolButton from './WellnessEnrolButton';
 // classes from the live feed and falls back to the catalogue, never to a
 // bare /wellness.
 import InstructorClasses from './InstructorClasses';
+import RealInstructorProfile from './RealInstructorProfile';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import { HAS_VERIFIED_INSTRUCTORS, SAMPLE_INSTRUCTOR_NOTE } from '../../../../lib/launch-gates';
 
@@ -157,6 +159,8 @@ const instructors: Record<string, {
  },
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function generateStaticParams() {
  return Object.keys(instructors).map((id) => ({ id }));
 }
@@ -164,6 +168,15 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
  const { id } = await params;
  const inst = instructors[id];
+ if (!inst && UUID_RE.test(id)) {
+ // A real listed instructor (see RealInstructorProfile). The record is fetched client-side, so the
+ // title is section-level rather than the instructor's name.
+ return {
+ title: 'Wellness Instructor',
+ alternates: { canonical: `https://darshya.online/wellness/instructors/${id}` },
+ description: 'A yoga, meditation or pranayama instructor listed on Darshya: what they teach and their upcoming live classes.',
+ };
+ }
  if (!inst) return { title: 'Instructor Not Found' };
  return {
  title: `${inst.name} — ${inst.specialty.join(', ')}`,
@@ -178,17 +191,9 @@ export default async function InstructorDetailPage({ params }: { params: Promise
  const { id } = await params;
  const inst = instructors[id];
 
- if (!inst) {
- return (
- <div className="min-h-[60vh] flex items-center justify-center">
- <div className="text-center">
- <h1 className={`${H1.portal} mb-2`}>Instructor not found</h1>
- <p className="text-sm mb-4" style={{ color: 'var(--color-text-muted)' }}>The instructor you are looking for does not exist.</p>
- <Link href="/wellness" className="text-sm font-medium" style={{ color: 'var(--color-primary)' }}>Back to Wellness</Link>
- </div>
- </div>
- );
- }
+ if (!inst && UUID_RE.test(id)) return <RealInstructorProfile id={id} />;
+ // Not a fixture and not a profile id: a real 404, not a 200 page that says "not found".
+ if (!inst) notFound();
 
  const categoryLink = inst.category === 'vipassana' ? '/wellness/vipassana' : inst.category === 'meditation' ? '/wellness/meditation' : '/wellness/yoga';
  const categoryLabel = inst.category === 'vipassana' ? 'Vipassana' : inst.category === 'meditation' ? 'meditation' : 'yoga';

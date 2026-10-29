@@ -19,16 +19,12 @@ import {
   type WellnessStudent,
 } from '../../../lib/wellness-api';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { formatIstDate } from '../../../lib/wellness-time';
 
 // ─── Helpers ────────────────────────────────────────────────────
 
 function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
+  return formatIstDate(iso, true);
 }
 
 // ─── Component ──────────────────────────────────────────────────
