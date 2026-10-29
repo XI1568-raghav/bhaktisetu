@@ -129,7 +129,7 @@ describe('DU-03 — the measured screens adopted the Button recipe', () => {
     ['app/pujas/(index)/page.tsx', 'catalogue Apply / Load more / empty-state CTA'],
     ['app/pricing/page.tsx', 'Get Started Free / Start Free / Subscribe'],
     ['app/auth/login/page.tsx', 'the three submit buttons'],
-    ['components/home/ThisWeek.tsx', 'the dated booking CTA and its browse fallback'],
+    ['components/home/ThisWeekView.tsx', 'the dated booking CTA and its browse fallback'],
     ['components/home/NextFestivalStrip.tsx', 'the seasonal booking CTA'],
     ['components/home/ShopStrip.tsx', 'Visit store'],
   ];

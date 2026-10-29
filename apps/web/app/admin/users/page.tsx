@@ -410,7 +410,7 @@ function AdminUsersPageContent() {
  className={`border-b border-[var(--color-border)] last:border-0 hover:bg-surface-50/80 transition-colors ${i % 2 === 1 ? 'bg-surface-50/30' : ''}`}
  >
  <td className="py-3 px-5">
- <Link href={`/admin/users/${user.id}`} className="font-medium text-surface-800 hover:text-saffron-600 transition-colors">
+ <Link href={`/admin/users/view?id=${user.id}`} className="font-medium text-surface-800 hover:text-saffron-600 transition-colors">
  {user.name}
  </Link>
  </td>
@@ -442,7 +442,7 @@ function AdminUsersPageContent() {
  <td className="py-3 px-5 text-right relative">
  <div className="flex items-center justify-end gap-1">
  <Link
- href={`/admin/users/${user.id}`}
+ href={`/admin/users/view?id=${user.id}`}
  className="p-1.5 text-surface-400 hover:text-saffron-600 hover:bg-saffron-50 rounded-md transition-colors"
  title="View"
  >

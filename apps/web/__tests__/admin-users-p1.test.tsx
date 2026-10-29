@@ -322,7 +322,7 @@ describe('AO-08 — a moderation action is confirmed from the server, not from a
 // ─── AO-05: the row must lead somewhere that exists ──────────────────────────
 
 describe('AO-05 — user rows link to the real detail route', () => {
-  it('points the name and the Eye button at /admin/users/<id>', async () => {
+  it('points the name and the Eye button at /admin/users/view?id=<id>', async () => {
     mockApi();
     await renderPage();
 
@@ -330,7 +330,8 @@ describe('AO-05 — user rows link to the real detail route', () => {
     const links = within(row).getAllByRole('link');
     expect(links.length).toBeGreaterThanOrEqual(2);
     for (const link of links) {
-      expect(link.getAttribute('href')).toBe(`/admin/users/${ALL_USERS[0]!.id}`);
+      // The static twin (/admin/users/view?id=) renders the same screen without the Worker.
+      expect(link.getAttribute('href')).toBe(`/admin/users/view?id=${ALL_USERS[0]!.id}`);
     }
   });
 });

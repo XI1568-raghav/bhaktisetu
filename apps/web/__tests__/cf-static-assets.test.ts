@@ -16,6 +16,9 @@ const cfg = JSON.parse(readFileSync(join(WEB, 'scripts/cf-static-pages.json'), '
   mustBeStatic: { routes: string[]; portalPrefixes: string[] };
   exclude: { routes: Record<string, string>; prefixes: Record<string, string> };
   isrStaticPrefixes: { prefixes: string[] };
+  isrStaticRoutes: { routes: string[] };
+  isrBuildDataPrefixes: { prefixes: string[] };
+  mustBeCopied: { routes: string[] };
   workerServed: Record<string, string>;
 };
 const served = Object.keys(cfg.workerServed).filter((k) => k.startsWith('/')).map((k) => join(WEB, 'app', k));
@@ -78,9 +81,57 @@ describe('Cloudflare asset-served pages stay free of server-side request data', 
     }
   });
 
-  it('locale landings stay excluded: middleware writes poojly_language on them', () => {
-    for (const l of ['/hi', '/ta', '/te', '/bn', '/mr']) expect(Object.keys(cfg.exclude.routes)).toContain(l);
+  it('locale landings are served from assets: cookie written by layout script, Content-Language by _headers', () => {
+    const layout = readFileSync(join(WEB, 'app/layout.tsx'), 'utf8');
+    expect(layout).toContain('poojly_language=');
+    expect(layout).toMatch(/hi\|ta\|te\|bn\|mr/);
+    const headers = readFileSync(join(WEB, 'public/_headers'), 'utf8');
+    for (const l of ['hi', 'ta', 'te', 'bn', 'mr']) {
+      expect(Object.keys(cfg.exclude.routes)).not.toContain('/' + l);
+      expect(cfg.mustBeCopied.routes).toContain('/' + l);
+      expect(headers).toMatch(new RegExp(`^/${l}\\n  Content-Language: ${l}$`, 'm'));
+      expect(headers).toMatch(new RegExp(`^/${l}/\\*\\n  Content-Language: ${l}$`, 'm'));
+    }
+    // Per-path-locale help articles still need the Worker for their Content-Language.
     expect(Object.keys(cfg.exclude.prefixes)).toContain('/help/articles/');
+  });
+
+  it('the home page is static: no revalidate, no per-request data, language redirect and dated content run in the browser', () => {
+    const home = strip(readFileSync(join(WEB, 'app/page.tsx'), 'utf8'));
+    expect(home).not.toMatch(/export\s+const\s+revalidate\b/);
+    for (const re of SERVER_REQUEST_DATA) expect(home).not.toMatch(re);
+    expect(home).not.toMatch(/getTodayPanchang|<ThisWeek \/>/);
+    expect(home).toContain('HomeLocaleRedirect');
+    expect(home).toContain('HomePanchangChip');
+    expect(home).toContain('ThisWeekLive');
+    expect(cfg.isrStaticRoutes.routes).toContain('/');
+    expect(cfg.mustBeCopied.routes).toContain('/');
+    for (const f of ['HomePanchangChip', 'ThisWeekLive']) {
+      expect(isClient(readFileSync(join(WEB, `components/home/${f}.tsx`), 'utf8')), f).toBe(true);
+    }
+  });
+
+  it('the home language redirect keeps middleware rules: bare root only, chosen cookie only, supported locales only', () => {
+    const src = readFileSync(join(WEB, 'components/home/HomeLocaleRedirect.tsx'), 'utf8');
+    expect(src).toContain("location.pathname!=='/'");
+    expect(src).toContain('poojly_language');
+    expect(src).toContain("['hi','ta','te','bn','mr']");
+    expect(src).toContain('location.replace');
+  });
+
+  it('build-time-data sections render nothing per request (no cookies, headers, searchParams, bare new Date())', () => {
+    for (const prefix of cfg.isrBuildDataPrefixes.prefixes) {
+      const files = walk(join(WEB, 'app', prefix));
+      expect(files.length, prefix).toBeGreaterThan(0);
+      for (const f of files) {
+        const raw = readFileSync(f, 'utf8');
+        if (isClient(raw)) continue;
+        const src = strip(raw);
+        expect(src, `${f}: clock/cookie/query data does not belong in an asset-served section`).not.toMatch(
+          /\bcookies\s*\(|next\/headers|\bheaders\s*\(\s*\)|\bsearchParams\b|\bnew Date\(\)|\bDate\.now\(/,
+        );
+      }
+    }
   });
 
   it('ISR sections copied to assets render committed data only (no fetch, cookies, dates)', () => {

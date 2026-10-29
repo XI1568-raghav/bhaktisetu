@@ -11,7 +11,6 @@ import {
  ChevronDown,
 } from 'lucide-react';
 import { getTranslations } from '../lib/t';
-import { getTodayPanchang } from '../lib/api';
 import { getPlatformCounts } from '../lib/platform-stats';
 // ParallaxLayer is the only motion component this page actually renders.
 // TextReveal, ScrambleReveal and StickyHeadlinePin were imported here and
@@ -26,7 +25,7 @@ import { buttonClass } from '../components/ui/button-recipe';
 import { HomeHeroCta } from '../components/HomeHeroCta';
 import IntentTrio from '../components/home/IntentTrio';
 import ContinueJourneyCard from '../components/home/ContinueJourneyCard';
-import ThisWeek from '../components/home/ThisWeek';
+import ThisWeekLive from '../components/home/ThisWeekLive';
 import ServiceLanes from '../components/home/ServiceLanes';
 import NriLane from '../components/home/NriLane';
 import EmailCapture from '../components/EmailCapture';
@@ -34,10 +33,14 @@ import HowItWorks from '../components/home/HowItWorks';
 import HeroCopyVariant from '../components/home/HeroCopyVariant';
 import TempleClock from '../components/home/TempleClock';
 import SankalpThread from '../components/home/SankalpThread';
+import HomePanchangChip from '../components/home/HomePanchangChip';
+import HomeLocaleRedirect from '../components/home/HomeLocaleRedirect';
 
-// Edge runtime + 1-hour revalidate — TTFB win per Pillar 4 audit (2026-06-08).
-// Panchang chip cache OK at 1h granularity. Personal salutation deferred to client.
-export const revalidate = 3600;
+// No `revalidate`: this page is prerendered once at build time and served by Cloudflare as
+// a static asset, so the Worker (free plan: 10 ms CPU, error 1102 on a cold start) never runs
+// for it. Everything that depends on the clock or the visitor is resolved in the browser: the
+// panchang chip (HomePanchangChip) and the chosen-language redirect (HomeLocaleRedirect, which
+// replaces the 307 middleware.ts used to send). Inventory counts are read at build time.
 
 export const metadata: Metadata = {
  title: "Darshya, India's Devotional Super App",
@@ -75,23 +78,15 @@ export default async function HomePage() {
  const t = await getTranslations('home');
  const tCommon = await getTranslations('common');
 
- // Tolerant panchang fetch — surface tithi + nakshatra chip in hero per blueprint Day 2.
- let panchangChip: { tithi: string; nakshatra: string } | null = null;
- try {
-   const p = await getTodayPanchang();
-   panchangChip = { tithi: p.tithi, nakshatra: p.nakshatra };
- } catch {
-   panchangChip = null;
- }
-
  // CM-11 / DF-05 (prod sweep 2026-08-12): every inventory number on this page
  // used to be a string literal ("200+ verified temples", "500+ vetted
  // pandits"). They are now server counts, and a failed count renders copy with
  // no digits rather than the old marketing figure. See lib/platform-stats.ts.
- const counts = await getPlatformCounts();
+ const counts = await getPlatformCounts({ buildTime: true });
 
  return (
  <ScrollReveal>
+ <HomeLocaleRedirect />
  <script
    type="application/ld+json"
    dangerouslySetInnerHTML={{ __html: JSON.stringify(brandFaqJsonLd) }}
@@ -123,16 +118,7 @@ export default async function HomePage() {
  <div className="container-wide py-6 md:py-8">
  <div className="grid md:grid-cols-2 gap-8 items-center">
  <div>
- {panchangChip && (
- <div
- data-reveal="up"
- className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-3"
- style={{ background: '#FFFBEB', color: '#92400E', border: '1px solid #FDE68A' }}
- >
- <span className="w-1.5 h-1.5 rounded-full" style={{ background: '#D97706' }} />
- Aaj {panchangChip.tithi}, {panchangChip.nakshatra}
- </div>
- )}
+ <HomePanchangChip />
  <div
  data-reveal="spring"
  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium mb-6"
@@ -285,7 +271,7 @@ export default async function HomePage() {
      the CCPA dark-pattern guidelines leave open. Every CTA resolves against
      the live catalogue; when nothing resolves the card offers the guide
      rather than a dead /pujas/<slug>. */}
- <ThisWeek />
+ <ThisWeekLive />
 
  {/* CM-13: the answer to "how do I know the puja actually happened?", placed
      where the buyer asks it rather than ten screens down. */}

@@ -286,7 +286,7 @@ export default function AdminApprovalsPage() {
                     <XCircle className="w-3.5 h-3.5" /> Reject
                   </button>
                   <Link
-                    href={`/admin/users/${approval.userId}`}
+                    href={`/admin/users/view?id=${approval.userId}`}
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-surface-100 text-surface-600 text-xs font-medium rounded-lg hover:bg-surface-200 transition-colors"
                   >
                     <Eye className="w-3.5 h-3.5" /> View
