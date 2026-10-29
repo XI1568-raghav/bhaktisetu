@@ -292,12 +292,13 @@ export default function LiveAstrologersClient() {
 
       <div className="mt-4 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-wider text-saffron-600">Verified · onboarded</p>
+          <p className="text-xs uppercase tracking-wider text-saffron-600">Live listings</p>
           <h1 className={`${H1.catalogue} mt-1`}>
             Live astrologer directory
           </h1>
           <p className="text-surface-500 mt-1 max-w-2xl prose-body">
-            Every astrologer here is a real Darshya profile that has been submitted and is live. Availability comes from
+            Every astrologer here is a real Darshya profile that has been submitted and is live. A tick beside a name means
+            Darshya has reviewed that astrologer; without one, the listing is the astrologer&rsquo;s own. Availability comes from
             their own go-online status, so an &ldquo;Online&rdquo; badge means they are at their
             desk right now.
           </p>
@@ -305,7 +306,7 @@ export default function LiveAstrologersClient() {
 
         {state === 'ready' && astrologers.length > 0 && (
           <p className="text-sm text-surface-500 shrink-0">
-            <span className="font-semibold text-surface-800">{astrologers.length}</span> verified ·{' '}
+            <span className="font-semibold text-surface-800">{astrologers.length}</span> listed ·{' '}
             <span className="font-semibold text-emerald-600">{onlineCount}</span> online now
           </p>
         )}
@@ -344,7 +345,7 @@ export default function LiveAstrologersClient() {
         <div className="mt-8">
           <p className="flex items-center gap-2 text-sm text-surface-500">
             <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
-            Loading approved astrologers…
+            Loading astrologers…
           </p>
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {[0, 1, 2].map((i) => (

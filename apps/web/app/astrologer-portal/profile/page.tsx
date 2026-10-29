@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   UserCircle,
   Star,
@@ -29,6 +29,10 @@ interface AstrologerProfile {
   rating: number;
   approved: boolean;
 }
+
+/** Mirrors MAX_PRICE_PER_MINUTE in apps/api/src/routes/astrologer-portal.ts. */
+const MAX_RATE_PER_MINUTE = 1000;
+const MAX_BIO = 2000;
 
 const ALL_SPECIALTIES = [
   'Vedic Astrology', 'Kundli Reading', 'Marriage Compatibility',
@@ -71,43 +75,65 @@ function Content() {
 
   const token = session?.accessToken;
   const [listingNote, setListingNote] = useState<string | null>(null);
+  // A failed read leaves the blank starter form on screen. Saving THAT would
+  // overwrite the real name, rate, specialties and languages with blanks and a
+  // Rs 10 rate, so Save stays off until the profile has actually been read.
+  const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+  // The rate box is text so it can be cleared and retyped; it is parsed on save.
+  const [rateText, setRateText] = useState('10');
+  const fullNameRef = useRef(user?.fullName ?? '');
+  fullNameRef.current = user?.fullName ?? '';
 
+  // Keyed on the token only. It used to depend on `user`, so any auth refresh that
+  // produced a new user object re-ran this and replaced what the astrologer was
+  // typing with the stored profile.
   useEffect(() => {
     if (!token) {
-      setProfile((p) => ({ ...p, displayName: user?.fullName ?? '' }));
+      setProfile((p) => ({ ...p, displayName: fullNameRef.current }));
       setLoading(false);
       return;
     }
+    let cancelled = false;
+    setLoadError(null);
     (async () => {
       try {
         const r = await fetch(`${API_BASE_URL}/astrologer-portal/dashboard`, {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (r.ok) {
-          const j = await r.json();
-          setListingNote(j.profile?.approved ? null : (j.listing?.message ?? null));
-          if (j.profile) {
-            setProfile({
-              displayName: j.profile.displayName ?? user?.fullName ?? '',
-              bio: j.profile.bio ?? '',
-              experience: j.profile.experience ?? 0,
-              specialties: j.profile.specialties ?? [],
-              languages: j.profile.languages ?? [],
-              pricePerMinute: Number(j.profile.pricePerMinute ?? 10),
-              rating: j.profile.rating ?? 0,
-              approved: j.profile.approved ?? false,
-            });
-          } else {
-            setProfile((p) => ({ ...p, displayName: user?.fullName ?? '' }));
-          }
+        if (!r.ok) {
+          if (!cancelled) setLoadError('We could not load your profile. Your saved details are safe; please retry before editing.');
+          return;
         }
+        const j = await r.json();
+        if (cancelled) return;
+        setListingNote(j.profile?.approved ? null : (j.listing?.message ?? null));
+        if (j.profile) {
+          const rate = Number(j.profile.pricePerMinute ?? 10);
+          setProfile({
+            displayName: j.profile.displayName ?? fullNameRef.current,
+            bio: j.profile.bio ?? '',
+            experience: j.profile.experience ?? 0,
+            specialties: j.profile.specialties ?? [],
+            languages: j.profile.languages ?? [],
+            pricePerMinute: rate,
+            rating: j.profile.rating ?? 0,
+            approved: j.profile.approved ?? false,
+          });
+          setRateText(String(rate));
+        } else {
+          setProfile((p) => ({ ...p, displayName: fullNameRef.current }));
+        }
+        setLoaded(true);
       } catch {
-        // graceful
+        if (!cancelled) setLoadError('We could not reach Darshya to load your profile. Check your connection and retry before editing.');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     })();
-  }, [token, user]);
+    return () => { cancelled = true; };
+  }, [token, reloadKey]);
 
   function updateField<K extends keyof AstrologerProfile>(key: K, value: AstrologerProfile[K]) {
     setProfile((prev) => ({ ...prev, [key]: value }));
@@ -125,8 +151,17 @@ function Content() {
       setError('Not signed in');
       return;
     }
+    if (!loaded) {
+      setError('Your profile has not loaded yet, so there is nothing safe to save over. Retry loading first.');
+      return;
+    }
     if (!profile.displayName.trim()) {
       setError('Display name required');
+      return;
+    }
+    const rate = Number(rateText);
+    if (!rateText.trim() || !Number.isFinite(rate) || rate < 1 || rate > MAX_RATE_PER_MINUTE) {
+      setError(`Per-minute rate must be between \u20B91 and \u20B9${MAX_RATE_PER_MINUTE}.`);
       return;
     }
     setSaving(true);
@@ -136,12 +171,14 @@ function Content() {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          displayName: profile.displayName,
-          bio: profile.bio || undefined,
+          displayName: profile.displayName.trim(),
+          // Always sent, empty included: omitting an empty box meant a bio could
+          // never be removed; "Saved!" showed and the old text came back on reload.
+          bio: profile.bio.trim(),
           experience: profile.experience,
           specialties: profile.specialties,
           languages: profile.languages,
-          pricePerMinute: profile.pricePerMinute,
+          pricePerMinute: rate,
         }),
       });
       if (!r.ok) {
@@ -152,13 +189,24 @@ function Content() {
       }
       const saveBody = await r.json().catch(() => null);
       if (saveBody?.profile) {
-        setProfile((p) => ({ ...p, approved: !!saveBody.profile.approved }));
-        setListingNote(saveBody.profile.approved ? null : (saveBody.listing?.message ?? null));
+        const saved = saveBody.profile;
+        // Show what the server stored (it trims, de-duplicates and rounds the rate).
+        setProfile((p) => ({
+          ...p,
+          displayName: saved.displayName ?? p.displayName,
+          bio: saved.bio ?? '',
+          specialties: saved.specialties ?? p.specialties,
+          languages: saved.languages ?? p.languages,
+          pricePerMinute: Number(saved.pricePerMinute ?? rate),
+          approved: !!saved.approved,
+        }));
+        setRateText(String(Number(saved.pricePerMinute ?? rate)));
+        setListingNote(saved.approved ? null : (saveBody.listing?.message ?? null));
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch {
-      setError('Network error');
+      setError('We could not reach Darshya, so nothing was saved. Check your connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -177,13 +225,22 @@ function Content() {
         </div>
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || !loaded}
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white font-medium text-sm rounded-lg hover:bg-purple-700 disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle2 className="w-4 h-4" /> : <Save className="w-4 h-4" />}
           {saved ? 'Saved!' : 'Save Changes'}
         </button>
       </div>
+
+      {loadError && (
+        <div role="alert" className="flex flex-wrap items-center gap-2 text-sm px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
+          <AlertCircle className="w-4 h-4 shrink-0" /> <span className="flex-1">{loadError}</span>
+          <button type="button" onClick={() => { setLoading(true); setReloadKey((k) => k + 1); }} className="font-medium underline">
+            Retry
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-start gap-2 text-sm px-3 py-2 rounded-lg bg-[#fef2e8] border border-[#f59e54] text-[#943b19]">
@@ -199,8 +256,14 @@ function Content() {
           <h2 className="text-xl font-bold text-surface-800">{profile.displayName || user?.fullName || 'Astrologer'}</h2>
           <p className="text-sm text-surface-500">{profile.experience} years experience</p>
           <div className="flex items-center gap-1 mt-1">
-            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-            <span className="text-sm font-medium text-surface-700">{profile.rating.toFixed(1)}</span>
+            {profile.rating > 0 ? (
+              <>
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span className="text-sm font-medium text-surface-700">{profile.rating.toFixed(1)}</span>
+              </>
+            ) : (
+              <span className="text-sm text-surface-500">No ratings yet</span>
+            )}
             <span className="text-xs text-surface-400">{profile.approved ? '(live)' : '(not listed yet)'}</span>
           </div>
         </div>
@@ -224,9 +287,12 @@ function Content() {
           value={profile.bio}
           onChange={(e) => updateField('bio', e.target.value)}
           rows={4}
+          maxLength={MAX_BIO}
+          aria-describedby="bio-count"
           placeholder="Tell devotees about your background, training, approach…"
           className="w-full px-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200 resize-none"
         />
+        <p id="bio-count" className="prose-meta mt-1 text-right text-surface-400">{profile.bio.length}/{MAX_BIO}</p>
       </Card>
 
       <Card title="Experience">
@@ -234,8 +300,9 @@ function Content() {
           <input
             type="number"
             value={profile.experience}
-            onChange={(e) => updateField('experience', Math.max(0, parseInt(e.target.value) || 0))}
+            onChange={(e) => updateField('experience', Math.min(80, Math.max(0, parseInt(e.target.value) || 0)))}
             min={0}
+            max={80}
             className="w-24 px-3 py-2.5 border border-surface-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-purple-200"
           />
           <span className="text-sm text-surface-600">years</span>
@@ -248,14 +315,24 @@ function Content() {
             <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-400" />
             <input
               type="number"
-              value={profile.pricePerMinute}
-              onChange={(e) => updateField('pricePerMinute', Math.max(1, parseFloat(e.target.value) || 1))}
+              inputMode="decimal"
+              aria-label="Per-minute rate in rupees"
+              value={rateText}
+              onChange={(e) => { setRateText(e.target.value); setSaved(false); }}
               min={1}
+              max={MAX_RATE_PER_MINUTE}
+              step="0.5"
               className="w-32 pl-9 pr-3 py-2.5 bg-[var(--color-surface-offset)] border border-[var(--color-border)] text-[var(--color-text)] rounded-lg text-sm focus:outline-none focus:border-purple-500 focus:ring-2 focus:ring-purple-200"
             />
           </div>
           <span className="text-sm text-surface-600">per minute (chat/call)</span>
         </div>
+        <p className="prose-meta mt-2 text-surface-500">
+          Between {'\u20B9'}1 and {'\u20B9'}{MAX_RATE_PER_MINUTE}. Devotees book 5 to 60 minutes
+          {Number(rateText) >= 1 && Number(rateText) <= MAX_RATE_PER_MINUTE
+            ? `, so a 30-minute session costs them \u20B9${Math.round(Number(rateText) * 30)}.`
+            : '.'}
+        </p>
       </Card>
 
       <Card title="Specialties" icon={Sparkles}>

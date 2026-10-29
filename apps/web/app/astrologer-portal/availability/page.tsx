@@ -18,6 +18,7 @@ import {
  type WeekAvailability,
  type DaySlots,
 } from '../../../lib/astrologer-api';
+import { parseStoredAvailability } from '../../../lib/astrologer-availability';
 import { H1 } from '../../../components/ui/heading-recipe';
 
 // ─── Constants ──────────────────────────────────────────────────
@@ -39,26 +40,14 @@ const defaultAvailability: WeekAvailability = {
  Sunday: { morning: false, afternoon: false, evening: false },
 };
 
-// Best-effort coercion: backend stores availability as free-form JSON, so the
-// blob may not match the WeekAvailability shape. Fall back to defaults if any
-// day is missing/malformed instead of crashing the page.
-function normalize(raw: unknown): WeekAvailability {
- if (!raw || typeof raw !== 'object') return defaultAvailability;
- const out: WeekAvailability = {};
- for (const day of DAYS) {
-  const v = (raw as Record<string, unknown>)[day];
-  if (v && typeof v === 'object') {
-   const d = v as Partial<DaySlots>;
-   out[day] = {
-    morning: Boolean(d.morning),
-    afternoon: Boolean(d.afternoon),
-    evening: Boolean(d.evening),
-   };
-  } else {
-   out[day] = defaultAvailability[day]!;
-  }
- }
- return out;
+// Backend stores availability as free-form JSON and two clients write two
+// shapes (web grid, mobile app). parseStoredAvailability reads both; `null` means
+// nothing is saved yet, which the page says out loud instead of presenting the
+// suggested week below as if it were the astrologer's saved schedule.
+function normalize(raw: unknown): { week: WeekAvailability; saved: boolean } {
+ const parsed = parseStoredAvailability(raw);
+ if (!parsed) return { week: defaultAvailability, saved: false };
+ return { week: parsed, saved: true };
 }
 
 // ─── Component ──────────────────────────────────────────────────
@@ -80,6 +69,11 @@ function AstrologerAvailabilityPageContent() {
  const [saving, setSaving] = useState(false);
  const [saved, setSaved] = useState(false);
  const [error, setError] = useState<string | null>(null);
+ // false = the schedule on the screen is the suggested week, not something stored.
+ const [hasSaved, setHasSaved] = useState(true);
+ // True only after a successful read. A failed read leaves the suggested week on
+ // screen, and saving THAT would overwrite the astrologer's real schedule.
+ const [loaded, setLoaded] = useState(false);
 
  const load = useCallback(async () => {
   if (!token) return;
@@ -87,7 +81,10 @@ function AstrologerAvailabilityPageContent() {
   setError(null);
   try {
    const raw = await getAvailability(token);
-   setAvailability(normalize(raw));
+   const { week, saved: wasSaved } = normalize(raw);
+   setAvailability(week);
+   setHasSaved(wasSaved);
+   setLoaded(true);
   } catch (err) {
    setError(userFacingMessage(err, 'We could not load your availability. Please try again.'));
   } finally {
@@ -123,11 +120,12 @@ function AstrologerAvailabilityPageContent() {
  }
 
  async function handleSave() {
-  if (!token) return;
+  if (!token || !loaded) return;
   setSaving(true);
   setError(null);
   try {
    await updateAvailability(token, availability);
+   setHasSaved(true);
    setSaved(true);
    setTimeout(() => setSaved(false), 3000);
   } catch (err) {
@@ -162,12 +160,12 @@ function AstrologerAvailabilityPageContent() {
     <div>
      <h1 className={H1.portal}>Availability</h1>
      <p className="text-surface-500 mt-1">
-      Set your available time slots for consultations. {totalSlots} slots active.
+      Set the time slots in which devotees may book you. All times are IST (India Standard Time). {totalSlots} slots active.
      </p>
     </div>
     <button
      onClick={() => void handleSave()}
-     disabled={saving}
+     disabled={saving || !loaded}
      className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white font-medium text-sm rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50"
     >
      {saving ? (
@@ -201,6 +199,13 @@ function AstrologerAvailabilityPageContent() {
      >
       Retry
      </button>
+    </div>
+   )}
+
+   {loaded && !hasSaved && (
+    <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+     You have not saved a schedule yet. The week below is only a suggestion. Until you press Save Schedule,
+     devotees can request any time with you.
     </div>
    )}
 
@@ -245,6 +250,9 @@ function AstrologerAvailabilityPageContent() {
          {SLOTS.map((slot) => (
           <div key={slot.key} className="col-span-1 flex justify-center">
            <button
+            type="button"
+            aria-pressed={d[slot.key]}
+            aria-label={`${day} ${slot.label}`}
             onClick={() => toggleSlot(day, slot.key)}
             className={`w-full max-w-[120px] py-2.5 rounded-lg text-xs font-medium transition-all ${
              d[slot.key]
@@ -288,6 +296,9 @@ function AstrologerAvailabilityPageContent() {
           {SLOTS.map((slot) => (
            <button
             key={slot.key}
+            type="button"
+            aria-pressed={d[slot.key]}
+            aria-label={`${day} ${slot.label}`}
             onClick={() => toggleSlot(day, slot.key)}
             className={`flex-1 py-2 rounded-lg text-xs font-medium transition-all ${
              d[slot.key] ? 'bg-purple-600 text-white' : 'bg-surface-100 text-surface-400'
@@ -309,8 +320,9 @@ function AstrologerAvailabilityPageContent() {
     <div className="text-sm text-purple-800">
      <p className="font-medium">How it works</p>
      <p className="text-purple-600 mt-1">
-      Devotees can book consultations only during your available slots. Each slot represents a time window
-      when you accept new bookings. You can update this schedule anytime.
+      When a devotee books a specific time, it must fall inside the windows you switch on here (IST). A session that
+      runs past the end of a window needs the next window on too. Devotees can also request an instant session while
+      you are online. You can update this schedule anytime; sessions already booked are not affected.
      </p>
     </div>
    </div>

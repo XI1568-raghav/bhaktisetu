@@ -1402,6 +1402,7 @@ export async function consultationRoutes(server: FastifyInstance) {
         jitsiUrl: row.room_name ? `https://meet.jit.si/${row.room_name}` : null,
         scheduledAt: row.scheduled_at,
         createdAt: row.created_at,
+        paidAt: row.paid_at,
         // P0 #AP-10: surface the devotee id only to the owner/admin — the
         // assigned astrologer gets the consultation detail but not the
         // devotee's user id (privacy: astrologers see room + booking meta,

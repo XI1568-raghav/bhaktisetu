@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import { useAuth } from '../../lib/auth-context';
+import { useAstrologerHeartbeat } from '../../lib/use-astrologer-heartbeat';
 
 const sidebarLinks = [
  { href: '/astrologer-portal', label: 'Dashboard', icon: LayoutDashboard },
@@ -30,7 +31,9 @@ const sidebarLinks = [
 
 function AstrologerPortalLayout({ children }: { children: React.ReactNode }) {
  const pathname = usePathname();
- const { user } = useAuth();
+ const { user, session } = useAuth();
+ // Keeps a "Go online" astrologer online on every portal page (see the hook).
+ useAstrologerHeartbeat(session?.accessToken);
  const [sidebarOpen, setSidebarOpen] = useState(false);
 
  const isActive = (href: string) => {
@@ -80,7 +83,7 @@ function AstrologerPortalLayout({ children }: { children: React.ReactNode }) {
  <p className="text-sm font-semibold text-white truncate">
  {user?.fullName || 'Astrologer'}
  </p>
- <p className="text-xs text-white/40">Vedic Astrologer</p>
+ <p className="text-xs text-white/40">Astrologer</p>
  </div>
  </div>
  </div>
