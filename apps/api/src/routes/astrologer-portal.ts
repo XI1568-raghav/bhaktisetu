@@ -12,6 +12,7 @@ import {
 import { isUpcomingCommission, unfinishedConsultationIds } from '../services/payout.service.js';
 import { goLive } from '../lib/go-live.js';
 import { onboardingService } from '../services/onboarding.service.js';
+import { parseWeeklyAvailability } from '../lib/astrologer-availability.js';
 
 /**
  * PAR-13. `AstrologerProfile.userId` and `Commission.providerId` are both
@@ -32,6 +33,19 @@ function isUuid(value: string | null | undefined): boolean {
   return typeof value === 'string' && UUID_RE.test(value);
 }
 
+/** Most rows read to build the totals, and the most returned as the visible list. */
+const LEDGER_ROW_CAP = 5000;
+const LEDGER_LIST_LIMIT = 100;
+
+const IST_OFFSET_MS = (5 * 60 + 30) * 60 * 1000;
+/** Midnight IST today and midnight IST on the 1st, as instants. */
+export function istPeriodStarts(now: Date): { dayStart: Date; monthStart: Date } {
+  const ist = new Date(now.getTime() + IST_OFFSET_MS);
+  const dayStart = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), ist.getUTCDate()) - IST_OFFSET_MS);
+  const monthStart = new Date(Date.UTC(ist.getUTCFullYear(), ist.getUTCMonth(), 1) - IST_OFFSET_MS);
+  return { dayStart, monthStart };
+}
+
 /** No ledger rows can exist for an id the ledger cannot store. All zeros. */
 function emptyAstrologerLedger() {
   return {
@@ -50,30 +64,64 @@ function emptyAstrologerLedger() {
   };
 }
 
+// Trim before measuring: "   " used to pass `.min(1)` and was stored as the
+// astrologer's public name, and "" / "  " entries were stored as specialties.
+const trimmedList = (max: number, itemMax: number) =>
+  z
+    .array(z.string().trim().min(1).max(itemMax))
+    .max(max)
+    // "Vedic" ticked twice (or "vedic ") is one specialty.
+    .transform((xs) => [...new Map(xs.map((x) => [x.toLowerCase(), x])).values()]);
+
+/** Highest per-minute rate the portal will save: 60 min must stay payable in one Razorpay/UPI order. */
+export const MAX_PRICE_PER_MINUTE = 1000;
+
 const profileUpdateSchema = z.object({
-  displayName: z.string().min(1).max(100).optional(),
-  specialties: z.array(z.string().max(50)).max(20).optional(),
+  displayName: z.string().trim().min(1, 'Display name is required.').max(100).optional(),
+  specialties: trimmedList(20, 50).optional(),
   experience: z.number().int().min(0).max(80).optional(),
-  languages: z.array(z.string().max(30)).max(20).optional(),
+  languages: trimmedList(20, 30).optional(),
   // P0 #AP-09 (2026-07-09): floor at ₹1/min, not 0. The old .min(0) let an
   // astrologer save ₹0/min; devotees then hit /consultation/book's "Minimum
   // consultation amount is ₹50" 400 with no hint that the rate was the cause.
   // ₹1/min × the shortest slot still clears ₹50 for any reasonable duration;
   // the booking endpoint enforces the absolute ₹50 floor independently.
-  pricePerMinute: z.number().min(1, 'Per-minute rate must be at least ₹1.').max(100000).optional(),
+  //
+  // Ceiling: it was 100000, so ₹100,000/min x 60 min = ₹60 lakh was a valid
+  // save and a valid booking amount. Two decimals only - the column is
+  // Decimal(10,2) and a rate of 25.555 was displayed as 25.555 and charged as 25.56.
+  pricePerMinute: z
+    .number()
+    .min(1, 'Per-minute rate must be at least ₹1.')
+    .max(MAX_PRICE_PER_MINUTE, `Per-minute rate can be at most ₹${MAX_PRICE_PER_MINUTE}.`)
+    .transform((v) => Math.round(v * 100) / 100)
+    .optional(),
   bio: z.string().max(2000).optional(),
 });
 
 // Availability is intentionally free-form JSON so the portal can iterate on
-// the slot shape without a migration. Cap at 64KB to prevent abuse.
+// the slot shape without a migration. Cap at 64KB to prevent abuse. It must be a
+// weekly schedule one of the two clients writes (see lib/astrologer-availability.ts)
+// or `{}` to clear it: `null`, a number or an array used to be accepted and
+// `null` crashed the write with a 500 (Prisma wants JsonNull for a null Json).
 const availabilityUpdateSchema = z.object({
-  availability: z.unknown().refine((v) => {
-    try {
-      return JSON.stringify(v).length <= 64 * 1024;
-    } catch {
-      return false;
-    }
-  }, 'availability JSON exceeds 64KB cap'),
+  availability: z
+    .unknown()
+    .refine((v) => {
+      try {
+        return JSON.stringify(v).length <= 64 * 1024;
+      } catch {
+        return false;
+      }
+    }, 'availability JSON exceeds 64KB cap')
+    .refine(
+      (v) =>
+        typeof v === 'object' &&
+        v !== null &&
+        !Array.isArray(v) &&
+        (Object.keys(v).length === 0 || parseWeeklyAvailability(v) !== null),
+      'availability must be a weekly schedule',
+    ),
 });
 
 // astro-wellness-3 (2026-09-09, P2): this lived inline in POST /online as a
@@ -111,11 +159,21 @@ async function loadAstrologerLedger(userId: string) {
   // P2023 here just as it does on astrologerProfile. No rows can be attributed
   // to an id that cannot be stored, so an empty ledger is the true answer.
   if (!isUuid(userId)) return emptyAstrologerLedger();
-  const allRows = await prisma.commission.findMany({
-    where: { providerId: userId },
-    orderBy: { createdAt: 'desc' },
-    take: 100,
-  });
+  // The summary used to be summed over `take: 100` rows, so an astrologer with
+  // more than 100 commissions saw a "Total earnings" / "Paid out" / month figure
+  // that silently dropped everything older. Read every row (bounded) for the
+  // totals and return only the newest 100 as the list. The held-id lookup is
+  // independent of the commission read, so the two go out together.
+  const [allRows, unfinishedIds] = await Promise.all([
+    prisma.commission.findMany({
+      where: { providerId: userId },
+      orderBy: { createdAt: 'desc' },
+      take: LEDGER_ROW_CAP,
+    }),
+    // Consultations not yet completed are earned but not yet releasable: the same
+    // hold GET /payouts/balance applies, reported here as `upcoming`.
+    unfinishedConsultationIds(prisma, userId),
+  ]);
   // Commission has no source discriminator, and every provider role is keyed
   // by User.id — so once the puja writers were corrected to use User.id
   // (RV-04), a dual-role user's PUJA commissions started matching this query
@@ -131,14 +189,12 @@ async function loadAstrologerLedger(userId: string) {
   const pujaIds = new Set(pujaRows.map((p) => p.id));
   const rows = allRows.filter((c) => !c.bookingId || !pujaIds.has(c.bookingId));
 
-  // Consultations not yet completed are earned but not yet releasable: the same
-  // hold GET /payouts/balance applies, reported here as `upcoming`.
   const heldKeys = {
     wellnessEnrollmentIds: new Set<string>(),
-    bookingIds: new Set(await unfinishedConsultationIds(prisma, userId)),
+    bookingIds: new Set(unfinishedIds),
   };
 
-  const data = rows.map((c) => {
+  const allData = rows.map((c) => {
     const earnings = new Prisma.Decimal(c.amount);
     const gross = commissionGross(c.amount, c.percentage);
     const platformCut = commissionPlatformCut(c.amount, c.percentage);
@@ -164,15 +220,15 @@ async function loadAstrologerLedger(userId: string) {
 
   // A REVERSED row is a cancelled/refunded consultation (AW-06). It is not
   // earned, not pending and not paid — it must not appear in any total.
-  const live = data.filter((r) => r.status !== 'REVERSED');
+  const live = allData.filter((r) => r.status !== 'REVERSED');
+  const data = allData.slice(0, LEDGER_LIST_LIMIT);
   const round2 = (n: number) => Math.round(n * 100) / 100;
   const sum = (rs: typeof live) => round2(rs.reduce((s, r) => s + r.earningsInr, 0));
 
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
-  const dayStart = new Date();
-  dayStart.setHours(0, 0, 0, 0);
+  // "Today" and "this month" are the astrologer's calendar, which is IST. The API
+  // runs in UTC, so setHours(0) put the day boundary at 05:30 IST: earnings made
+  // between midnight and 05:30 IST counted toward yesterday.
+  const { dayStart, monthStart } = istPeriodStarts(new Date());
 
   return {
     data,
@@ -255,8 +311,8 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
           settle(() => prisma.$queryRawUnsafe<Array<{ count: string; sum: string | null }>>(
             `SELECT COUNT(*)::text AS count, COALESCE(SUM(amount_inr),0)::text AS sum
            FROM astrologer_consultations
-           WHERE astrologer_id = ANY($1::text[]) AND status = 'confirmed'
-             AND paid_at::date = CURRENT_DATE`,
+           WHERE astrologer_id = ANY($1::text[]) AND status IN ('confirmed', 'completed')
+             AND (paid_at AT TIME ZONE 'Asia/Kolkata')::date = (now() AT TIME ZONE 'Asia/Kolkata')::date`,
             idArray,
           )),
           // AW-14 (2026-08-12, P2): the lifetime figure counts the same rows
@@ -357,35 +413,47 @@ export async function astrologerPortalRoutes(server: FastifyInstance) {
       });
     }
     const existing = await prisma.astrologerProfile.findUnique({ where: { userId } });
+    // An empty bio box means "remove my bio": store null, do not keep the old text.
+    const { bio, ...rest } = parsed.data;
+    const patch = { ...rest, ...(bio !== undefined ? { bio: bio.trim() || null } : {}) };
+    const respond = async (profile: NonNullable<typeof existing>) => {
+      const live = await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerMinute !== undefined });
+      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) });
+    };
     if (!existing) {
       // QA 2026-10-13 (mirrors gaushala S-08): no placeholder name on a public profile.
-      if (!parsed.data.displayName?.trim()) {
+      if (!parsed.data.displayName) {
         return reply.code(400).send({
           code: 'display_name_required',
           error: 'Display name required',
           message: 'Enter your name as devotees should see it to create your astrologer profile.',
         });
       }
-      const profile = await prisma.astrologerProfile.create({
-        data: {
-          userId,
-          displayName: parsed.data.displayName.trim(),
-          specialties: parsed.data.specialties ?? [],
-          languages: parsed.data.languages ?? [],
-          experience: parsed.data.experience ?? 0,
-          pricePerMinute: parsed.data.pricePerMinute ?? 10,
-          bio: parsed.data.bio,
-        },
-      });
-      const live = await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerMinute !== undefined });
-      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) });
+      try {
+        const profile = await prisma.astrologerProfile.create({
+          data: {
+            userId,
+            displayName: parsed.data.displayName,
+            specialties: parsed.data.specialties ?? [],
+            languages: parsed.data.languages ?? [],
+            experience: parsed.data.experience ?? 0,
+            pricePerMinute: parsed.data.pricePerMinute ?? 10,
+            bio: patch.bio ?? undefined,
+          },
+        });
+        return await respond(profile);
+      } catch (err) {
+        // A double-clicked first save: both requests saw "no profile", the second
+        // create hit the unique userId index and answered 500. The first one won;
+        // this request's values are applied on top of it as an ordinary update.
+        if (!(err instanceof Prisma.PrismaClientKnownRequestError) || err.code !== 'P2002') throw err;
+      }
     }
     const profile = await prisma.astrologerProfile.update({
       where: { userId },
-      data: parsed.data,
+      data: patch,
     });
-    const live = await goLive(userId, 'ASTROLOGER', profile, () => prisma.astrologerProfile.findUnique({ where: { userId } }), { priceProvided: parsed.data.pricePerMinute !== undefined });
-      return reply.send({ profile: live, listing: live.approved ? null : await onboardingService.describeListing(userId, 'ASTROLOGER').catch(() => null) });
+    return respond(profile);
   });
 
   // ─── PATCH /availability ────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ import { astrologyFetch } from '../../../lib/astrologer-fetch';
 import { formatNumber } from '../../../lib/format-locale';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { availabilitySummary, type PublicAvailability } from '../../../lib/astrologer-availability';
 import {
  Star,
  BadgeCheck,
@@ -46,6 +47,8 @@ interface Astrologer {
  bio: string;
  verified: boolean;
  badges: string[];
+ /** Weekly hours (IST) or null when none are saved. */
+ availability: PublicAvailability | null;
 }
 
 interface Review {
@@ -111,6 +114,7 @@ function normalise(d: Partial<Astrologer>, fallbackId: string): Astrologer {
   bio: typeof d.bio === 'string' ? d.bio : '',
   verified: d.verified === true,
   badges: list(d.badges),
+  availability: d.availability && typeof d.availability === 'object' && 'days' in d.availability ? d.availability : null,
  };
 }
 
@@ -242,7 +246,7 @@ function AstrologerDetailInner() {
  <div className="bg-gradient-to-br from-surface-900 via-surface-800 to-surface-800 pb-24">
  <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-10 pt-6">
  <Link
- href="/astrology"
+ href="/astrology/astrologers/live"
  className="inline-flex items-center gap-1.5 text-sm text-saffron-300/70 hover:text-white transition-colors mb-6"
  >
  <ChevronLeft className="w-4 h-4" />
@@ -296,18 +300,31 @@ function AstrologerDetailInner() {
  </h1>
  </div>
 
- <div className="flex items-center gap-3 mb-3">
+ <div className="flex flex-wrap items-center gap-3 mb-3">
+ {/* No rating, review count or "0 consultations" is printed for an astrologer
+     who has none: there is no review store yet, and "0 reviews" beside five
+     empty stars read as a verdict rather than as "new". */}
+ {astrologer.rating > 0 ? (
  <div className="flex items-center gap-1.5">
  {renderStars(astrologer.rating)}
- <span className="text-sm font-semibold text-surface-700">{astrologer.rating}</span>
+ <span className="text-sm font-semibold text-surface-700">{astrologer.rating.toFixed(1)}</span>
  </div>
+ ) : (
+ <span className="text-sm text-surface-500">Not rated yet</span>
+ )}
+ {astrologer.reviewCount > 0 && (
+ <>
  <span className="text-surface-300">|</span>
  <span className="text-sm text-surface-500">
  {formatNumber(astrologer.reviewCount)} reviews
  </span>
+ </>
+ )}
  <span className="text-surface-300">|</span>
  <span className="text-sm text-surface-500">
- {formatNumber(astrologer.consultationCount)} consultations
+ {astrologer.consultationCount > 0
+ ? `${formatNumber(astrologer.consultationCount)} consultations`
+ : 'New on Darshya'}
  </span>
  </div>
 
@@ -336,12 +353,14 @@ function AstrologerDetailInner() {
  <div className="flex flex-wrap items-center gap-4 text-sm text-surface-500">
  <span className="flex items-center gap-1.5">
  <Clock className="w-4 h-4 text-saffron-400" />
- {astrologer.experienceYears} years experience
+ {astrologer.experienceYears > 0 ? `${astrologer.experienceYears} years experience` : 'Experience not listed'}
  </span>
+ {astrologer.languages.length > 0 && (
  <span className="flex items-center gap-1.5">
  <Globe className="w-4 h-4 text-saffron-400" />
  {astrologer.languages.join(', ')}
  </span>
+ )}
  </div>
  </div>
 
@@ -440,6 +459,7 @@ function AstrologerDetailInner() {
  {/* Left column — Bio, Specializations */}
  <div className="lg:col-span-2 space-y-6">
  {/* Specializations */}
+ {astrologer.specializations.length > 0 && (
  <div className="bg-white rounded-xl border border-surface-200/80 p-6">
  <h2 className="text-lg font-bold text-surface-800 mb-4">Specializations</h2>
  <div className="flex flex-wrap gap-2">
@@ -453,11 +473,16 @@ function AstrologerDetailInner() {
  ))}
  </div>
  </div>
+ )}
 
  {/* Bio */}
  <div className="bg-white rounded-xl border border-surface-200/80 p-6">
  <h2 className="text-lg font-bold text-surface-800 mb-3">About</h2>
- <p className="text-surface-600 leading-relaxed">{astrologer.bio}</p>
+ {astrologer.bio.trim() ? (
+ <p className="text-surface-600 leading-relaxed whitespace-pre-line">{astrologer.bio}</p>
+ ) : (
+ <p className="text-sm text-surface-500">This astrologer has not added a bio yet.</p>
+ )}
  </div>
 
  {/* Reviews — AW-02: the five invented testimonials ("Priya M."…) and the
@@ -500,24 +525,46 @@ function AstrologerDetailInner() {
  <span className="text-sm text-surface-500 flex items-center gap-2">
  <Clock className="w-4 h-4 text-saffron-400" /> Experience
  </span>
- <span className="text-sm font-bold text-surface-700">{astrologer.experienceYears} years</span>
+ <span className="text-sm font-bold text-surface-700">
+ {astrologer.experienceYears > 0 ? `${astrologer.experienceYears} years` : 'Not listed'}
+ </span>
  </div>
  <div className="flex items-center justify-between">
  <span className="text-sm text-surface-500 flex items-center gap-2">
  <ThumbsUp className="w-4 h-4 text-saffron-400" /> Rating
  </span>
- <span className="text-sm font-bold text-surface-700">{astrologer.rating}/5.0</span>
+ <span className="text-sm font-bold text-surface-700">
+ {astrologer.rating > 0 ? `${astrologer.rating.toFixed(1)}/5.0` : 'Not rated yet'}
+ </span>
  </div>
  <div className="flex items-center justify-between">
  <span className="text-sm text-surface-500 flex items-center gap-2">
- <Shield className="w-4 h-4 text-saffron-400" /> Verified
+ <Shield className="w-4 h-4 text-saffron-400" /> Listing
  </span>
- <span className="text-sm font-bold text-emerald-600">Yes</span>
+ {/* This row read "Verified: Yes" for every astrologer. Only a real admin
+     review (astrologer.verified, which the API reports false while approval is
+     off) may claim verification. */}
+ <span className={`text-sm font-bold ${astrologer.verified ? 'text-emerald-600' : 'text-surface-700'}`}>
+ {astrologer.verified ? 'Verified by Darshya' : 'Live on Darshya'}
+ </span>
  </div>
  </div>
  </div>
 
+ {astrologer.availability && availabilitySummary(astrologer.availability).length > 0 && (
+ <div className="bg-white rounded-xl border border-surface-200/80 p-6">
+ <h3 className="text-base font-bold text-surface-800 mb-1">Hours for booked slots</h3>
+ <p className="text-xs text-surface-500 mb-3">India Standard Time (IST). Instant sessions depend on being online.</p>
+ <ul className="space-y-1.5 text-sm text-surface-600">
+ {availabilitySummary(astrologer.availability).map((r) => (
+ <li key={r.day}><span className="font-semibold text-surface-700">{r.day.slice(0, 3)}</span> {r.text}</li>
+ ))}
+ </ul>
+ </div>
+ )}
+
  {/* Languages */}
+ {astrologer.languages.length > 0 && (
  <div className="bg-white rounded-xl border border-surface-200/80 p-6">
  <h3 className="text-base font-bold text-surface-800 mb-3">Languages</h3>
  <div className="flex flex-wrap gap-2">
@@ -528,6 +575,7 @@ function AstrologerDetailInner() {
  ))}
  </div>
  </div>
+ )}
 
  {/* AW-02: the "Similar Astrologers" rail listed three invented people
   (Acharya Ramesh Iyer / Tarot Priya Singh / Acharya Bhaskar Rao) with
@@ -538,7 +586,7 @@ function AstrologerDetailInner() {
  <div className="bg-white rounded-xl border border-surface-200/80 p-6">
  <h3 className="text-base font-bold text-surface-800 mb-2">Other astrologers</h3>
  <p className="text-sm text-surface-500 mb-4">
- Every astrologer in our directory is onboarded and verified.
+ Every astrologer in our directory has a live Darshya profile.
  </p>
  <Link
  href="/astrology/astrologers/live"

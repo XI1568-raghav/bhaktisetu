@@ -43,7 +43,7 @@ async function buildApp() {
 /** Classifies which of the dashboard's raw statements is being asked. */
 function kindOf(sql: string): 'today' | 'lifetime' | 'upcoming' | 'other' {
   const s = String(sql).replace(/--[^\n]*/g, '');
-  if (/CURRENT_DATE/.test(s)) return 'today';
+  if (/Asia\/Kolkata/.test(s)) return 'today';
   if (/COUNT\(\*\)/.test(s)) return 'lifetime';
   if (/SELECT id, reference/.test(s)) return 'upcoming';
   return 'other';

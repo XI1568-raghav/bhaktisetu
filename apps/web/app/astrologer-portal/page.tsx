@@ -26,6 +26,8 @@ import {
 } from '../../lib/api-config';
 import { H1 } from '../../components/ui/heading-recipe';
 import LoadErrorBanner from '../../components/LoadErrorBanner';
+import { formatIst } from '../../lib/consultation-time';
+import { ASTROLOGER_PRESENCE_EVENT } from '../../lib/use-astrologer-heartbeat';
 
 // ─── Zero-state defaults ────────────────────────────────────────
 
@@ -91,16 +93,8 @@ type ApiAstroDashboard = {
 };
 
 function formatSessionWhen(session: UpcomingSession): string {
- const raw = session.scheduled_at ?? null;
- if (!raw) return 'Time to be agreed with the devotee';
- const d = new Date(raw);
- if (Number.isNaN(d.getTime())) return 'Time to be agreed with the devotee';
- return d.toLocaleString('en-IN', {
-  day: 'numeric',
-  month: 'short',
-  hour: '2-digit',
-  minute: '2-digit',
- });
+ // IST, labelled (was the browser's zone with no label).
+ return formatIst(session.scheduled_at ?? null, 'Time to be agreed with the devotee');
 }
 
 function formatSessionAmount(session: UpcomingSession): string | null {
@@ -141,6 +135,17 @@ export default function AstrologerDashboard() {
  // directory, so an astrologer who thinks she is online sits waiting for
  // consultations that were never routed to her.
  const [onlineError, setOnlineError] = useState<string | null>(null);
+ // The portal layout's heartbeat reads the server's presence every few minutes
+ // and broadcasts it, so this switch follows reality (a restart or a decay to
+ // offline) instead of staying on "ONLINE" while the directory says otherwise.
+ useEffect(() => {
+  const onPresence = (e: Event) => {
+   const detail = (e as CustomEvent<{ online?: boolean }>).detail;
+   if (typeof detail?.online === 'boolean') setOnline(detail.online);
+  };
+  window.addEventListener(ASTROLOGER_PRESENCE_EVENT, onPresence);
+  return () => window.removeEventListener(ASTROLOGER_PRESENCE_EVENT, onPresence);
+ }, []);
  useEffect(() => {
   if (!session?.accessToken) return;
   fetchWithTimeout(`${API_BASE_URL}/astrologer-portal/online`, {
@@ -289,7 +294,7 @@ export default function AstrologerDashboard() {
  </p>
  <p className="text-xs text-surface-500">
  {online
- ? 'Devotees can see you and book a consultation now.'
+ ? 'Devotees can see you and book a consultation now. Stay in the portal to remain online; you drop offline about 15 minutes after you close it.'
  : 'Turn on to appear as available to devotees (chat/call).'}
  </p>
  </div>

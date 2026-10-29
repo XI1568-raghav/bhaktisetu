@@ -204,6 +204,7 @@ export const prismaMock = {
     count: vi.fn(),
   },
   astrologerProfile: {
+    create: vi.fn(),
     upsert: vi.fn(),
     findUnique: vi.fn(),
     findFirst: vi.fn(),

@@ -19,6 +19,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import { cancellationRefundable, formatIst } from '../../../lib/consultation-time';
 import {
   GENERIC_ERROR_MESSAGE,
   UserFacingError,
@@ -76,6 +77,7 @@ type Consultation = {
   jitsiUrl: string | null;
   scheduledAt: string | null;
   createdAt: string;
+  paidAt?: string | null;
 };
 
 // P1#4: HttpOnly cookie `darshya_session` is the canonical auth surface.
@@ -97,6 +99,8 @@ function statusBadge(status: string) {
       return { cls: 'bg-surface-100 text-surface-600', label: 'Cancelled' };
     case 'pending_payment':
       return { cls: 'bg-amber-100 text-amber-700', label: 'Payment Pending' };
+    case 'payment_review':
+      return { cls: 'bg-amber-100 text-amber-700', label: 'Payment under review' };
     default:
       return { cls: 'bg-surface-100 text-surface-600', label: status };
   }
@@ -136,7 +140,14 @@ function ListContent() {
   useEffect(() => { load(); }, [load]);
 
   async function handleCancel(c: Consultation) {
-    if (!confirm(`Cancel consultation ${c.reference}? This cannot be undone.`)) return;
+    // Inside the 24 h window cancelling forfeits the payment; the old prompt said
+    // only "This cannot be undone", so the devotee found out afterwards.
+    const msg = c.status === 'pending_payment'
+      ? `Cancel consultation ${c.reference}? You have not been charged.`
+      : cancellationRefundable(c)
+        ? `Cancel consultation ${c.reference}? You will be refunded in full (5-7 business days).`
+        : `Cancel consultation ${c.reference}? This is inside the 24-hour window, so you will NOT be refunded. Continue?`;
+    if (!confirm(msg)) return;
     setCancellingId(c.id);
     setCancelError(null);
     try {
@@ -225,7 +236,7 @@ function ListContent() {
                     <div className="flex items-center gap-1"><IndianRupee className="w-3.5 h-3.5" />₹{c.amountInr}</div>
                     {scheduled && (
                       <div className="flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />
-                        {scheduled.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                        {formatIst(scheduled)}
                       </div>
                     )}
                   </div>

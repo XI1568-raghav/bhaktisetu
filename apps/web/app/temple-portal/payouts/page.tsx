@@ -45,6 +45,7 @@ function TemplePayoutsContent() {
   const load = useCallback(async () => {
     if (!session?.accessToken) return;
     setLoading(true);
+    setError(null);
     try {
       const res = await fetch(`${API_BASE_URL}/temple-portal/payouts`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
@@ -88,7 +89,7 @@ function TemplePayoutsContent() {
             </div>
             <div>
               <p className="text-xs text-surface-500">Ready for settlement</p>
-              <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(payableInr)}</p>
+              <p className="text-xl font-bold text-surface-800">{loading ? '…' : error ? '—' : formatINR(payableInr)}</p>
             </div>
           </div>
         </div>
@@ -99,7 +100,7 @@ function TemplePayoutsContent() {
             </div>
             <div>
               <p className="text-xs text-surface-500">Upcoming</p>
-              <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(upcomingInr)}</p>
+              <p className="text-xl font-bold text-surface-800">{loading ? '…' : error ? '—' : formatINR(upcomingInr)}</p>
               <p className="text-xs text-surface-400">Released once the puja is performed and its video proof is uploaded.</p>
             </div>
           </div>
@@ -111,7 +112,7 @@ function TemplePayoutsContent() {
             </div>
             <div>
               <p className="text-xs text-surface-500">Settled (total)</p>
-              <p className="text-xl font-bold text-surface-800">{loading ? '…' : formatINR(paidInr)}</p>
+              <p className="text-xl font-bold text-surface-800">{loading ? '…' : error ? '—' : formatINR(paidInr)}</p>
             </div>
           </div>
         </div>

@@ -12,6 +12,7 @@
 import { prisma } from '../lib/prisma.js';
 import { notifyUser } from '../routes/notifications.js';
 import { notifyDevotee } from './booking-notify.service.js';
+import { ensureConversationForBooking } from './conversation.service.js';
 
 /** Platform's share of a consult fee. Astrologer keeps (1 - this) = 80%. */
 export const ASTROLOGER_PLATFORM_RATE = 0.2;
@@ -140,5 +141,37 @@ export async function notifyDevoteeConsultConfirmed(params: {
     }).catch(() => undefined);
   } catch (err) {
     console.warn('[astrologer.service] notifyDevoteeConsultConfirmed failed:', err);
+  }
+}
+
+/**
+ * Open the chat thread for a paid consultation. conversation.service documents
+ * that "the astrology / wellness booking flows" call ensureConversationForBooking
+ * when a booking is confirmed, but the astrology flow never did: the portal's
+ * Messages page promised "When devotees book your services, threads will appear
+ * here" and no thread was ever created, and the web has no control for a devotee
+ * to start one. Idempotent (one open thread per devotee/astrologer/consultation);
+ * best effort, never throws.
+ */
+export async function openConsultationThread(params: {
+  astrologerRef: string; // profile id / userId
+  devoteeUserId: string;
+  astrologerName: string;
+  minutes: number;
+  reference: string;
+  consultationId: string;
+}): Promise<void> {
+  try {
+    const contact = await astrologerContact(params.astrologerRef);
+    if (!contact || contact.userId === params.devoteeUserId) return;
+    await ensureConversationForBooking({
+      bookingId: params.consultationId,
+      devoteeId: params.devoteeUserId,
+      providerId: contact.userId,
+      kind: 'astrology',
+      systemMessage: `Namaste! I'm ${params.astrologerName}. Your ${params.minutes}-minute consultation (${params.reference}) is booked. Share your birth details or what you would like to ask here before we begin.`,
+    });
+  } catch (err) {
+    console.warn('[astrologer.service] openConsultationThread failed:', err);
   }
 }

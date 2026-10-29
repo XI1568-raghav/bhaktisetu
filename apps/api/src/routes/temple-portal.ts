@@ -202,6 +202,18 @@ function notLinked(reply: FastifyReply, reason: TempleLinkReason) {
   });
 }
 
+async function publicListingOf(templeId: string): Promise<{ verified: boolean; status: string; slug: string } | null> {
+  try {
+    const t = await prisma.temple.findUnique({
+      where: { id: templeId },
+      select: { isVerified: true, status: true, slug: true },
+    });
+    return t ? { verified: t.isVerified === true, status: String(t.status), slug: t.slug } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Upper bound on TemplePayout rows read for the dashboard's released/upcoming split. */
 const DASHBOARD_SHARE_SCAN_CAP = 5000;
 
@@ -360,6 +372,11 @@ export async function templePortalRoutes(server: FastifyInstance) {
         monthUpcomingInr: r2(upcomingMonth),
         totalStreams: profile.totalStreams,
       },
+      // Whether devotees can actually find and book this temple. The manager's
+      // portal goes live on submit, but the catalogue row stays hidden (and
+      // bookings are refused: TEMPLE_NOT_VERIFIED) until the Darshya team
+      // verifies it, and nothing on screen said so.
+      publicListing: await publicListingOf(templeId),
       recentBookings: recent.map((b) => ({
         id: b.id,
         bookingNumber: b.bookingNumber,
@@ -745,6 +762,42 @@ export async function templePortalRoutes(server: FastifyInstance) {
     });
   });
 
+  // ─── GET /priests/candidates — pandits this temple can invite ──────────────
+  // The public /priests directory only lists Priest.isVerified rows, and that
+  // flag is never auto-set (TC-08), so a live pandit could never be found
+  // there. An invitation needs the pandit's consent anyway, so the picker
+  // offers every live pandit (status active, i.e. not suspended or inactive)
+  // who is not already on this roster. Name and specialisations only.
+  server.get('/priests/candidates', { preHandler: [authenticateUser] }, async (request, reply) => {
+    const roles = request.currentUser!.roles ?? [];
+    if (!roles.includes('TEMPLE_MANAGER')) {
+      return reply.code(403).send({ error: 'TEMPLE_MANAGER role required' });
+    }
+    const templeId = await resolveManagerTempleId(request.currentUser!.id);
+    if (!templeId) return reply.send({ candidates: [] });
+    const [onRoster, invites] = await Promise.all([
+      prisma.templePriest.findMany({ where: { templeId }, select: { priestId: true }, take: 500 }),
+      listInvitesForTemple(templeId),
+    ]);
+    const pending = new Set(invites.filter((i) => i.status === 'pending').map((i) => i.priestId));
+    const rows = await prisma.priest.findMany({
+      where: { status: 'active', id: { notIn: onRoster.map((r) => r.priestId) } },
+      select: { id: true, displayName: true, specializations: true, experienceYears: true, isVerified: true },
+      orderBy: { displayName: 'asc' },
+      take: 200,
+    });
+    return reply.send({
+      candidates: rows.map((p) => ({
+        id: p.id,
+        displayName: p.displayName,
+        specializations: p.specializations,
+        experienceYears: p.experienceYears,
+        isVerified: p.isVerified,
+        invited: pending.has(p.id),
+      })),
+    });
+  });
+
   // ─── POST /priests — add a priest to the roster (by Priest id) ─────────────
   server.post('/priests', { preHandler: [authenticateUser] }, async (request, reply) => {
     const roles = request.currentUser!.roles ?? [];
@@ -762,6 +815,12 @@ export async function templePortalRoutes(server: FastifyInstance) {
     }
     const priest = await prisma.priest.findUnique({ where: { id: parsed.data.priestId } });
     if (!priest) return reply.code(404).send({ error: 'Priest not found' });
+    if (priest.status !== 'active') {
+      return reply.code(409).send({
+        code: 'priest_unavailable',
+        error: 'This pandit is not accepting invitations right now.',
+      });
+    }
     // A manager cannot put a pandit on the roster (or make them primary) on
     // their own: this only records an invitation. The roster row is created
     // when the pandit accepts (POST /priest/temple-invites/:id/accept).
@@ -811,7 +870,16 @@ export async function templePortalRoutes(server: FastifyInstance) {
     if (existing.templeId !== templeId) {
       return reply.code(403).send({ error: 'You do not own this roster entry.' });
     }
-    await prisma.templePriest.delete({ where: { id } });
+    // Removing a pandit also ends the consent that let their name sit on this
+    // temple's offerings: unpin them, or bookings keep auto-assigning to a
+    // pandit the temple no longer works with.
+    await prisma.$transaction([
+      prisma.templePujaOffering.updateMany({
+        where: { templeId, assignedPriestId: existing.priestId },
+        data: { assignedPriestId: null },
+      }),
+      prisma.templePriest.delete({ where: { id } }),
+    ]);
     return reply.send({ ok: true });
   });
 

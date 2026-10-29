@@ -13,10 +13,17 @@ describe('consultation bookSchema', () => {
   it('accepts optional scheduledAt iso datetime', () => {
     // bookSchema refines `scheduledAt must be in the future`, so the fixture
     // must stay ahead of the wall clock — a fixed past date is a time-bomb
-    // (broke CI 2026-07-08 once the date aged into the past). Use 2099 so the
-    // test survives without periodic edits.
-    const r = bookSchema.safeParse({ ...valid, scheduledAt: '2099-06-01T10:00:00.000Z' });
+    // (broke CI 2026-07-08 once the date aged into the past). Derive it from the
+    // clock so it never ages; the horizon cap (60 days) rules out a fixed far date.
+    const r = bookSchema.safeParse({ ...valid, scheduledAt: new Date(Date.now() + 7 * 86_400_000).toISOString() });
     expect(r.success).toBe(true);
+  });
+
+  it('rejects a slot beyond the 60-day booking horizon (2099 was accepted on prod)', () => {
+    const r = bookSchema.safeParse({ ...valid, scheduledAt: '2099-06-01T10:00:00.000Z' });
+    expect(r.success).toBe(false);
+    const edge = bookSchema.safeParse({ ...valid, scheduledAt: new Date(Date.now() + 61 * 86_400_000).toISOString() });
+    expect(edge.success).toBe(false);
   });
 
   it('rejects malformed scheduledAt', () => {
