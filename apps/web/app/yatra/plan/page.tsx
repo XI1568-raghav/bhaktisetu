@@ -97,7 +97,7 @@ export default function CustomPlanPage() {
  const others = data.destinations.map((id) => siteById.get(id)).filter((x): x is NonNullable<typeof x> => !!x);
  const hints = distanceHints(added, others);
  if (hints.length === 0) return '';
- return `${added.name}: ` + hints.map((h) => (h.km < 10 ? `same town as ${h.fromName}` : `about ${h.km} km from ${h.fromName}`)).join(', ') + ' (straight-line; by road it is longer).';
+ return `${added.name}: ` + hints.map((h) => (h.km < 10 ? `same town as ${h.fromName}` : `about ${h.km} km from ${h.fromName}` + (h.road ? `, about ${h.road.km} km and ${h.road.hours} h by road` : ''))).join(', ') + (hints.some((h) => h.road) ? ' (distance is straight-line; road figures are approximate, from OpenStreetMap routing without traffic, closures or season).' : ' (straight-line; by road it is longer).');
  }, [lastAdded, data.destinations, siteById]);
 
  function toggleNeed(n: string) {
