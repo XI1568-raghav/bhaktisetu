@@ -25,10 +25,10 @@ import {
   deleteDarshanStream,
   setDarshanStreamStatus,
   type DarshanStream,
-  type CreateDarshanStreamInput,
   type DarshanStreamProvider,
 } from '../../../lib/temple-api';
 import { DateTimeInput } from '../../../components/ui/DateInput';
+import { buildDarshanPayload, type DarshanFormErrors } from '../../../lib/darshan-stream-input';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 
@@ -81,7 +81,11 @@ function TempleDarshanPageContent() {
   const [formProvider, setFormProvider] = useState<DarshanStreamProvider>('YOUTUBE');
   const [formStreamKey, setFormStreamKey] = useState('');
   const [formPlaybackUrl, setFormPlaybackUrl] = useState('');
-  const [formYoutubeId, setFormYoutubeId] = useState('');
+  const [formYoutubeSource, setFormYoutubeSource] = useState('');
+  // DateTimeInput keeps its own date/time parts; remount it when the form is cleared.
+  const [formResetKey, setFormResetKey] = useState(0);
+  const [formErrors, setFormErrors] = useState<DarshanFormErrors>({});
+  const [formError, setFormError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!token) return;
@@ -110,36 +114,40 @@ function TempleDarshanPageContent() {
     setFormProvider('YOUTUBE');
     setFormStreamKey('');
     setFormPlaybackUrl('');
-    setFormYoutubeId('');
+    setFormYoutubeSource('');
+    setFormErrors({});
+    setFormError(null);
+    setFormResetKey((k) => k + 1);
     setShowForm(false);
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!token || !formTitle.trim() || !formStreamKey.trim() || !formPlaybackUrl.trim()) {
-      setError('Title, stream key, and playback URL are required.');
+    if (!token) return;
+    setError(null);
+    setFormError(null);
+    const built = buildDarshanPayload({
+      title: formTitle,
+      description: formDesc,
+      cameraLocation: formCamera,
+      provider: formProvider,
+      youtubeSource: formYoutubeSource,
+      streamKey: formStreamKey,
+      playbackUrl: formPlaybackUrl,
+      scheduledStart: formSchedule,
+    });
+    if (!built.ok) {
+      setFormErrors(built.errors);
       return;
     }
+    setFormErrors({});
     setSubmitting(true);
-    setError(null);
-    const body: CreateDarshanStreamInput = {
-      streamKey: formStreamKey.trim(),
-      playbackUrl: formPlaybackUrl.trim(),
-      title: formTitle.trim(),
-      description: formDesc.trim() || undefined,
-      cameraLocation: formCamera.trim() || undefined,
-      streamProvider: formProvider,
-      youtubeVideoId: formYoutubeId.trim() || undefined,
-      scheduledStart: formSchedule
-        ? new Date(formSchedule).toISOString()
-        : undefined,
-    };
     try {
-      const created = await createDarshanStream(token, body);
-      setStreams((prev) => [...prev, created]);
+      const created = await createDarshanStream(token, built.payload);
+      setStreams((prev) => [created, ...prev]);
       resetForm();
     } catch (err) {
-      setError(userFacingMessage(err, 'We could not create that stream. Please try again.'));
+      setFormError(userFacingMessage(err, 'We could not create that stream. Please try again.'));
     } finally {
       setSubmitting(false);
     }
@@ -245,7 +253,7 @@ function TempleDarshanPageContent() {
               <X className="w-5 h-5" />
             </button>
           </div>
-          <form onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
+          <form noValidate onSubmit={(e) => void handleSubmit(e)} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-surface-700 mb-1.5">
@@ -257,8 +265,11 @@ function TempleDarshanPageContent() {
                   onChange={(e) => setFormTitle(e.target.value)}
                   className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
                   placeholder="e.g. Morning Mangal Aarti"
-                  required
+                  aria-invalid={Boolean(formErrors.title)}
                 />
+                {formErrors.title && (
+                  <p role="alert" className="prose-meta text-red-700 mt-1">{formErrors.title}</p>
+                )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-surface-700 mb-1.5">
@@ -284,74 +295,119 @@ function TempleDarshanPageContent() {
                 className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 resize-none"
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                  Provider
+                <label htmlFor="darshan-provider" className="block text-sm font-medium text-surface-700 mb-1.5">
+                  Where will you stream from?
                 </label>
                 <select
+                  id="darshan-provider"
                   value={formProvider}
-                  onChange={(e) =>
-                    setFormProvider(e.target.value as DarshanStreamProvider)
-                  }
+                  onChange={(e) => {
+                    setFormProvider(e.target.value as DarshanStreamProvider);
+                    setFormErrors({});
+                  }}
                   className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 bg-white"
                 >
-                  <option value="YOUTUBE">YouTube</option>
+                  <option value="YOUTUBE">YouTube (easiest)</option>
                   <option value="IVS">AWS IVS</option>
-                  <option value="EXTERNAL_RTMP">External RTMP</option>
+                  <option value="EXTERNAL_RTMP">Other RTMP / HLS encoder</option>
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                  Scheduled Start
-                </label>
+                <span className="block text-sm font-medium text-surface-700 mb-1.5">
+                  Scheduled Start (optional)
+                </span>
                 <DateTimeInput
+                  key={formResetKey}
+                  ariaLabel="Scheduled start"
                   value={formSchedule}
                   onChange={(v) => setFormSchedule(v)}
                 />
+                {formErrors.scheduledStart ? (
+                  <p role="alert" className="prose-meta text-red-700 mt-1">{formErrors.scheduledStart}</p>
+                ) : (
+                  <p className="prose-meta text-surface-500 mt-1">Leave blank to start it yourself with Go Live.</p>
+                )}
               </div>
-              {formProvider === 'YOUTUBE' && (
+            </div>
+            {formProvider === 'YOUTUBE' ? (
+              <div>
+                <label htmlFor="darshan-youtube" className="block text-sm font-medium text-surface-700 mb-1.5">
+                  YouTube video link or channel ID *
+                </label>
+                <input
+                  id="darshan-youtube"
+                  type="text"
+                  value={formYoutubeSource}
+                  onChange={(e) => setFormYoutubeSource(e.target.value)}
+                  aria-invalid={Boolean(formErrors.youtubeSource)}
+                  className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                  placeholder="https://www.youtube.com/watch?v=… or UC…"
+                />
+                {formErrors.youtubeSource ? (
+                  <p role="alert" className="prose-meta text-red-700 mt-1">{formErrors.youtubeSource}</p>
+                ) : (
+                  <p className="prose-meta text-surface-500 mt-1">
+                    That is all we need. We build the stream key and playback address from it. For a temple that
+                    streams every day, the channel ID (starts with UC) keeps working after each broadcast ends.
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                    YouTube Video ID
+                  <label htmlFor="darshan-key" className="block text-sm font-medium text-surface-700 mb-1.5">
+                    {formProvider === 'IVS' ? 'IVS stream key *' : 'Stream key *'}
                   </label>
                   <input
+                    id="darshan-key"
                     type="text"
-                    value={formYoutubeId}
-                    onChange={(e) => setFormYoutubeId(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
-                    placeholder="e.g. dQw4w9WgXcQ"
+                    value={formStreamKey}
+                    onChange={(e) => setFormStreamKey(e.target.value)}
+                    aria-invalid={Boolean(formErrors.streamKey)}
+                    className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 font-mono"
+                    autoComplete="off"
                   />
+                  {formErrors.streamKey ? (
+                    <p role="alert" className="prose-meta text-red-700 mt-1">{formErrors.streamKey}</p>
+                  ) : (
+                    <p className="prose-meta text-surface-500 mt-1">The key your encoder (OBS, a camera) streams with. Keep it private.</p>
+                  )}
                 </div>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                  Stream Key *
-                </label>
-                <input
-                  type="text"
-                  value={formStreamKey}
-                  onChange={(e) => setFormStreamKey(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 font-mono"
-                  required
-                />
+                <div>
+                  <label htmlFor="darshan-url" className="block text-sm font-medium text-surface-700 mb-1.5">
+                    Playback address *
+                  </label>
+                  <input
+                    id="darshan-url"
+                    type="text"
+                    inputMode="url"
+                    value={formPlaybackUrl}
+                    onChange={(e) => setFormPlaybackUrl(e.target.value)}
+                    aria-invalid={Boolean(formErrors.playbackUrl)}
+                    className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
+                    placeholder="https://…/playlist.m3u8"
+                  />
+                  {formErrors.playbackUrl ? (
+                    <p role="alert" className="prose-meta text-red-700 mt-1">{formErrors.playbackUrl}</p>
+                  ) : (
+                    <p className="prose-meta text-surface-500 mt-1">The https address devotees watch from (usually ends in .m3u8).</p>
+                  )}
+                </div>
+                {formProvider === 'EXTERNAL_RTMP' && (
+                  <p className="prose-meta text-amber-800 md:col-span-2">
+                    Devotees can watch YouTube and AWS IVS streams on Darshya today. Streams from other encoders are saved
+                    here but are not shown on the public darshan page yet.
+                  </p>
+                )}
               </div>
-              <div>
-                <label className="block text-sm font-medium text-surface-700 mb-1.5">
-                  Playback URL *
-                </label>
-                <input
-                  type="url"
-                  value={formPlaybackUrl}
-                  onChange={(e) => setFormPlaybackUrl(e.target.value)}
-                  className="w-full px-3 py-2.5 border border-surface-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200"
-                  placeholder="https://..."
-                  required
-                />
-              </div>
-            </div>
+            )}
+            {formError && (
+              <p role="alert" className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {formError}
+              </p>
+            )}
             <div className="flex items-center gap-3 pt-2">
               <button
                 type="submit"
