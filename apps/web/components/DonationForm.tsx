@@ -18,7 +18,7 @@ import { useAuth } from '../lib/auth-context';
 import { API_BASE_URL } from '../lib/api-config';
 import { COMPANY } from '../lib/company';
 import { buttonClass } from '../components/ui/button-recipe';
-import { userFacingMessage } from '../lib/friendly-error';
+import { serverErrorMessage, userFacingMessage } from '../lib/friendly-error';
 import { loadRazorpayCheckout, preloadRazorpayCheckout } from '../lib/razorpay-loader';
 import {
   MIN_INR,
@@ -240,10 +240,16 @@ export default function DonationForm({
       }).catch(() => null);
 
       if (!createRes || !createRes.ok) {
+        // The server says what actually went wrong for 400/404/503 (gaushala not
+        // onboarded, payment page unavailable). A bare status code tells the donor
+        // nothing; a 401 from a signed-in donor is left on the generic line because
+        // the gateway's refusal used to be reported as one by older API builds.
+        const body = createRes ? await createRes.json().catch(() => null) : null;
         const fallback = createRes
           ? `Could not create your donation order (${createRes.status}).`
           : 'Network error reaching the donations service.';
-        setTopError(`${fallback} Please try again or email support@darshya.online.`);
+        const said = createRes && createRes.status !== 401 ? serverErrorMessage(body, '') : '';
+        setTopError(said ? `${said} If it keeps happening, email support@darshya.online.` : `${fallback} Please try again or email support@darshya.online.`);
         setSubmitting(false);
         return;
       }

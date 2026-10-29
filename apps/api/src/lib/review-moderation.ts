@@ -40,6 +40,10 @@ export async function hiddenReviewIds(): Promise<string[]> {
     cache = { at: Date.now(), ids };
     return ids;
   } catch {
+    // Remember the miss too (a table that has not been created yet fails the same
+    // way on every read, and each failed read is a wasted round trip to the
+    // database on every page that lists reviews). hideReview resets the cache.
+    cache = { at: Date.now(), ids: [] };
     return [];
   }
 }

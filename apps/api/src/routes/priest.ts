@@ -14,6 +14,7 @@ import { proofKeyBookingId } from '../lib/booking-proof.js';
 import { videoMaxBytes, videoMaxMb, videoTooLargeMessage } from '../lib/upload-limits.js';
 import { isDemoMode } from '../lib/supabase.js';
 import { httpUrlSchema } from '../lib/http-url.js';
+import { recallPriestId } from '../lib/priest-id-cache.js';
 import { inspectOwnPhoto, attachFailureMessage } from '../lib/upload-inspect.js';
 import { BookingStatus, PayoutStatus, Prisma } from '@prisma/client';
 
@@ -354,6 +355,9 @@ export async function priestRoutes(server: FastifyInstance) {
    * on every priest endpoint without this backfill.
    */
   async function getPriestId(userId: string): Promise<string> {
+    // The guard (requireRole('priest')) read this row moments ago and left the id.
+    const remembered = recallPriestId(userId);
+    if (remembered) return remembered;
     const priest = await prisma.priest.findUnique({
       where: { userId },
       select: { id: true },
@@ -865,6 +869,12 @@ export async function priestRoutes(server: FastifyInstance) {
       // commission must not send us down the legacy-only path, because the
       // summary cards below it cover the whole ledger regardless of the filter.
       const baseWhere = unifiedBaseWhere(userId);
+      // Latency: a legacy-only pandit (the common case) needs the sidecar-rail
+      // history as the answer, and it does not depend on the count, so both start
+      // together. A pandit with unified earnings discards it and takes the merged
+      // path below, which asks for its own window.
+      const legacyOnly = priestService.getPayoutHistory(priestId, { status, page, limit });
+      legacyOnly.catch(() => undefined);
       const unifiedAny = await prisma.commission.count({ where: baseWhere });
 
       // Legacy-only pandit: the single-rail path, byte-for-byte the behaviour
@@ -876,7 +886,7 @@ export async function priestRoutes(server: FastifyInstance) {
       // what the page's PF-15 error banner exists for: an unread ledger is an
       // error, never a balance.
       if (!(unifiedAny > 0)) {
-        return await priestService.getPayoutHistory(priestId, { status, page, limit });
+        return await legacyOnly;
       }
 
       // Defaults mirror priestService.getPayoutHistory so the two paths page
@@ -1152,12 +1162,15 @@ export async function priestRoutes(server: FastifyInstance) {
       const userId = request.currentUser!.id;
       const priestId = await getPriestId(userId);
 
+      // The hidden-id lookup used to be awaited inside the first query's
+      // arguments, which held back the second query until it returned.
+      const hiddenWhere = notHiddenReviewWhere();
       const [rows, ratedBookings] = await Promise.all([
-        prisma.review.findMany({
-          where: { ...(await notHiddenReviewWhere()), providerId: userId, providerType: 'PANDIT' },
+        hiddenWhere.then((hidden) => prisma.review.findMany({
+          where: { ...hidden, providerId: userId, providerType: 'PANDIT' },
           orderBy: { createdAt: 'desc' },
           take: REVIEW_PAGE,
-        }),
+        })),
         prisma.pujaBooking.findMany({
           where: { priestId, rating: { not: null } },
           orderBy: { updatedAt: 'desc' },

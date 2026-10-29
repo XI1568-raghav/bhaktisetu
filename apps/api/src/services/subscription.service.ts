@@ -360,6 +360,29 @@ export class SubscriptionService {
   }
 
   /**
+   * Can a buyer actually pay for this plan right now?
+   *
+   * A free plan always can. A priced plan needs the Razorpay credentials AND the
+   * RAZORPAY_PLAN_* id that createRazorpaySubscription reads (the same lookup,
+   * mapToRazorpayPlanId); without them the Subscribe button could only end in an
+   * error. Outside production, demo credentials mint a demo subscription, so a
+   * dev stack stays usable. This reports only a yes/no: which variable is
+   * missing is for the log and the runbook, never for the page.
+   */
+  isPurchasable(plan: { id: string; price: number }): boolean {
+    if (!(plan.price > 0)) return true;
+    const keyId = process.env.RAZORPAY_KEY_ID || '';
+    const demoCredentials = !keyId || keyId === 'rzp_test_demo';
+    if (demoCredentials) return process.env.NODE_ENV !== 'production';
+    return Boolean(mapToRazorpayPlanId(plan.id));
+  }
+
+  /** getPlans() with a per-plan `purchasable` flag, for the plans route. */
+  getPlansWithAvailability(role?: string): Array<PlanDefinition & { purchasable: boolean }> {
+    return this.getPlans(role).map((p) => ({ ...p, purchasable: this.isPurchasable(p) }));
+  }
+
+  /**
    * The raw definition, including plans currently withheld from sale. Used by
    * reconciliation and by tests; never by a buying surface.
    */

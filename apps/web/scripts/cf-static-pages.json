@@ -1,9 +1,39 @@
 {
-  "_why": "Which prerendered pages build-cf.mjs copies into .open-next/assets so Cloudflare answers them WITHOUT starting the Worker. The OpenNext Worker imports its 45 MB server bundle on the first request of every cold isolate (measured ~0.9 s CPU; the free plan allows 10 ms), so any request that reaches the Worker can fail with error 1102; a file in assets costs ~3 ms and no Worker invocation. scripts/static-pages-to-assets.mjs DISCOVERS the routes from .next/prerender-manifest.json: every fully static route (initialRevalidateSeconds === false) is copied unless it is excluded below, plus ISR routes under isrStaticPrefixes. Trade-offs of bypassing the Worker (see docs/runbooks/cloudflare-web-deploy.md): middleware.ts does not run (no portal 307 for signed-out visitors, no poojly_language cookie, no ?lang= handling, no Content-Language header), the asset layer ignores query strings and request headers, and a client-side soft navigation to these paths falls back to a full page load (the RSC request is answered with HTML).",
+  "_why": "Which prerendered pages build-cf.mjs copies into .open-next/assets so Cloudflare answers them WITHOUT starting the Worker. The OpenNext Worker imports its 45 MB server bundle on the first request of every cold isolate (measured ~0.9 s CPU; the free plan allows 10 ms), so any request that reaches the Worker can fail with error 1102; a file in assets costs ~3 ms and no Worker invocation. scripts/static-pages-to-assets.mjs DISCOVERS the routes from .next/prerender-manifest.json: every fully static route (initialRevalidateSeconds === false) is copied unless it is excluded below, plus ISR routes under isrStaticPrefixes. Trade-offs of bypassing the Worker (see docs/runbooks/cloudflare-web-deploy.md): middleware.ts does not run (no portal 307 for signed-out visitors, no ?lang= handling; the poojly_language cookie is written by an inline script in app/layout.tsx on locale landings, the `/` language redirect is HomeLocaleRedirect, and Content-Language comes from public/_headers), the asset layer ignores query strings and request headers, and a client-side soft navigation to these paths falls back to a full page load (the RSC request is answered with HTML).",
   "mustBeStatic": {
     "_why": "Build FAILS if any of these routes is missing from the prerender output or is not fully static. portalPrefixes must list every PORTAL_PREFIXES entry of middleware.ts (a test pins that): every page route under them must be fully static, or be listed in workerServed with its reason.",
-    "routes": ["/privacy", "/privacy/v2", "/terms", "/refund", "/refunds", "/shipping", "/legal/cookies", "/legal/privacy-uk", "/data-deletion", "/support", "/support/faq", "/support/tickets", "/support/tickets/view", "/support/ticket/new", "/pujas/book", "/dashboard", "/profile", "/bookings", "/auth/login", "/auth/signup"],
-    "portalPrefixes": ["/admin", "/priest", "/store-admin", "/astrologer-portal", "/wellness-portal", "/gaushala-portal", "/temple-portal", "/payouts"]
+    "routes": [
+      "/privacy",
+      "/privacy/v2",
+      "/terms",
+      "/refund",
+      "/refunds",
+      "/shipping",
+      "/legal/cookies",
+      "/legal/privacy-uk",
+      "/data-deletion",
+      "/support",
+      "/support/faq",
+      "/support/tickets",
+      "/support/tickets/view",
+      "/support/ticket/new",
+      "/pujas/book",
+      "/dashboard",
+      "/profile",
+      "/bookings",
+      "/auth/login",
+      "/auth/signup"
+    ],
+    "portalPrefixes": [
+      "/admin",
+      "/priest",
+      "/store-admin",
+      "/astrologer-portal",
+      "/wellness-portal",
+      "/gaushala-portal",
+      "/temple-portal",
+      "/payouts"
+    ]
   },
   "workerServed": {
     "_why": "Page routes under portalPrefixes that legitimately stay on the Worker (dynamic [param] segments or server-rendered). Anything else under a portal prefix that stops being static fails the build.",
@@ -15,19 +45,9 @@
   "exclude": {
     "_why": "Static routes that MUST reach the Worker. Everything else static is copied.",
     "routes": {
-      "/_not-found": "404 shell: status is not 200",
-      "/hi": "locale landing: middleware stores poojly_language on it",
-      "/ta": "locale landing: middleware stores poojly_language on it",
-      "/te": "locale landing: middleware stores poojly_language on it",
-      "/bn": "locale landing: middleware stores poojly_language on it",
-      "/mr": "locale landing: middleware stores poojly_language on it"
+      "/_not-found": "404 shell: status is not 200"
     },
     "prefixes": {
-      "/hi/": "locale landing subtree (Content-Language + cookie)",
-      "/ta/": "locale landing subtree (Content-Language + cookie)",
-      "/te/": "locale landing subtree (Content-Language + cookie)",
-      "/bn/": "locale landing subtree (Content-Language + cookie)",
-      "/mr/": "locale landing subtree (Content-Language + cookie)",
       "/help/articles/": "per-language articles: Content-Language must follow the path locale",
       "/static-shell/": "internal rewrite targets of middleware (/pujas, /store); never a public URL",
       "/og/": "OG image routes",
@@ -36,6 +56,94 @@
   },
   "isrStaticPrefixes": {
     "_why": "Sections that are ISR only because of `export const revalidate` but render committed in-repo data (no fetch, no cookies, no dates; verified by __tests__/cf-static-assets.test.ts). The Workers incremental cache is read-only, so these never refresh between deploys anyway; copying them only removes the cold-Worker hit. Live-data sections (temples, pujas, panchang, blog, store, wellness, astrology, city, yatra-packages, deity, festival, calendar, help, content ISR) are deliberately NOT here.",
-    "prefixes": ["/aarti", "/aditya", "/ashta-lakshmi", "/bhakti-saint", "/chakras", "/chalisa", "/chants", "/darshanas", "/dashavatar", "/devi", "/ekadashi", "/gita", "/hindu-philosophies", "/hindu-symbols", "/jyotirlinga", "/mahabharata", "/masa", "/muhurat", "/nakshatra", "/nava-graha", "/navaratna", "/pancha-bhoota", "/pilgrimage", "/puranas", "/ramayana", "/rashi", "/rudraksha", "/sacred-mountains", "/sacred-rivers", "/sacred-trees", "/samskaras", "/sapta-mathruka", "/sapta-rishis", "/shakti-peeth", "/shlokas", "/tirth", "/tithi", "/upanishads", "/vedas", "/vedic-yajnas", "/vrat", "/yoga-sutras", "/free-pandit-advice", "/about", "/faqs", "/why-darshya", "/pricing", "/list-temple", "/offline"]
+    "prefixes": [
+      "/aarti",
+      "/aditya",
+      "/ashta-lakshmi",
+      "/bhakti-saint",
+      "/chakras",
+      "/chalisa",
+      "/chants",
+      "/darshanas",
+      "/dashavatar",
+      "/devi",
+      "/ekadashi",
+      "/gita",
+      "/hindu-philosophies",
+      "/hindu-symbols",
+      "/jyotirlinga",
+      "/mahabharata",
+      "/masa",
+      "/muhurat",
+      "/nakshatra",
+      "/nava-graha",
+      "/navaratna",
+      "/pancha-bhoota",
+      "/pilgrimage",
+      "/puranas",
+      "/ramayana",
+      "/rashi",
+      "/rudraksha",
+      "/sacred-mountains",
+      "/sacred-rivers",
+      "/sacred-trees",
+      "/samskaras",
+      "/sapta-mathruka",
+      "/sapta-rishis",
+      "/shakti-peeth",
+      "/shlokas",
+      "/tirth",
+      "/tithi",
+      "/upanishads",
+      "/vedas",
+      "/vedic-yajnas",
+      "/vrat",
+      "/yoga-sutras",
+      "/free-pandit-advice",
+      "/about",
+      "/faqs",
+      "/why-darshya",
+      "/pricing",
+      "/list-temple",
+      "/offline"
+    ]
+  },
+  "isrStaticRoutes": {
+    "_why": "Exact routes copied to assets although Next marks them ISR (a fetch inside the page tree carries a revalidate window). The page itself is clock- and cookie-free: everything dated or visitor-specific on it resolves in the browser. '/' also replaces middleware's language redirect with HomeLocaleRedirect.",
+    "routes": [
+      "/"
+    ]
+  },
+  "isrBuildDataPrefixes": {
+    "_why": "Sections whose pages read the API (or committed data) once at build time and contain nothing that depends on the clock, a cookie or a query string (checked 2026-10-29: no new Date()/Date.now()/cookies()/headers()/searchParams in the server tree of these sections; __tests__/cf-static-assets.test.ts re-checks it). The Workers incremental cache is read-only, so these never refreshed between deploys anyway; their content changes with a redeploy. Only routes that were actually prerendered are copied; unknown slugs (dynamicParams) still reach the Worker. NOT here on purpose: /panchang, /calendar, /festival, /today (dated), /astrology and /wellness/classes|instructors (sessions and availability), /pujas and /store (query-aware), /content (searchParams), /help/articles (Content-Language per path locale), /darshan/[id]/replay.",
+    "prefixes": [
+      "/deity",
+      "/city",
+      "/puja",
+      "/blog",
+      "/temples",
+      "/gaushala",
+      "/wellness/vipassana",
+      "/wellness/meditation",
+      "/hi",
+      "/ta",
+      "/te",
+      "/bn",
+      "/mr"
+    ]
+  },
+  "mustBeCopied": {
+    "_why": "Build FAILS if one of these is not copied to assets (a page that stopped being prerendered would silently go back to the Worker).",
+    "routes": [
+      "/",
+      "/hi",
+      "/ta",
+      "/te",
+      "/bn",
+      "/mr",
+      "/temples",
+      "/deity/shiva",
+      "/ta/chennai"
+    ]
   }
 }

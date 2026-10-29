@@ -220,7 +220,11 @@ function BookYatraInner() {
  // path. Nothing reads it (the inquiry schema defaults that field to 0) and the
  // rate was already stale, so it was a fabricated number travelling with a real
  // one. Dropped.
+ // One id for this submit and all of its automatic retries: the API answers a
+ // repeat of it with the first reference instead of mailing the desk again.
+ const clientRequestId = (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
  const payload = {
+ clientRequestId,
  yatraSlug: currentYatra.slug,
  yatraTitle: currentYatra.title,
  packageTier: data.packageTier,

@@ -16,6 +16,7 @@ vi.mock('../middlewares/auth.js', () => ({
 
 import Fastify from 'fastify';
 import { storeAdminRoutes } from './store-admin.js';
+import { __profileIdMemoClear } from '../lib/profile-id-memo.js';
 
 const now = new Date();
 const mk = (id: string, price: number, paymentId: string | null) => ({
@@ -38,6 +39,7 @@ async function call(url: string) {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __profileIdMemoClear();
   prismaMock.storeProfile.findUnique.mockResolvedValue({ id: 'store-1' });
   prismaMock.storeProduct.findMany.mockResolvedValue([{ id: 'p-1', name: 'Mala', stock: 40 }]);
   prismaMock.user.findMany.mockResolvedValue([{ id: 'b1', fullName: 'Asha' }]);

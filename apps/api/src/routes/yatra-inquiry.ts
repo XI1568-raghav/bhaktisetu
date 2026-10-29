@@ -53,6 +53,9 @@ const inquirySchema = z.object({
     country: z.string().max(80).optional().default('India'),
   }),
   notes: z.string().max(2000).optional().default(''),
+  // Minted once per submit by the web form and re-sent on every automatic retry,
+  // so a retry after a client-side timeout cannot send the desk a second mail.
+  clientRequestId: z.string().min(8).max(64).optional(),
 });
 
 // New Razorpay checkout schema for the 5 packaged tours w/ locked availability.
@@ -175,7 +178,16 @@ ${travelers ? `<h3 style="font-size:14px;margin:16px 0 4px">Travelers</h3><table
 </div></body></html>`;
 }
 
-export const __testing = { inquirySchema, createOrderSchema, verifyPaymentSchema, refId };
+// Answers already given, by clientRequestId, for ten minutes. In-memory is
+// enough: the retry that matters follows the first attempt by seconds, on the
+// same single instance.
+const INQUIRY_REPLAY_TTL_MS = 10 * 60 * 1000;
+const inquiryReplay = new Map<string, { at: number; answer: Promise<{ referenceId: string; ok: true; waDelivery: string }> }>();
+function sweepInquiryReplay(now: number) {
+  for (const [k, v] of inquiryReplay) if (now - v.at > INQUIRY_REPLAY_TTL_MS) inquiryReplay.delete(k);
+}
+
+export const __testing = { inquirySchema, inquiryReplay, createOrderSchema, verifyPaymentSchema, refId };
 
 export async function yatraInquiryRoutes(server: FastifyInstance) {
   // ─── POST /                       Legacy inquiry intake (email + WA) ────
@@ -185,49 +197,60 @@ export async function yatraInquiryRoutes(server: FastifyInstance) {
       return reply.status(400).send({ error: 'invalid_body', issues: parsed.error.flatten() });
     }
     const body = parsed.data;
+    const now = Date.now();
+    sweepInquiryReplay(now);
+    const replay = body.clientRequestId ? inquiryReplay.get(body.clientRequestId) : undefined;
+    if (replay) return reply.status(200).send(await replay.answer);
+
     const referenceId = refId();
     const to = process.env.YATRA_INQUIRY_TO || 'yatra@darshya.online';
 
-    await sendEmail({
-      to,
-      subject: `[Yatra ${body.packageTier}] ${body.yatraTitle || body.yatraSlug} — ${body.travelersCount} pax`,
-      html: adminHtml(referenceId, body),
-    }).catch(() => null);
-
-    await sendEmail({
-      to: body.buyer.email,
-      subject: `Yatra inquiry received — ${referenceId}`,
-      html: `<p>Namaste ${esc(body.buyer.name)},</p>
+    const deliver = async () => {
+      // Each Resend / WhatsApp call is a network round trip of its own. They do
+      // not depend on one another, so they run side by side: the buyer waits for
+      // the slowest, not for the sum.
+      const [, , opsWa, buyerWa] = await Promise.all([
+        sendEmail({
+          to,
+          subject: `[Yatra ${body.packageTier}] ${body.yatraTitle || body.yatraSlug} — ${body.travelersCount} pax`,
+          html: adminHtml(referenceId, body),
+        }).catch(() => null),
+        sendEmail({
+          to: body.buyer.email,
+          subject: `Yatra inquiry received — ${referenceId}`,
+          html: `<p>Namaste ${esc(body.buyer.name)},</p>
 <p>We received your inquiry for <strong>${esc(body.yatraTitle || body.yatraSlug)}</strong> (${esc(body.packageTier)}) starting ${esc(body.startDate)} for ${esc(body.travelersCount)} traveler(s).</p>
 <p>Reference: <strong>${referenceId}</strong></p>
 <p>Our yatra team will confirm hotel + transport availability and email final invoice within 24 hours. Quote shown: ₹${esc(body.totalInr.toLocaleString('en-IN'))}.</p>
 <p>— Darshya yatra desk</p>`,
-    }).catch(() => null);
+        }).catch(() => null),
+        whatsapp.enabled && process.env.YATRA_OPS_WHATSAPP
+          ? sendWhatsappTemplate({
+              to: process.env.YATRA_OPS_WHATSAPP,
+              template: 'yatra_inquiry_ops',
+              languageCode: 'en',
+              variables: [referenceId, body.packageTier, String(body.travelersCount), body.startDate],
+            }).catch(() => null)
+          : Promise.resolve(null),
+        whatsapp.enabled && body.buyer.phone
+          ? sendWhatsappTemplate({
+              to: body.buyer.phone,
+              template: 'yatra_inquiry_received',
+              languageCode: 'en',
+              variables: [body.buyer.name, body.yatraTitle || body.yatraSlug, referenceId],
+            }).catch(() => ({ ok: false }))
+          : Promise.resolve(null),
+      ]);
+      void opsWa;
+      const waDelivery: 'sent' | 'skipped' | 'failed' = buyerWa ? (buyerWa.ok ? 'sent' : 'failed') : 'skipped';
+      return { referenceId, ok: true as const, waDelivery };
+    };
 
-    let waDelivery: 'sent' | 'skipped' | 'failed' = 'skipped';
-    if (whatsapp.enabled) {
-      const opsTo = process.env.YATRA_OPS_WHATSAPP || '';
-      if (opsTo) {
-        await sendWhatsappTemplate({
-          to: opsTo,
-          template: 'yatra_inquiry_ops',
-          languageCode: 'en',
-          variables: [referenceId, body.packageTier, String(body.travelersCount), body.startDate],
-        }).catch(() => null);
-      }
-      if (body.buyer.phone) {
-        const r = await sendWhatsappTemplate({
-          to: body.buyer.phone,
-          template: 'yatra_inquiry_received',
-          languageCode: 'en',
-          variables: [body.buyer.name, body.yatraTitle || body.yatraSlug, referenceId],
-        }).catch(() => ({ ok: false }));
-        waDelivery = r.ok ? 'sent' : 'failed';
-      }
-    }
-
-    request.log.info({ referenceId, yatraSlug: body.yatraSlug, tier: body.packageTier, waDelivery }, '[yatra-inquiry]');
-    return reply.status(200).send({ referenceId, ok: true, waDelivery });
+    const answer = deliver();
+    if (body.clientRequestId) inquiryReplay.set(body.clientRequestId, { at: now, answer });
+    const result = await answer;
+    request.log.info({ referenceId, yatraSlug: body.yatraSlug, tier: body.packageTier, waDelivery: result.waDelivery }, '[yatra-inquiry]');
+    return reply.status(200).send(result);
   });
 
   // ─── POST /create-order       Real Razorpay checkout (R-Q2-P-003) ───────

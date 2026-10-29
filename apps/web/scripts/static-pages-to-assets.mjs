@@ -47,17 +47,19 @@ if (problems.length) {
 
 const excludedExact = new Set(Object.keys(cfg.exclude.routes).filter((k) => !k.startsWith('_')));
 const excludedPrefix = Object.keys(cfg.exclude.prefixes).filter((k) => !k.startsWith('_'));
-const isrPrefixes = cfg.isrStaticPrefixes.prefixes;
+const isrPrefixes = [...cfg.isrStaticPrefixes.prefixes, ...(cfg.isrBuildDataPrefixes?.prefixes ?? [])];
+const isrExact = new Set(cfg.isrStaticRoutes?.routes ?? []);
 const underPrefix = (route, p) => route === p || route.startsWith(p + '/');
 
 const wanted = [];
 const skipped = { excluded: 0, noHtml: 0, nonOk: 0, redirect: 0 };
 for (const route of Object.keys(routes)) {
-  if (route === '/') continue; // root redirects on the locale cookie (middleware)
   const fullyStatic = isStatic(route);
-  if (!fullyStatic && !isrPrefixes.some((p) => underPrefix(route, p))) continue;
+  if (!fullyStatic && !isrExact.has(route) && !isrPrefixes.some((p) => underPrefix(route, p))) continue;
   if (excludedExact.has(route) || excludedPrefix.some((p) => route.startsWith(p))) { skipped.excluded++; continue; }
-  const src = path.join(nextDir, 'server/app', route + '.html');
+  // The root page is prerendered as server/app/index.html and must land at assets/index.html.
+  const file = route === '/' ? '/index' : route;
+  const src = path.join(nextDir, 'server/app', file + '.html');
   if (!fs.existsSync(src)) { skipped.noHtml++; continue; }
   try {
     const meta = JSON.parse(fs.readFileSync(src.replace(/\.html$/, '.meta'), 'utf8'));
@@ -70,9 +72,15 @@ for (const route of Object.keys(routes)) {
 }
 
 for (const { route, src } of wanted) {
-  const dest = path.join(assetsDir, route + '.html');
+  const dest = path.join(assetsDir, (route === '/' ? '/index' : route) + '.html');
   fs.mkdirSync(path.dirname(dest), { recursive: true });
   fs.copyFileSync(src, dest);
+}
+const copied = new Set(wanted.map((w) => w.route));
+const missing = (cfg.mustBeCopied?.routes ?? []).filter((r) => !copied.has(r));
+if (missing.length) {
+  console.error('static-pages-to-assets: these routes must be copied to assets but were not (no longer prerendered, excluded, or not a 200 page): ' + missing.join(', '));
+  process.exit(1);
 }
 const isr = wanted.filter((w) => w.isr).length;
 console.log(

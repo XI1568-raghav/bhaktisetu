@@ -33,3 +33,37 @@
 # https://opennext.js.org/cloudflare/caching#static-assets-caching
 /_next/static/*
   Cache-Control: public, max-age=31536000, immutable
+
+# Locale landings are served from assets (the Worker, and with it middleware.ts, never runs for
+# them), so the Content-Language header middleware used to add (contentLanguageFor) is set here.
+# The poojly_language cookie they used to set is written by the inline script in app/layout.tsx.
+/hi
+  Content-Language: hi
+
+/hi/*
+  Content-Language: hi
+
+/ta
+  Content-Language: ta
+
+/ta/*
+  Content-Language: ta
+
+/te
+  Content-Language: te
+
+/te/*
+  Content-Language: te
+
+/bn
+  Content-Language: bn
+
+/bn/*
+  Content-Language: bn
+
+/mr
+  Content-Language: mr
+
+/mr/*
+  Content-Language: mr
+

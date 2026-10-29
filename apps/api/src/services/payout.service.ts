@@ -256,6 +256,13 @@ async function unperformedPujaBookingIds(
  * commission's bare `bookingId` is the consultation id. A missing table (it is
  * created lazily) means no consultations, so nothing is held.
  */
+let consultationsTableProbe: { present: boolean; at: number } | null = null;
+const CONSULTATIONS_ABSENT_RECHECK_MS = 60_000;
+/** Test hook: forget what the probe learned. */
+export function __resetConsultationsTableProbe(): void {
+  consultationsTableProbe = null;
+}
+
 export async function unfinishedConsultationIds(
   db: Pick<typeof prisma, '$queryRawUnsafe'>,
   providerId: string,
@@ -265,10 +272,23 @@ export async function unfinishedConsultationIds(
     // 25P02), so the catch below cannot recover: the NEXT read in the tx dies and
     // the payout request returned a 400 carrying Prisma internals. Probe for the
     // lazily created table first instead of letting the join fail.
-    const probe = await db.$queryRawUnsafe<Array<{ present?: unknown }>>(
-      `SELECT to_regclass('public.astrologer_consultations') IS NOT NULL AS present`,
-    );
-    if (Array.isArray(probe) && probe[0] && probe[0].present === false) return [];
+    //
+    // Latency: the probe is a round trip of its own, in front of the join on
+    // every balance read. A table that exists never stops existing, so a positive
+    // answer is remembered for the life of the process; a negative one for a
+    // minute, so a freshly created table is noticed.
+    const nowMs = Date.now();
+    const known = consultationsTableProbe;
+    if (known && known.present === false && nowMs - known.at < CONSULTATIONS_ABSENT_RECHECK_MS) return [];
+    if (!(known && known.present === true)) {
+      const probe = await db.$queryRawUnsafe<Array<{ present?: unknown }>>(
+        `SELECT to_regclass('public.astrologer_consultations') IS NOT NULL AS present`,
+      );
+      if (Array.isArray(probe) && probe[0] && typeof probe[0].present === 'boolean') {
+        consultationsTableProbe = { present: probe[0].present, at: nowMs };
+      }
+      if (Array.isArray(probe) && probe[0] && probe[0].present === false) return [];
+    }
     const rows = await db.$queryRawUnsafe<Array<{ booking_id?: unknown }>>(
       `SELECT c.booking_id FROM commissions c
          JOIN astrologer_consultations a ON a.id::text = c.booking_id
@@ -296,11 +316,12 @@ export interface HeldEarningKeys {
 
 /** The same held sets getPayoutBalance uses, for per-row payable/upcoming flags. */
 export async function heldEarningKeys(providerId: string): Promise<HeldEarningKeys> {
-  const wellness = await upcomingWellnessEnrollmentIds(prisma, providerId);
-  const bookings = [
-    ...(await unperformedPujaBookingIds(prisma, providerId)),
-    ...(await unfinishedConsultationIds(prisma, providerId)),
-  ];
+  const [wellness, unperformed, unfinished] = await Promise.all([
+    upcomingWellnessEnrollmentIds(prisma, providerId),
+    unperformedPujaBookingIds(prisma, providerId),
+    unfinishedConsultationIds(prisma, providerId),
+  ]);
+  const bookings = [...unperformed, ...unfinished];
   return { wellnessEnrollmentIds: new Set(wellness), bookingIds: new Set(bookings) };
 }
 
@@ -348,66 +369,13 @@ export async function getPayoutBalance(providerId: string) {
   ]);
   const heldPujaIds = [...unperformedIds, ...unfinishedIds];
 
-  // Wave 2: the three sums that need the held ids. `pending` excludes held
+  // Wave 2: the three sums that need the held ids, and the legacy-rail read
+  // (which needs only wave 1's priest row), all together. `pending` excludes held
   // rows; `upcoming*` is earned but not yet withdrawable.
-  const [pending, upcomingWellness, upcomingPuja] = await Promise.all([
-    sumCommissionAmounts({
-      providerId,
-      status: 'PENDING',
-      payoutRequestId: null,
-      ...notHeldWellness(heldIds),
-      ...notHeldPuja(heldPujaIds),
-    }),
-    heldIds.length
-      ? sumCommissionAmounts({
-          providerId,
-          status: 'PENDING',
-          payoutRequestId: null,
-          wellnessEnrollmentId: { in: heldIds },
-        })
-      : Promise.resolve(new Prisma.Decimal(0)),
-    heldPujaIds.length
-      ? sumCommissionAmounts({
-          providerId,
-          status: 'PENDING',
-          payoutRequestId: null,
-          bookingId: { in: heldPujaIds },
-        })
-      : Promise.resolve(new Prisma.Decimal(0)),
-  ]);
-  const upcoming = upcomingWellness.add(upcomingPuja);
-
-  // RV-05 (2026-08-10): availableInr used to be `pending - inFlight`, but the two
-  // sets are disjoint by construction — the `pending` query filters
-  // payoutRequestId: null and a Prisma to-one relation filter never matches a
-  // NULL FK, so no in-flight row is ever inside `pending`. The subtraction
-  // removed money that was never added: requestPayout sized the PayoutRequest at
-  // (new earnings − in-flight) while linking ALL unlinked commissions to it, so
-  // on completion every one of them flipped to PAID and the difference was
-  // destroyed (provider short-paid, platform kept it) — every Monday, via the
-  // weekly settlement cron. Available is exactly `pending`; in-flight is only
-  // ever reported separately as pendingInr.
-  // ── DI-05: the LEGACY pandit rail, reported rather than silently omitted ──
-  //
-  // Everything above reads the Commission ledger and nothing else, so a pandit
-  // whose earnings sit on the sidecar `PriestPayout` rail saw his money on
-  // /priest/payouts and Rs 0 here — on apps/web/app/payouts/page.tsx, which is
-  // role-gated to include 'priest' and is where /settings/earnings redirects.
-  // Same pandit, same money, two screens, two answers.
-  //
-  // It is reported SEPARATELY and deliberately NOT folded into `availableInr`.
-  // That figure gates POST /payouts/request, and requestPayout sizes the actual
-  // PayoutRequest from Commission rows inside its transaction (RV-06). Adding
-  // sidecar money to it would clear the MIN_PAYOUT_INR gate on money this rail
-  // cannot settle and would fail after promising a balance — and it is the
-  // exact shape of the double-pay the two-rail invariant exists to prevent.
-  // The sidecar rail is settled by its own process (admin/bookings).
-  //
-  // Costs a non-pandit provider ONE indexed lookup that misses.
-  let legacyPending = new Prisma.Decimal(0);
-  let legacyPaid = new Prisma.Decimal(0);
-
-  if (priestRow) {
+  const legacyRail = async (): Promise<{ pending: Prisma.Decimal; paid: Prisma.Decimal }> => {
+    let legacyPending = new Prisma.Decimal(0);
+    let legacyPaid = new Prisma.Decimal(0);
+    if (!priestRow) return { pending: legacyPending, paid: legacyPaid };
     // Exclude any booking the unified rail already owns, so the two figures on
     // one screen can never restate the same rupee. Bounded by the provider's
     // own commission rows; the write side (services/provider-earning-mint.ts)
@@ -438,8 +406,66 @@ export async function getPayoutBalance(providerId: string) {
         legacyPending = legacyPending.add(amount);
       }
     }
-  }
+    return { pending: legacyPending, paid: legacyPaid };
+  };
 
+  const [pending, upcomingWellness, upcomingPuja, legacy] = await Promise.all([
+    sumCommissionAmounts({
+      providerId,
+      status: 'PENDING',
+      payoutRequestId: null,
+      ...notHeldWellness(heldIds),
+      ...notHeldPuja(heldPujaIds),
+    }),
+    heldIds.length
+      ? sumCommissionAmounts({
+          providerId,
+          status: 'PENDING',
+          payoutRequestId: null,
+          wellnessEnrollmentId: { in: heldIds },
+        })
+      : Promise.resolve(new Prisma.Decimal(0)),
+    heldPujaIds.length
+      ? sumCommissionAmounts({
+          providerId,
+          status: 'PENDING',
+          payoutRequestId: null,
+          bookingId: { in: heldPujaIds },
+        })
+      : Promise.resolve(new Prisma.Decimal(0)),
+    legacyRail(),
+  ]);
+  const upcoming = upcomingWellness.add(upcomingPuja);
+  const legacyPending = legacy.pending;
+  const legacyPaid = legacy.paid;
+
+  // RV-05 (2026-08-10): availableInr used to be `pending - inFlight`, but the two
+  // sets are disjoint by construction — the `pending` query filters
+  // payoutRequestId: null and a Prisma to-one relation filter never matches a
+  // NULL FK, so no in-flight row is ever inside `pending`. The subtraction
+  // removed money that was never added: requestPayout sized the PayoutRequest at
+  // (new earnings − in-flight) while linking ALL unlinked commissions to it, so
+  // on completion every one of them flipped to PAID and the difference was
+  // destroyed (provider short-paid, platform kept it) — every Monday, via the
+  // weekly settlement cron. Available is exactly `pending`; in-flight is only
+  // ever reported separately as pendingInr.
+  // ── DI-05: the LEGACY pandit rail, reported rather than silently omitted ──
+  //
+  // Everything above reads the Commission ledger and nothing else, so a pandit
+  // whose earnings sit on the sidecar `PriestPayout` rail saw his money on
+  // /priest/payouts and Rs 0 here — on apps/web/app/payouts/page.tsx, which is
+  // role-gated to include 'priest' and is where /settings/earnings redirects.
+  // Same pandit, same money, two screens, two answers.
+  //
+  // It is reported SEPARATELY and deliberately NOT folded into `availableInr`.
+  // That figure gates POST /payouts/request, and requestPayout sizes the actual
+  // PayoutRequest from Commission rows inside its transaction (RV-06). Adding
+  // sidecar money to it would clear the MIN_PAYOUT_INR gate on money this rail
+  // cannot settle and would fail after promising a balance — and it is the
+  // exact shape of the double-pay the two-rail invariant exists to prevent.
+  // The sidecar rail is settled by its own process (admin/bookings).
+  //
+  // Costs a non-pandit provider ONE indexed lookup that misses.
   // Decimal all the way through; converted to number only at this boundary,
   // where the value stops being money and becomes a display/API field.
   return {

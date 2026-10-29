@@ -17,6 +17,10 @@ const STREAMS = [
   { templeSlug: 'tirumala-tirupati', youtubeChannelId: 'UCS2Y83GD-fc7qqgNW5uj41g', attribution: 'SVBC TTD' },
   { templeSlug: 'kashi-vishwanath-varanasi', youtubeChannelId: 'UCdMj2twWfMHXrWgX5oVdoyA', attribution: 'Shree Kashi Vishwanath Mandir Trust' },
   { templeSlug: 'jagannath-puri', youtubeChannelId: 'UCstacpPsNLSiGcYe7qbF14Q', attribution: 'Shree Jagannatha Temple Administration, Puri' },
+  { templeSlug: 'govind-dev-ji-jaipur', youtubeChannelId: 'UCGqf8XY3-ONj_M9tf1DdckA', attribution: 'Mandir Shri Govind Devji Utsav Darshan' },
+  { templeSlug: 'banke-bihari-vrindavan', youtubeChannelId: 'UCwh96MUAk0m81vEXaHVm6Ng', attribution: 'Thakurji Shri Banke Bihari ji' },
+  { templeSlug: 'ram-mandir-ayodhya', youtubeChannelId: 'UCIbhcJEGjI7fRfKiG_p0Mqg', attribution: 'Shri Ram Janmbhoomi Teerth Kshetra' },
+  { templeSlug: 'omkareshwar', youtubeChannelId: 'UCsIZ3yYwCW4316fPX3V-4lg', attribution: 'Shri Omkareshwar Jyotirlinga Official' },
 ];
 
 async function main() {

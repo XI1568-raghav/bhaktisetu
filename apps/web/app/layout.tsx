@@ -492,6 +492,22 @@ export default function RootLayout({
    }}
  />
  {/*
+   Language-landing choice, remembered. /hi /ta /te /bn /mr are served from static assets
+   (the Worker, and with it middleware.ts, does not run for them), so the poojly_language
+   cookie middleware used to write when a visitor lands on one is written here instead:
+   same name, path, one-year max-age and SameSite=Lax, readable by the client switcher,
+   and written only when the stored value would change. Content-Language for these paths
+   comes from public/_headers. Nothing happens off a locale landing.
+ */}
+ <script
+   dangerouslySetInnerHTML={{
+     __html:
+       "try{var m=location.pathname.match(/^\\/(hi|ta|te|bn|mr)(\\/|$)/);" +
+       "if(m&&!new RegExp('(?:^|; )poojly_language='+m[1]+'(?:;|$)').test(document.cookie)){" +
+       "document.cookie='poojly_language='+m[1]+';path=/;max-age=31536000;SameSite=Lax'+(location.protocol==='https:'?';Secure':'');}}catch(e){}",
+   }}
+ />
+ {/*
  PERF-03 (closed 2026-08-28) — the two brand cuts that paint the FIRST
  VIEWPORT of every route, self-hosted from public/fonts and declared in
  app/globals.css.

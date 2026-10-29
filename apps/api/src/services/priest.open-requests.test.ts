@@ -35,9 +35,13 @@ describe('PriestService.getOpenRequests', () => {
   it('shows nothing, and says why, to a pandit who is not approved yet', async () => {
     prismaMock.priest.findUnique.mockResolvedValue({ isVerified: false, status: 'active', userId: 'u-1' });
     prismaMock.panditProfile.findUnique.mockResolvedValue({ approved: false });
+    // The list is read alongside the eligibility check (one round trip, not two);
+    // an unapproved pandit must still receive none of it.
+    prismaMock.pujaBooking.findMany.mockResolvedValue([
+      { id: 'b-1', bookingNumber: 'BS-1', scheduledDate: new Date(), scheduledTimeSlot: 'morning', devoteeNames: ['A'], priestPayout: 500, pujaType: { name: 'Rudrabhishek' }, temple: { name: 'T', city: 'C', state: 'S' } },
+    ]);
     const out = await service.getOpenRequests('priest-1');
     expect(out).toEqual({ eligible: false, requests: [] });
-    expect(prismaMock.pujaBooking.findMany).not.toHaveBeenCalled();
   });
 
   it('REQUIRE_PROVIDER_APPROVAL off: a live pandit profile is enough, Priest.isVerified is not required (TC-08: it is never minted)', async () => {

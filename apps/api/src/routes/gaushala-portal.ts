@@ -68,7 +68,39 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
       return reply.code(403).send({ error: 'GAUSHALA_MANAGER role required' });
     }
 
-    const profile = await prisma.gaushalaProfile.findUnique({ where: { userId } });
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const baseWhere = { gaushalaId: userId, status: 'paid' as const };
+
+    // Latency: the profile read and the five aggregates are all keyed on the user
+    // id alone, so they share one round trip instead of two. A user with no
+    // profile still gets the empty answer; the aggregates are simply dropped.
+    const [profile, [donorRows, totalSum, monthSum, recent, recentCows]] = await Promise.all([
+      prisma.gaushalaProfile.findUnique({ where: { userId } }),
+      Promise.all([
+        prisma.donation.findMany({
+          where: baseWhere,
+          select: { userId: true },
+          distinct: ['userId'],
+        }),
+        prisma.donation.aggregate({ where: baseWhere, _sum: { amountInr: true } }),
+        prisma.donation.aggregate({
+          where: { ...baseWhere, paidAt: { gte: monthStart } },
+          _sum: { amountInr: true },
+        }),
+        prisma.donation.findMany({
+          where: baseWhere,
+          orderBy: { paidAt: 'desc' },
+          take: 10,
+          include: { user: { select: { fullName: true } } },
+        }),
+        prisma.cow.findMany({
+          where: { gaushalaId: userId },
+          orderBy: { createdAt: 'desc' },
+          take: 5,
+        }),
+      ]),
+    ]);
     if (!profile) {
       return reply.send({
         profile: null,
@@ -77,34 +109,6 @@ export async function gaushalaPortalRoutes(server: FastifyInstance) {
         recentCows: [],
       });
     }
-
-    const now = new Date();
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const baseWhere = { gaushalaId: userId, status: 'paid' as const };
-
-    const [donorRows, totalSum, monthSum, recent, recentCows] = await Promise.all([
-      prisma.donation.findMany({
-        where: baseWhere,
-        select: { userId: true },
-        distinct: ['userId'],
-      }),
-      prisma.donation.aggregate({ where: baseWhere, _sum: { amountInr: true } }),
-      prisma.donation.aggregate({
-        where: { ...baseWhere, paidAt: { gte: monthStart } },
-        _sum: { amountInr: true },
-      }),
-      prisma.donation.findMany({
-        where: baseWhere,
-        orderBy: { paidAt: 'desc' },
-        take: 10,
-        include: { user: { select: { fullName: true } } },
-      }),
-      prisma.cow.findMany({
-        where: { gaushalaId: userId },
-        orderBy: { createdAt: 'desc' },
-        take: 5,
-      }),
-    ]);
 
     const recentContacts = await donorContactMap(recent.map((d) => d.id));
 

@@ -134,14 +134,20 @@ export function liveDarshanClaim(count: number | null): string {
  * resolved independently, and a failure on either side yields `null` for that
  * one only.
  */
-export async function getPlatformCounts(): Promise<PlatformCounts> {
+export async function getPlatformCounts(opts: { buildTime?: boolean } = {}): Promise<PlatformCounts> {
   const base = resolveApiBase();
 
   const read = async (path: string): Promise<unknown> => {
     try {
-      const res = await fetch(`${base}${path}`, {
-        next: { revalidate: 900, tags: ['temples'] },
-      } as RequestInit);
+      // `buildTime`: read once while prerendering (force-cache), so a page that uses
+      // the counts stays fully static instead of inheriting this fetch's revalidate
+      // window and being re-rendered by the Worker.
+      const res = await fetch(
+        `${base}${path}`,
+        (opts.buildTime
+          ? { cache: 'force-cache' }
+          : { next: { revalidate: 900, tags: ['temples'] } }) as RequestInit,
+      );
       if (!res.ok) return null;
       return await res.json();
     } catch {
