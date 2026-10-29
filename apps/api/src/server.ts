@@ -47,6 +47,7 @@ import { subscriptionRoutes } from './routes/subscriptions.js';
 import { priestRoutes } from './routes/priest.js';
 import { priestsPublicRoutes } from './routes/priests-public.js';
 import { adminRoutes } from './routes/admin.js';
+import { adminRazorpayDiagnosticRoutes } from './routes/admin-razorpay-diagnostic.js';
 import { panchangRoutes } from './routes/panchang.js';
 import { storeRoutes } from './routes/store.js';
 import { storeAdminRoutes } from './routes/store-admin.js';
@@ -493,6 +494,7 @@ async function bootstrap() {
   await server.register(priestRoutes, { prefix: '/api/v1/priest' });
   await server.register(priestsPublicRoutes, { prefix: '/api/v1/priests' });
   await server.register(adminRoutes, { prefix: '/api/v1/admin' });
+  await server.register(adminRazorpayDiagnosticRoutes, { prefix: '/api/v1/admin/diagnostics' });
   await server.register(aiRoutes, { prefix: '/api/v1/ai' });
   await server.register(gaushalaRoutes, { prefix: '/api/v1/gaushala' });
   await server.register(astrologyRoutes, { prefix: '/api/v1/astrology' });
