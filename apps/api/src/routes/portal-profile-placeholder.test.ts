@@ -91,7 +91,7 @@ describe('astrologer portal profile create', () => {
   });
 
   it('PATCH /availability no longer auto-creates a placeholder profile', async () => {
-    const res = await patch(astrologerPortalRoutes, '/api/v1/astrologer-portal', '/availability', 'demo-astro', { availability: { mon: ['09:00-12:00'] } });
+    const res = await patch(astrologerPortalRoutes, '/api/v1/astrologer-portal', '/availability', 'demo-astro', { availability: { Monday: { morning: true, afternoon: false, evening: false } } });
     expect(res.statusCode).toBe(409);
     expect(res.json().code).toBe('display_name_required');
     expect((prismaMock.astrologerProfile as any).create).not.toHaveBeenCalled();
