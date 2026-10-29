@@ -31,6 +31,7 @@ const PANDIT_USER = { id: '11111111-1111-4111-8111-111111111111', email: 'pandit
 const TEMPLE_ID = '33333333-3333-4333-8333-333333333333';
 const PRIEST_A = '6a56eba6-e340-40bc-b236-97440ada4001';
 const PRIEST_B = '6a56eba6-e340-40bc-b236-97440ada4002';
+const PRIEST_SUSPENDED = '6a56eba6-e340-40bc-b236-97440ada4003';
 
 interface InviteRow {
   id: string;
@@ -129,11 +130,28 @@ beforeEach(() => {
   prismaMock.temple.findFirst.mockResolvedValue({ id: TEMPLE_ID } as any);
   prismaMock.priest.findUnique.mockImplementation(async (args: any) => {
     if (args.where.userId) return { id: loggedInPriestId, userId: args.where.userId, status: 'active' } as any;
-    return args.where.id === PRIEST_A || args.where.id === PRIEST_B ? ({ id: args.where.id } as any) : null;
+    if (args.where.id === PRIEST_SUSPENDED) return { id: PRIEST_SUSPENDED, status: 'suspended' } as any;
+    return args.where.id === PRIEST_A || args.where.id === PRIEST_B ? ({ id: args.where.id, status: 'active' } as any) : null;
   });
+  prismaMock.priest.findMany.mockImplementation(async (args: any) => {
+    const excluded: string[] = args.where.id?.notIn ?? [];
+    return [
+      { id: PRIEST_A, displayName: 'Pandit A', specializations: ['Satyanarayan'], experienceYears: 8, isVerified: false },
+      { id: PRIEST_B, displayName: 'Pandit B', specializations: [], experienceYears: 3, isVerified: true },
+    ].filter((p) => !excluded.includes(p.id)) as any;
+  });
+  (prismaMock.templePujaOffering as any).updateMany = vi.fn(async () => ({ count: 1 }));
 
   (prismaMock as any).templePriest = {
-    findUnique: vi.fn(async ({ where }: any) => roster.find((r) => r.templeId === where.templeId_priestId.templeId && r.priestId === where.templeId_priestId.priestId) ?? null),
+    findUnique: vi.fn(async ({ where }: any) =>
+      where.id
+        ? roster.find((r) => r.id === where.id) ?? null
+        : roster.find((r) => r.templeId === where.templeId_priestId.templeId && r.priestId === where.templeId_priestId.priestId) ?? null,
+    ),
+    delete: vi.fn(async ({ where }: any) => {
+      const i = roster.findIndex((r) => r.id === where.id);
+      return roster.splice(i, 1)[0];
+    }),
     findMany: vi.fn(async () => roster.map((r) => ({ ...r, joinedAt: new Date(), priest: { id: r.priestId, displayName: 'Pandit A', userId: 'u' } }))),
     create: vi.fn(async ({ data }: any) => { const r = { id: `r${roster.length + 1}`, ...data }; roster.push(r); return r; }),
     upsert: vi.fn(async ({ where, create }: any) => {
@@ -146,7 +164,7 @@ beforeEach(() => {
   };
   prismaMock.$executeRawUnsafe.mockResolvedValue(0 as any);
   prismaMock.$queryRawUnsafe.mockImplementation(async (sql: string, ...a: unknown[]) => fakeRaw(sql, ...a) as any);
-  prismaMock.$transaction.mockImplementation(async (fn: any) => fn(prismaMock));
+  prismaMock.$transaction.mockImplementation(async (fn: any) => (Array.isArray(fn) ? Promise.all(fn) : fn(prismaMock)));
 
   apps = makeApps();
 });
@@ -259,5 +277,45 @@ describe('the invited pandit answers', () => {
 
   it('a malformed invitation id is a 404', async () => {
     expect((await asPandit('POST', '/temple-invites/not-a-uuid/accept')).statusCode).toBe(404);
+  });
+});
+
+describe('who a temple can invite', () => {
+  it('candidates are live pandits (not gated on Priest.isVerified) who are not already on the roster', async () => {
+    const all = (await asManager('GET', '/priests/candidates')).json().candidates;
+    expect(all.map((c: { id: string }) => c.id)).toEqual([PRIEST_A, PRIEST_B]);
+    const where = (prismaMock.priest.findMany as any).mock.calls[0][0].where;
+    expect(where.status).toBe('active');
+    expect(where).not.toHaveProperty('isVerified');
+
+    roster.push({ id: 'r1', templeId: TEMPLE_ID, priestId: PRIEST_A, isPrimary: false });
+    const left = (await asManager('GET', '/priests/candidates')).json().candidates;
+    expect(left.map((c: { id: string }) => c.id)).toEqual([PRIEST_B]);
+  });
+
+  it('flags a pandit who already has a pending invitation', async () => {
+    await asManager('POST', '/priests', { priestId: PRIEST_A });
+    const list = (await asManager('GET', '/priests/candidates')).json().candidates;
+    expect(list.find((c: { id: string }) => c.id === PRIEST_A).invited).toBe(true);
+    expect(list.find((c: { id: string }) => c.id === PRIEST_B).invited).toBe(false);
+  });
+
+  it('a suspended or inactive pandit cannot be invited', async () => {
+    const res = await asManager('POST', '/priests', { priestId: PRIEST_SUSPENDED });
+    expect(res.statusCode).toBe(409);
+    expect(res.json().code).toBe('priest_unavailable');
+    expect(invites).toHaveLength(0);
+  });
+
+  it("removing a pandit from the roster unpins them from this temple's offerings", async () => {
+    const rowId = '99999999-9999-4999-8999-999999999999';
+    roster.push({ id: rowId, templeId: TEMPLE_ID, priestId: PRIEST_A, isPrimary: false });
+    const res = await asManager('DELETE', `/priests/${rowId}`);
+    expect(res.statusCode).toBe(200);
+    expect(roster).toHaveLength(0);
+    expect((prismaMock.templePujaOffering as any).updateMany).toHaveBeenCalledWith({
+      where: { templeId: TEMPLE_ID, assignedPriestId: PRIEST_A },
+      data: { assignedPriestId: null },
+    });
   });
 });

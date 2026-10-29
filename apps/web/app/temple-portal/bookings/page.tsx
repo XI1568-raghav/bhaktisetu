@@ -15,6 +15,7 @@ import { useAuth } from '../../../lib/auth-context';
 import { UserFacingError, serverErrorText, userFacingMessage } from '../../../lib/friendly-error';
 import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
+import { TEMPLE_BOOKING_FILTERS as STATUS_FILTERS, templeBookingStatus } from '../../../lib/temple-booking-status';
 
 interface TempleBooking {
   id: string;
@@ -31,19 +32,6 @@ interface TempleBooking {
   dispatchTier: string;
   createdAt: string;
 }
-
-const STATUS_FILTERS = [
-  'all', 'pending_payment', 'confirmed', 'priest_assigned', 'in_progress', 'completed', 'cancelled',
-] as const;
-
-const statusClass: Record<string, string> = {
-  pending_payment: 'bg-yellow-100 text-yellow-800',
-  confirmed: 'bg-blue-100 text-blue-800',
-  priest_assigned: 'bg-indigo-100 text-indigo-800',
-  in_progress: 'bg-saffron-100 text-saffron-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
-};
 
 function TempleBookingsContent() {
   const { session } = useAuth();
@@ -85,7 +73,8 @@ function TempleBookingsContent() {
     !search ||
     b.bookingNumber.toLowerCase().includes(search.toLowerCase()) ||
     b.devoteeName.toLowerCase().includes(search.toLowerCase()) ||
-    b.pujaName.toLowerCase().includes(search.toLowerCase()),
+    b.pujaName.toLowerCase().includes(search.toLowerCase()) ||
+    (b.priestName ?? '').toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -102,7 +91,8 @@ function TempleBookingsContent() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search booking #, devotee, puja…"
+            aria-label="Search bookings"
+            placeholder="Search booking #, devotee, puja, pandit…"
             className="w-full pl-9 pr-3 py-2 text-sm border border-surface-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-saffron-200"
           />
         </div>
@@ -111,11 +101,12 @@ function TempleBookingsContent() {
             <button
               key={s}
               onClick={() => setStatus(s)}
+              aria-pressed={status === s}
               className={`px-3 py-1.5 text-xs font-medium rounded-full transition-colors ${
                 status === s ? 'bg-saffron-600 text-white' : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
               }`}
             >
-              {s === 'all' ? 'All' : s.replace(/_/g, ' ')}
+              {s === 'all' ? 'All' : templeBookingStatus(s).label}
             </button>
           ))}
         </div>
@@ -142,7 +133,7 @@ function TempleBookingsContent() {
         ) : filtered.length === 0 ? (
           <div className="p-12 text-center">
             <Inbox className="w-8 h-8 text-surface-300 mx-auto mb-2" />
-            <p className="text-sm text-surface-500">No bookings found{status !== 'all' ? ` for "${status.replace(/_/g, ' ')}"` : ''}.</p>
+            <p className="text-sm text-surface-500">{status !== 'all' ? `No ${templeBookingStatus(status).label.toLowerCase()} bookings.` : search ? 'No bookings match your search.' : 'No bookings yet. When devotees book a puja at your temple it appears here.'}</p>
           </div>
         ) : (
           <div className="divide-y divide-surface-100">
@@ -151,8 +142,8 @@ function TempleBookingsContent() {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="font-semibold text-surface-800">{b.pujaName}</p>
-                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${statusClass[b.status] ?? 'bg-surface-100 text-surface-600'}`}>
-                      {b.status.replace(/_/g, ' ')}
+                    <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${templeBookingStatus(b.status).cls}`}>
+                      {templeBookingStatus(b.status).label}
                     </span>
                     {b.dispatchTier !== 'scheduled' && (
                       <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 uppercase">
@@ -162,7 +153,7 @@ function TempleBookingsContent() {
                   </div>
                   <p className="text-xs text-surface-500 mt-1 font-mono">#{b.bookingNumber}</p>
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-0.5 mt-1.5 text-xs text-surface-500">
-                    <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{new Date(b.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                    <span className="flex items-center gap-1"><CalendarDays className="w-3 h-3" />{new Date(b.scheduledDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}</span>
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{b.scheduledTimeSlot}</span>
                     <span className="flex items-center gap-1"><IndianRupee className="w-3 h-3" />{Number(b.priceAmount).toLocaleString('en-IN')}</span>
                   </div>

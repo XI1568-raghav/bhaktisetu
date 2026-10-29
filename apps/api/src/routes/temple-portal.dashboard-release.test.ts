@@ -112,6 +112,19 @@ describe('GET /temple-portal/dashboard: released vs upcoming share', () => {
     expect(stats.releasedInr).toBe(0);
     expect(stats.upcomingInr).toBe(25);
   });
+  it('tells the manager whether devotees can find and book the temple (publicListing)', async () => {
+    prismaMock.templePayout.findMany.mockResolvedValue([] as any);
+    prismaMock.pujaBooking.findMany.mockResolvedValue([]);
+    prismaMock.temple.findUnique.mockResolvedValue({ isVerified: false, status: 'pending_review', slug: 'somnath' } as any);
+    expect((await dashboard()).publicListing).toEqual({ verified: false, status: 'pending_review', slug: 'somnath' });
+
+    prismaMock.temple.findUnique.mockResolvedValue({ isVerified: true, status: 'active', slug: 'somnath' } as any);
+    expect((await dashboard()).publicListing.verified).toBe(true);
+
+    prismaMock.temple.findUnique.mockRejectedValue(new Error('db down'));
+    expect((await dashboard()).publicListing).toBeNull();
+  });
+
   it('returns scheduledTimeSlot (not a stale field name) on recentBookings', async () => {
     prismaMock.templePayout.findMany.mockResolvedValue([] as any);
     prismaMock.pujaBooking.findMany.mockImplementation(async (args: any) =>

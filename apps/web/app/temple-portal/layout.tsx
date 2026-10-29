@@ -56,7 +56,7 @@ function TemplePortalLayout({ children }: { children: React.ReactNode }) {
  )}
 
  <aside
- className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-screen w-64 flex flex-col transition-transform duration-200 ${
+ className={`fixed lg:sticky top-0 left-0 z-50 lg:z-auto h-[100dvh] lg:h-screen overflow-y-auto w-64 flex flex-col transition-transform duration-200 ${
  sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
  }`}
  style={{ backgroundColor: '#2a2520' }}
