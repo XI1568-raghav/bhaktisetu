@@ -92,8 +92,6 @@ describe('Cloudflare asset-served pages stay free of server-side request data', 
       expect(headers).toMatch(new RegExp(`^/${l}\\n  Content-Language: ${l}$`, 'm'));
       expect(headers).toMatch(new RegExp(`^/${l}/\\*\\n  Content-Language: ${l}$`, 'm'));
     }
-    // Per-path-locale help articles still need the Worker for their Content-Language.
-    expect(Object.keys(cfg.exclude.prefixes)).toContain('/help/articles/');
   });
 
   it('the home page is static: no revalidate, no per-request data, language redirect and dated content run in the browser', () => {
@@ -132,6 +130,49 @@ describe('Cloudflare asset-served pages stay free of server-side request data', 
         );
       }
     }
+  });
+
+  it('exact ISR routes and pattern routes copied to assets render nothing per request (server files of their own folder)', () => {
+    const dirs = [
+      ...cfg.isrStaticRoutes.routes.filter((r) => r !== '/').map((r) => r.slice(1)),
+      ...(cfg as unknown as { isrBuildDataPatterns: { patterns: { dir: string }[] } }).isrBuildDataPatterns.patterns.map((p) => p.dir),
+    ];
+    expect(dirs.length).toBeGreaterThan(15);
+    for (const d of dirs) {
+      const dir = join(WEB, 'app', d);
+      // Only the folder's own files: a nested dynamic child ([slug]) is a different route.
+      expect(existsSync(join(dir, 'page.tsx')), d).toBe(true);
+      for (const name of readdirSync(dir)) {
+        const full = join(dir, name);
+        if (!statSync(full).isFile() || !/\.(tsx?|mjs)$/.test(name) || /\.test\./.test(name)) continue;
+        const raw = readFileSync(full, 'utf8');
+        if (isClient(raw)) continue;
+        expect(strip(raw), `${full}: clock/cookie/query data does not belong in an asset-served page`).not.toMatch(
+          /\bcookies\s*\(|next\/headers|\bheaders\s*\(\s*\)|\bsearchParams\b|\bnew Date\(\)|\bDate\.now\(/,
+        );
+      }
+    }
+  });
+
+  it('help articles are asset-served with the Content-Language middleware used to add per path locale', () => {
+    const headers = readFileSync(join(WEB, 'public/_headers'), 'utf8');
+    for (const lang of ['en', 'hi', 'ta', 'te', 'bn', 'mr']) {
+      expect(headers, lang).toMatch(new RegExp(`/help/articles/${lang}/\\*\\n\\s+Content-Language: ${lang}\\n`));
+    }
+    expect(Object.keys(cfg.exclude.prefixes)).not.toContain('/help/articles/');
+  });
+
+  it('/checkout/success is fully static: the booking number and status are read in the browser', () => {
+    const page = strip(readFileSync(join(WEB, 'app/checkout/success/page.tsx'), 'utf8'));
+    expect(page).not.toMatch(/searchParams|next\/headers|cookies\s*\(/);
+    expect(readFileSync(join(WEB, 'app/checkout/success/CheckoutSuccessQuery.tsx'), 'utf8')).toMatch(/window\.location\.search/);
+    expect(cfg.mustBeStatic.routes).toContain('/checkout/success');
+  });
+
+  it('prerendered alias redirects are turned into _redirects rules by the build step, not hand-listed', () => {
+    const script = readFileSync(join(WEB, 'scripts/static-pages-to-assets.mjs'), 'utf8');
+    expect(script).toMatch(/_redirects/);
+    expect(script).toMatch(/\[301, 302, 307, 308\]/);
   });
 
   it('ISR sections copied to assets render committed data only (no fetch, cookies, dates)', () => {

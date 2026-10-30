@@ -22,7 +22,8 @@
       "/profile",
       "/bookings",
       "/auth/login",
-      "/auth/signup"
+      "/auth/signup",
+      "/checkout/success"
     ],
     "portalPrefixes": [
       "/admin",
@@ -48,7 +49,6 @@
       "/_not-found": "404 shell: status is not 200"
     },
     "prefixes": {
-      "/help/articles/": "per-language articles: Content-Language must follow the path locale",
       "/static-shell/": "internal rewrite targets of middleware (/pujas, /store); never a public URL",
       "/og/": "OG image routes",
       "/api/": "route handlers"
@@ -109,13 +109,35 @@
     ]
   },
   "isrStaticRoutes": {
-    "_why": "Exact routes copied to assets although Next marks them ISR (a fetch inside the page tree carries a revalidate window). The page itself is clock- and cookie-free: everything dated or visitor-specific on it resolves in the browser. '/' also replaces middleware's language redirect with HomeLocaleRedirect.",
+    "_why": "Exact routes copied to assets although Next marks them ISR (a fetch inside the page tree carries a revalidate window). The page itself is clock- and cookie-free: everything dated or visitor-specific on it resolves in the browser. '/' also replaces middleware's language redirect with HomeLocaleRedirect. 2026-10-30: the committed-data tool pages under /astrology (their date inputs and 'today' defaults live inside ClientOnly or client components, nothing dated is rendered on the server), /nri/ca, /matchmaking, /sankalp and /discover. /astrology itself (live availability), /astrology/horoscope/<rashi> (today's date) and /astrology/[id] stay on the Worker.",
     "routes": [
-      "/"
+      "/",
+      "/astrology/baby-name",
+      "/astrology/choghadiya",
+      "/astrology/dasha",
+      "/astrology/hora",
+      "/astrology/kaal-sarp",
+      "/astrology/kundli-milan",
+      "/astrology/lal-kitab",
+      "/astrology/manglik",
+      "/astrology/nakshatra-finder",
+      "/astrology/numerology",
+      "/astrology/pancha-pakshi",
+      "/astrology/pitra-dosh",
+      "/astrology/rahu-kalam",
+      "/astrology/sade-sati",
+      "/astrology/shubh-muhurat",
+      "/astrology/vastu",
+      "/nri/ca",
+      "/matchmaking",
+      "/sankalp",
+      "/discover",
+      "/pujas/marriage",
+      "/pujas/home-puja"
     ]
   },
   "isrBuildDataPrefixes": {
-    "_why": "Sections whose pages read the API (or committed data) once at build time and contain nothing that depends on the clock, a cookie or a query string (checked 2026-10-29: no new Date()/Date.now()/cookies()/headers()/searchParams in the server tree of these sections; __tests__/cf-static-assets.test.ts re-checks it). The Workers incremental cache is read-only, so these never refreshed between deploys anyway; their content changes with a redeploy. Only routes that were actually prerendered are copied; unknown slugs (dynamicParams) still reach the Worker. NOT here on purpose: /panchang, /calendar, /festival, /today (dated), /astrology and /wellness/classes|instructors (sessions and availability), /pujas and /store (query-aware), /content (searchParams), /help/articles (Content-Language per path locale), /darshan/[id]/replay.",
+    "_why": "Sections whose pages read the API (or committed data) once at build time and contain nothing that depends on the clock, a cookie or a query string (checked 2026-10-29: no new Date()/Date.now()/cookies()/headers()/searchParams in the server tree of these sections; __tests__/cf-static-assets.test.ts re-checks it). The Workers incremental cache is read-only, so these never refreshed between deploys anyway; their content changes with a redeploy. Only routes that were actually prerendered are copied; unknown slugs (dynamicParams) still reach the Worker. NOT here on purpose: /panchang (city pages and index: dated), /today (dated), /astrology and /wellness/classes|instructors (sessions and availability), /pujas and /store (query-aware), /content (searchParams), /darshan/[id]/replay. 2026-10-30: /panchang/yoga and /panchang/karana (committed tables, no date) and /help/articles/* (Content-Language per path locale is now set by public/_headers rules, same as the locale landings; middleware.ts does not run for them). /panchang/<city> stays on the Worker (today's date). Also /festival and /calendar (2026-10-30): 'next festival', 'In N days', 'Today' and the past-dimming are applied in the browser (app/festival/FestivalLive.tsx, app/calendar/CalendarTodayMarkers.tsx); the server HTML carries no date logic.",
     "prefixes": [
       "/deity",
       "/city",
@@ -129,7 +151,12 @@
       "/ta",
       "/te",
       "/bn",
-      "/mr"
+      "/mr",
+      "/panchang/yoga",
+      "/panchang/karana",
+      "/help/articles",
+      "/festival",
+      "/calendar"
     ]
   },
   "mustBeCopied": {
@@ -143,7 +170,37 @@
       "/mr",
       "/temples",
       "/deity/shiva",
-      "/ta/chennai"
+      "/ta/chennai",
+      "/astrology/rahu-kalam",
+      "/nri/ca",
+      "/panchang/yoga",
+      "/help/articles/en/how-to-book-a-puja",
+      "/checkout/success",
+      "/festival",
+      "/festival/diwali",
+      "/calendar",
+      "/calendar/october"
+    ]
+  },
+  "isrBuildDataPatterns": {
+    "_why": "Single-segment pages of a section whose index page reads searchParams: only the pages matching `match` are copied, and __tests__/cf-static-assets.test.ts applies the build-time-data check to `dir` only. /content/<slug> is the committed-library reader; /content (the filtered index) stays on the Worker. /pujas/<slug> (the puja detail pages generateStaticParams prerenders from the API at build) and /pujas/<slug>/temples and /pujas/home-puja/<slug> join them (2026-10-30): the server tree of each reads no cookie, header, query or clock; price and temple data are read at build time, like /deity, /temples and /city (content changes with a redeploy). /pujas itself (query-aware index) and /pujas/<slug>/book (a redirect that forwards ?temple=, which the asset layer cannot match on) stay on the Worker.",
+    "patterns": [
+      {
+        "match": "^/content/[^/]+$",
+        "dir": "content/[slug]"
+      },
+      {
+        "match": "^/pujas/[^/]+$",
+        "dir": "pujas/[slug]"
+      },
+      {
+        "match": "^/pujas/[^/]+/temples$",
+        "dir": "pujas/[slug]/temples"
+      },
+      {
+        "match": "^/pujas/home-puja/[^/]+$",
+        "dir": "pujas/home-puja/[slug]"
+      }
     ]
   }
 }

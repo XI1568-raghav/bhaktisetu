@@ -11,6 +11,7 @@ import Link from 'next/link';
 // not dropped; they are listed below the twelve months with their real year.
 import { FESTIVALS, festivalsInMonth, resolveBookablePujas } from '../../lib/festivals';
 import { getCatalogueSlugs } from '../../lib/puja-catalogue';
+import { CalendarTodayMarkers } from './CalendarTodayMarkers';
 
 export const revalidate = 86400;
 
@@ -152,10 +153,6 @@ export default async function CalendarPage() {
     ],
   };
 
-  const today = new Date();
-  const isCurrentYear = today.getFullYear() === YEAR;
-  const todayIso = today.toISOString().slice(0, 10);
-
   function getDayOfWeek(iso: string): string {
     const d = new Date(iso + 'T00:00:00Z');
     return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()] || '';
@@ -163,6 +160,7 @@ export default async function CalendarPage() {
 
   return (
     <main className="mx-auto max-w-5xl px-4 py-10">
+      <CalendarTodayMarkers year={YEAR} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <header className="mb-8">
@@ -204,18 +202,14 @@ export default async function CalendarPage() {
             ) : (
               <div className="space-y-3">
                 {items.map((f) => {
-                  const isPast = isCurrentYear && f.date2026 < todayIso;
-                  const isToday = f.date2026 === todayIso;
                   const [, , dd] = f.date2026.split('-');
                   return (
                     <Link
                       key={f.slug}
                       href={`/festival/${f.slug}`}
-                      className={`flex gap-4 rounded-xl border p-4 transition hover:shadow-md ${
-                        isToday ? 'border-saffron-400 bg-saffron-50' :
-                        isPast ? 'border-gray-200 bg-gray-50/50 opacity-70' :
-                        'border-gray-200 bg-white'
-                      }`}
+                      data-fdate={f.date2026}
+                      data-fpast="opacity-70"
+                      className="flex gap-4 rounded-xl border border-gray-200 bg-white p-4 transition hover:shadow-md"
                     >
                       <div className="flex w-16 flex-shrink-0 flex-col items-center justify-center rounded-lg bg-saffron-100 py-2 text-center">
                         <div className="text-2xl font-bold text-saffron-900">{dd}</div>
@@ -223,9 +217,8 @@ export default async function CalendarPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-baseline justify-between">
-                          <h3 className="text-base font-semibold text-gray-900">
+                          <h3 data-ftitle className="text-base font-semibold text-gray-900">
                             {f.name}
-                            {isToday && <span className="ml-2 rounded bg-saffron-600 px-1.5 py-0.5 text-xs font-bold uppercase text-white">Today</span>}
                           </h3>
                           <span className="font-serif text-sm text-gray-600">{f.sanskrit}</span>
                         </div>

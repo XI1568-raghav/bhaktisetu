@@ -67,3 +67,23 @@
 /mr/*
   Content-Language: mr
 
+# Help articles are asset-served too (the Worker and middleware.ts do not run), so the
+# Content-Language that middleware derived from the path segment (contentLanguageFor) is set here.
+/help/articles/en/*
+  Content-Language: en
+
+/help/articles/hi/*
+  Content-Language: hi
+
+/help/articles/ta/*
+  Content-Language: ta
+
+/help/articles/te/*
+  Content-Language: te
+
+/help/articles/bn/*
+  Content-Language: bn
+
+/help/articles/mr/*
+  Content-Language: mr
+

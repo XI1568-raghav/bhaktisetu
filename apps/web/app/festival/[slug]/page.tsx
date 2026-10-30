@@ -17,6 +17,7 @@ import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { EnrichedAbout } from '../../../components/seo/EnrichedAbout';
 import { ENRICHMENT } from '../../../lib/enrich';
+import { FestivalCountdownBadge } from '../FestivalLive';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -50,12 +51,6 @@ function festivalYear(iso: string): string {
   return iso.slice(0, 4);
 }
 
-function daysUntil(iso: string): number {
-  const today = new Date(new Date().toISOString().slice(0, 10));
-  const target = new Date(iso);
-  return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-}
-
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   const f = getFestival(resolveFestivalSlug(slug));
@@ -83,11 +78,6 @@ export default async function FestivalPage({ params }: Params) {
   if (canonical !== slug) permanentRedirect(`/festival/${canonical}`);
   const f = getFestival(canonical);
   if (!f) notFound();
-
-  const days = daysUntil(f.date2026);
-  const isPast = days < 0;
-  const isToday = days === 0;
-  const isSoon = days > 0 && days <= 30;
 
   // DF-02: only slugs the live catalogue confirms become booking links.
   const bookable = resolveBookablePujas(f.pujasAvailable, await getCatalogueSlugs());
@@ -127,19 +117,7 @@ export default async function FestivalPage({ params }: Params) {
           <span className="inline-block px-2.5 py-0.5 text-xs font-semibold text-saffron-700 bg-saffron-100 rounded-full">
             📅 {fmtDate(f.date2026)}
           </span>
-          {isToday ? (
-            <span className="inline-block px-2.5 py-0.5 text-xs font-semibold text-white bg-saffron-700 rounded-full">
-              Today
-            </span>
-          ) : isSoon ? (
-            <span className="inline-block px-2.5 py-0.5 text-xs font-semibold text-amber-700 bg-amber-100 rounded-full">
-              In {days} days
-            </span>
-          ) : isPast ? (
-            <span className="inline-block px-2.5 py-0.5 text-xs font-semibold text-surface-600 bg-surface-100 rounded-full">
-              Returns next year
-            </span>
-          ) : null}
+          <FestivalCountdownBadge iso={f.date2026} />
         </div>
         <h1 className={`${H1.catalogue} mb-2`}>
           {f.name} <span className="text-2xl font-serif text-surface-500 ml-2">{f.sanskrit}</span>
