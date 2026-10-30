@@ -25,7 +25,7 @@ vi.mock('../services/booking-notify.service.js', () => ({
 vi.mock('./notifications.js', () => ({ notifyUser: vi.fn(async () => undefined) }));
 
 import Fastify from 'fastify';
-import { priestRoutes } from './priest.js';
+import { priestRoutes, __knownUnifiedClear } from './priest.js';
 
 const PANDIT_USER = {
   id: '11111111-1111-4111-8111-111111111111',
@@ -70,6 +70,7 @@ function aggregateByStatus() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __knownUnifiedClear();
   process.env.NODE_ENV = 'test'; // enables the demo-token bypass in auth middleware
   prismaMock.user.findUnique.mockImplementation(async (args: { where: { email?: string } }) =>
     args.where.email === 'pandit@demo.com' ? PANDIT_USER : null,
@@ -92,6 +93,9 @@ beforeEach(() => {
   prismaMock.pujaBooking.count.mockResolvedValue(0 as never);
   prismaMock.pujaBooking.findMany.mockResolvedValue([] as never);
   prismaMock.pujaBooking.aggregate.mockResolvedValue({ _sum: {} } as never);
+  // No unified-rail earnings: the presence groupBy answers "none".
+  prismaMock.commission.groupBy.mockResolvedValue([] as never);
+  prismaMock.commission.aggregate.mockResolvedValue({ _sum: { amount: null } } as never);
 });
 
 // ─── PF-12 ───────────────────────────────────────────────────────────────────

@@ -299,26 +299,56 @@ const toDecimal = (value: Prisma.Decimal | number | string | null | undefined): 
  * `new Date(y, m, 1)`, and two boundaries that drift apart is the same defect
  * again in a different column.
  */
-async function unifiedEarnings(providerId: string, monthStart: Date) {
+
+/**
+ * Pandits already seen with at least one unified-rail commission. Almost none
+ * goes back to zero (a row can be REVERSED and so leave the base set, but rows are
+ * minted, not deleted), so the payouts page can start the merged reads without
+ * first waiting to learn it. A wrong hint costs one discarded read set,
+ * never a wrong answer: the presence check still decides which path answers.
+ */
+const KNOWN_UNIFIED_MS = 10 * 60_000;
+const knownUnifiedUntil = new Map<string, number>();
+function isKnownUnified(userId: string): boolean {
+  const until = knownUnifiedUntil.get(userId);
+  if (until === undefined) return false;
+  if (until <= Date.now()) {
+    knownUnifiedUntil.delete(userId);
+    return false;
+  }
+  return true;
+}
+function markKnownUnified(userId: string): void {
+  if (knownUnifiedUntil.size >= 2000) knownUnifiedUntil.clear();
+  knownUnifiedUntil.set(userId, Date.now() + KNOWN_UNIFIED_MS);
+}
+/** Test hook. */
+export function __knownUnifiedClear(): void {
+  knownUnifiedUntil.clear();
+}
+
+/**
+ * Same three figures as `unifiedEarnings`, plus whether the pandit has ANY row
+ * on the unified rail (what `commission.count(unifiedBaseWhere)` answered), in
+ * two statements instead of four: one groupBy over the base set gives the row
+ * presence, the PAID sum and the PENDING sum; the month figure is the only one
+ * that needs its own filter.
+ */
+async function unifiedEarningsWithPresence(providerId: string, monthStart: Date) {
   const base = unifiedBaseWhere(providerId);
-  const [paid, paidThisMonth, pending] = await Promise.all([
-    prisma.commission.aggregate({
-      where: { ...base, status: 'PAID' },
-      _sum: { amount: true },
-    }),
+  const [byStatus, paidThisMonth] = await Promise.all([
+    prisma.commission.groupBy({ by: ['status'], where: base, _sum: { amount: true } }),
     prisma.commission.aggregate({
       where: { ...base, status: 'PAID', paidAt: { gte: monthStart } },
       _sum: { amount: true },
     }),
-    prisma.commission.aggregate({
-      where: { ...base, status: 'PENDING' },
-      _sum: { amount: true },
-    }),
   ]);
+  const sumOf = (status: string) => byStatus.find((r) => r.status === status)?._sum.amount;
   return {
-    total: toDecimal(paid._sum.amount),
+    any: byStatus.length > 0,
+    total: toDecimal(sumOf('PAID')),
     thisMonth: toDecimal(paidThisMonth._sum.amount),
-    pending: toDecimal(pending._sum.amount),
+    pending: toDecimal(sumOf('PENDING')),
   };
 }
 
@@ -406,16 +436,20 @@ export async function priestRoutes(server: FastifyInstance) {
       // temple-path pandit never has a row on. Same merge as GET /payouts, so
       // the two screens keep agreeing (PF-12). The count does not depend on the
       // priest id, so it runs alongside the lookup instead of after it.
-      const [dashboard, unifiedAny] = await Promise.all([
-        getPriestId(userId).then((priestId) => priestService.getDashboard(priestId)),
-        prisma.commission.count({ where: unifiedBaseWhere(userId) }),
-      ]);
-      if (!(unifiedAny > 0)) return dashboard;
-
+      // Latency: the unified-rail sums used to wait for the count (a second
+      // round trip for every pandit who has unified earnings, i.e. all of them
+      // once bookings flow). They do not depend on it, so the count, the sums
+      // and the dashboard share one wave; a pandit with no unified earnings
+      // discards the sums unread.
       const now = new Date();
       // Identical construction to priest.service.getDashboard's firstOfMonth.
       const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-      const extra = await unifiedEarnings(userId, monthStart);
+      const [dashboard, extraAll] = await Promise.all([
+        getPriestId(userId).then((priestId) => priestService.getDashboard(priestId)),
+        unifiedEarningsWithPresence(userId, monthStart),
+      ]);
+      if (!extraAll.any) return dashboard;
+      const extra = extraAll;
 
       return {
         ...dashboard,
@@ -465,8 +499,9 @@ export async function priestRoutes(server: FastifyInstance) {
 
   server.get('/open-requests', { preHandler: priestAuth }, async (request, reply) => {
     try {
-      const priestId = await getPriestId(request.currentUser!.id);
-      return await priestService.getOpenRequests(priestId);
+      const userId = request.currentUser!.id;
+      const priestId = await getPriestId(userId);
+      return await priestService.getOpenRequests(priestId, undefined, userId);
     } catch (err: any) {
       request.log?.error({ err }, 'priest route failed');
       reply.code(400).send({ error: safeErrorMessage(err) });
@@ -873,21 +908,18 @@ export async function priestRoutes(server: FastifyInstance) {
       // history as the answer, and it does not depend on the count, so both start
       // together. A pandit with unified earnings discards it and takes the merged
       // path below, which asks for its own window.
-      const legacyOnly = priestService.getPayoutHistory(priestId, { status, page, limit });
-      legacyOnly.catch(() => undefined);
-      const unifiedAny = await prisma.commission.count({ where: baseWhere });
-
-      // Legacy-only pandit: the single-rail path, byte-for-byte the behaviour
-      // this endpoint has always had, including unbounded deep paging.
-      // Written as `> 0` rather than `=== 0` so that "no rows" and "no answer"
-      // both fall back to the rail that has always worked — the merge is
-      // additive, and must never be the reason a legacy ledger stops rendering.
-      // A ledger read that THROWS still propagates to the 400 below, which is
-      // what the page's PF-15 error banner exists for: an unread ledger is an
-      // error, never a balance.
-      if (!(unifiedAny > 0)) {
-        return await legacyOnly;
-      }
+      // Same helper the dashboard card uses, so the two screens cannot drift
+      // apart on the same account's money again (PF-12). It also answers "any
+      // unified earning?" (what a bare count used to), so the summary figures
+      // below need no wave of their own. `thisMonth` is unused here; one extra
+      // indexed aggregate is cheaper than a second definition.
+      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      // A pandit already seen with unified earnings (they never go back to none)
+      // skips the legacy-only attempt and the wait for the presence answer: the
+      // merged path's reads all start in the first wave.
+      const knownUnified = isKnownUnified(userId);
+      const legacyOnly = knownUnified ? null : priestService.getPayoutHistory(priestId, { status, page, limit });
+      legacyOnly?.catch(() => undefined);
 
       // Defaults mirror priestService.getPayoutHistory so the two paths page
       // identically.
@@ -901,12 +933,7 @@ export async function priestRoutes(server: FastifyInstance) {
         ? { ...baseWhere, ...railFilter }
         : null;
 
-      // Same helper the dashboard card uses, so the two screens cannot drift
-      // apart on the same account's money again (PF-12). `thisMonth` is unused
-      // here; one extra indexed aggregate is cheaper than a second definition.
-      const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-
-      const [legacy, unifiedRows, unifiedTotal, unifiedSummary, lastPaid] = await Promise.all([
+      const readMerged = () => Promise.all([
         // Top `window` of the sidecar rail. `total` and `summary` are
         // aggregates, so they are unaffected by asking for page 1.
         priestService.getPayoutHistory(priestId, { status, page: 1, limit: window }),
@@ -929,13 +956,32 @@ export async function priestRoutes(server: FastifyInstance) {
             })
           : Promise.resolve([]),
         filteredWhere ? prisma.commission.count({ where: filteredWhere }) : Promise.resolve(0),
-        unifiedEarnings(userId, monthStart),
         prisma.commission.findFirst({
           where: { ...baseWhere, status: 'PAID' },
           orderBy: { paidAt: 'desc' },
           select: { amount: true, paidAt: true },
         }),
       ]);
+      // Known-unified: the merged reads start now, beside the presence answer.
+      const mergedEarly = knownUnified ? readMerged() : null;
+      mergedEarly?.catch(() => undefined);
+      const unifiedSummary = await unifiedEarningsWithPresence(userId, monthStart);
+      const unifiedAny = unifiedSummary.any ? 1 : 0;
+      if (unifiedSummary.any) markKnownUnified(userId);
+
+      // Legacy-only pandit: the single-rail path, byte-for-byte the behaviour
+      // this endpoint has always had, including unbounded deep paging.
+      // Written as `> 0` rather than `=== 0` so that "no rows" and "no answer"
+      // both fall back to the rail that has always worked — the merge is
+      // additive, and must never be the reason a legacy ledger stops rendering.
+      // A ledger read that THROWS still propagates to the 400 below, which is
+      // what the page's PF-15 error banner exists for: an unread ledger is an
+      // error, never a balance.
+      if (!(unifiedAny > 0)) {
+        return await (legacyOnly ?? priestService.getPayoutHistory(priestId, { status, page, limit }));
+      }
+
+      const [legacy, unifiedRows, unifiedTotal, lastPaid] = await (mergedEarly ?? readMerged());
 
       // Hydrate the booking each commission belongs to. Commission carries a
       // bookingId scalar, not a relation, so this is a separate read — bounded

@@ -5,7 +5,7 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
 import Fastify from 'fastify';
-import { priestRoutes } from './priest.js';
+import { priestRoutes, __knownUnifiedClear } from './priest.js';
 
 /**
  * DI-05, the double-payable — ONE booking holding a row on BOTH payout rails.
@@ -98,6 +98,7 @@ async function getPayouts(query = '') {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __knownUnifiedClear();
   process.env.NODE_ENV = 'test';
 
   prismaMock.user.findUnique.mockImplementation(async (args: { where: { email?: string } }) =>
@@ -142,6 +143,8 @@ beforeEach(() => {
 
   // ── unified rail: ONE PENDING commission on the SAME booking ──
   prismaMock.commission.count.mockResolvedValue(1 as never);
+  // The presence + PAID/PENDING sums come from one groupBy over the base set.
+  prismaMock.commission.groupBy.mockResolvedValue([{ status: 'PENDING', _sum: { amount: AMOUNT } }] as never);
   prismaMock.commission.findMany.mockResolvedValue([COMMISSION_ROW] as never);
   prismaMock.commission.findFirst.mockResolvedValue(null as never);
   prismaMock.commission.aggregate.mockImplementation(async (args: any) => {

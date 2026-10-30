@@ -129,17 +129,27 @@ export interface UpdatePriestProfileInput {
  * a self-registered pandit has; it is not a vetting claim and nothing here sets
  * `isVerified` (TC-08). An admin un-approval clears both.
  */
-async function isPanditLive(priestId: string): Promise<boolean> {
+async function isPanditLive(priestId: string, knownUserId?: string): Promise<boolean> {
+  // Latency: when the caller already knows the user id (the open-requests route
+  // does), the profile read starts beside the Priest read instead of after it.
+  // It is only consulted for an active, not-yet-verified pandit, exactly as before.
+  const profileRead = knownUserId
+    ? prisma.panditProfile.findUnique({ where: { userId: knownUserId }, select: { approved: true } })
+    : null;
+  profileRead?.catch(() => undefined);
   const priest = await prisma.priest.findUnique({
     where: { id: priestId },
     select: { isVerified: true, status: true, userId: true },
   });
   if (!priest || priest.status !== 'active') return false;
   if (priest.isVerified) return true;
-  const profile = await prisma.panditProfile.findUnique({
-    where: { userId: priest.userId },
-    select: { approved: true },
-  });
+  // A caller-supplied id that is not this pandit's own must never decide: fall back to the real read.
+  const profile = profileRead && knownUserId === priest.userId
+    ? await profileRead
+    : await prisma.panditProfile.findUnique({
+        where: { userId: priest.userId },
+        select: { approved: true },
+      });
   return profile?.approved === true;
 }
 
@@ -401,14 +411,14 @@ export class PriestService {
    * devotee-side price: those are released to the pandit who accepts, not to
    * every approved pandit on the platform.
    */
-  async getOpenRequests(priestId: string, limit = 50) {
+  async getOpenRequests(priestId: string, limit = 50, userId?: string) {
     const startOfToday = new Date();
     startOfToday.setUTCHours(0, 0, 0, 0);
 
     // Latency: the eligibility check (two reads) and the list are independent, so
     // they run together; an ineligible pandit still gets exactly the empty answer
     // and the rows are dropped unread.
-    const [live, rows] = await Promise.all([isPanditLive(priestId), prisma.pujaBooking.findMany({
+    const [live, rows] = await Promise.all([isPanditLive(priestId, userId), prisma.pujaBooking.findMany({
       where: { status: 'confirmed', priestId: null, scheduledDate: { gte: startOfToday } },
       orderBy: [{ scheduledDate: 'asc' }, { createdAt: 'asc' }],
       take: Math.min(Math.max(limit, 1), 100),
