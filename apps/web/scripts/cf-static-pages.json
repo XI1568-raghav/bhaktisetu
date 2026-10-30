@@ -109,7 +109,7 @@
     ]
   },
   "isrStaticRoutes": {
-    "_why": "Exact routes copied to assets although Next marks them ISR (a fetch inside the page tree carries a revalidate window). The page itself is clock- and cookie-free: everything dated or visitor-specific on it resolves in the browser. '/' also replaces middleware's language redirect with HomeLocaleRedirect. 2026-10-30: the committed-data tool pages under /astrology (their date inputs and 'today' defaults live inside ClientOnly or client components, nothing dated is rendered on the server), /nri/ca, /matchmaking, /sankalp and /discover. /astrology itself (live availability), /astrology/horoscope/<rashi> (today's date) and /astrology/[id] stay on the Worker.",
+    "_why": "Exact routes copied to assets although Next marks them ISR (a fetch inside the page tree carries a revalidate window). The page itself is clock- and cookie-free: everything dated or visitor-specific on it resolves in the browser. '/' also replaces middleware's language redirect with HomeLocaleRedirect. 2026-10-30: the committed-data tool pages under /astrology (their date inputs and 'today' defaults live inside ClientOnly or client components, nothing dated is rendered on the server), /nri/ca, /matchmaking, /sankalp and /discover. /astrology itself (live availability), /astrology/horoscope/<rashi> (today's date) and /astrology/[id] stay on the Worker. /gift, /uk and /nri-pujas (build-time catalogue data, no clock or query) follow.",
     "routes": [
       "/",
       "/astrology/baby-name",
@@ -133,7 +133,10 @@
       "/sankalp",
       "/discover",
       "/pujas/marriage",
-      "/pujas/home-puja"
+      "/pujas/home-puja",
+      "/gift",
+      "/uk",
+      "/nri-pujas"
     ]
   },
   "isrBuildDataPrefixes": {

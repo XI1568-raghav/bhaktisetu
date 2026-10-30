@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { linkPrefetch } from '../lib/worker-served-routes';
 import { usePathname } from 'next/navigation';
 import {
   Home as HomeIcon,
@@ -74,6 +75,7 @@ export function MobileBottomTabs() {
               <li key={tab.href} className="flex items-start justify-center -mt-4">
                 <Link
                   href={tab.href}
+                  prefetch={linkPrefetch(tab.href)}
                   aria-label={tab.label}
                   className="flex flex-col items-center gap-0.5"
                 >
@@ -91,6 +93,7 @@ export function MobileBottomTabs() {
             <li key={tab.href} className="flex items-center justify-center">
               <Link
                 href={tab.href}
+                prefetch={linkPrefetch(tab.href)}
                 aria-label={tab.label}
                 aria-current={active ? 'page' : undefined}
                 className="flex flex-col items-center justify-center gap-0.5 w-full h-full"
