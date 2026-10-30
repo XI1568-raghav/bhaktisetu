@@ -45,6 +45,18 @@ describe('yatra booking form copy (COM-08)', () => {
   it('is explicit that submitting is a request, not a payment', () => {
     expect(page).toMatch(/Request booking/);
   });
+
+  // Prod QA 2026-10-30: the review step said "Review & pay" and promised an
+  // invoice "within 24h" while the received page says no reply time is promised.
+  it('review step reads as an inquiry and makes no 24h promise', () => {
+    expect(page).not.toMatch(/Review & pay/);
+    expect(page).not.toMatch(/within 24h/);
+    expect(page).not.toMatch(/before payment/);
+  });
+
+  it('shows the start date as a readable date, not raw ISO', () => {
+    expect(page).not.toMatch(/value=\{data\.startDate \|\| '—'\}/);
+  });
 });
 
 /**

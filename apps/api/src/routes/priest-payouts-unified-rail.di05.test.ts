@@ -5,7 +5,7 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
 import Fastify from 'fastify';
-import { priestRoutes } from './priest.js';
+import { priestRoutes, __knownUnifiedClear } from './priest.js';
 
 /**
  * DI-05, the READ half — "a pandit paid through the temple booking path sees
@@ -153,6 +153,7 @@ const getPayouts = (query = '') => call(`/payouts${query}`);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __knownUnifiedClear();
   process.env.NODE_ENV = 'test';
 
   // Auth: demo-priest resolves pandit@demo.com; requireRole('priest') then
@@ -178,6 +179,13 @@ beforeEach(() => {
   ledger = [templeEarning()];
 
   prismaMock.commission.count.mockImplementation(async (args: any) => select(args?.where).length);
+  prismaMock.commission.groupBy.mockImplementation(async (args: any) => {
+    const rows = select(args?.where);
+    return [...new Set(rows.map((r) => r.status))].map((status) => ({
+      status,
+      _sum: { amount: sum(rows.filter((r) => r.status === status)) },
+    }));
+  });
   prismaMock.commission.aggregate.mockImplementation(async (args: any) => ({
     _sum: { amount: sum(select(args?.where)) },
   }));

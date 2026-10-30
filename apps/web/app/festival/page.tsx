@@ -4,10 +4,11 @@ import type { Metadata } from 'next';
 // DU-05: the one h1 recipe per page archetype. Extras are layout-only.
 import { H1 } from '../../components/ui/heading-recipe';
 import Link from 'next/link';
-import { FESTIVAL_YEAR, FESTIVALS, nextFestival } from '../../lib/festivals';
-import { buttonClass } from '../../components/ui/button-recipe';
+import { FESTIVAL_YEAR, FESTIVALS } from '../../lib/festivals';
+import { NextFestivalHero } from './FestivalLive';
 
-export const revalidate = 86400;
+// No `revalidate` and no server clock: "Next festival" is resolved in the browser
+// (FestivalLive.tsx), so this page is prerendered once and served from assets.
 
 export const metadata: Metadata = {
   title: 'Hindu festival calendar 2026 — pujas, rituals, dates',
@@ -29,7 +30,7 @@ function fmtDate(iso: string): string {
 }
 
 export default function FestivalIndex() {
-  const upcoming = nextFestival();
+  const lite = FESTIVALS.map(({ slug, name, sanskrit, deity, date2026 }) => ({ slug, name, sanskrit, deity, date2026 }));
 
   const itemList = {
     '@context': 'https://schema.org',
@@ -70,25 +71,7 @@ export default function FestivalIndex() {
         </p>
       </header>
 
-      {upcoming ? (
-        <section className="mb-10 rounded-xl border border-saffron-300 bg-saffron-50 p-6">
-          <p className="text-xs font-semibold uppercase tracking-wider text-saffron-700 mb-2">
-            Next festival
-          </p>
-          <h2 className="text-2xl font-bold text-surface-900 mb-1">
-            {upcoming.name} <span className="text-base text-surface-500 font-serif ml-2">{upcoming.sanskrit}</span>
-          </h2>
-          <p className="text-sm text-surface-700 mb-3">
-            {fmtDate(upcoming.date2026)} — {upcoming.deity}
-          </p>
-          <Link
-            href={`/festival/${upcoming.slug}`}
-            className={buttonClass('primary', 'md')}
-          >
-            Plan {upcoming.name} →
-          </Link>
-        </section>
-      ) : null}
+      <NextFestivalHero festivals={lite} />
 
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {FESTIVALS.map((f) => (

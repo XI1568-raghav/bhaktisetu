@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import { linkPrefetch } from '../lib/worker-served-routes';
 import {
   Menu,
   X,
@@ -277,6 +278,7 @@ export function MobileNavV2() {
                           <li key={item.href}>
                             <Link
                               href={item.href}
+                              prefetch={linkPrefetch(item.href)}
                               onClick={close}
                               className="flex items-center justify-between gap-2 px-3 py-3 text-sm text-surface-700 hover:bg-saffron-50/60 rounded-lg min-h-[44px]"
                             >

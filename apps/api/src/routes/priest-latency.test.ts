@@ -4,7 +4,7 @@ import { prismaMock } from '../lib/__mocks__/prisma.js';
 vi.mock('../lib/prisma.js', () => ({ prisma: prismaMock }));
 
 import Fastify from 'fastify';
-import { priestRoutes } from './priest.js';
+import { priestRoutes, __knownUnifiedClear } from './priest.js';
 import { __priestIdCacheClear } from '../lib/priest-id-cache.js';
 
 /**
@@ -28,6 +28,7 @@ async function get(path: string) {
 beforeEach(() => {
   vi.clearAllMocks();
   __priestIdCacheClear();
+  __knownUnifiedClear();
   process.env.NODE_ENV = 'test';
   prismaMock.user.findUnique.mockImplementation(async (args: { where: { email?: string } }) =>
     args.where.email === 'pandit@demo.com'
@@ -79,6 +80,115 @@ describe('priest routes read the Priest row once per request', () => {
     // The hidden lookup is still outstanding, yet the second query has started.
     expect(prismaMock.pujaBooking.findMany).toHaveBeenCalled();
     hiddenResolve([]);
+    expect((await pending).statusCode).toBe(200);
+  });
+});
+
+// ─── Second pass (2026-10-30): fewer sequential waves ───────────────────────────
+
+const tick = () => new Promise((r) => setTimeout(r, 40));
+
+describe('dashboard: the unified-rail sums share the first wave', () => {
+  beforeEach(() => {
+    prismaMock.priestPayout.aggregate.mockResolvedValue({ _sum: { amount: null } } as never);
+    prismaMock.pujaBooking.count.mockResolvedValue(0 as never);
+    (prismaMock.commission as any).aggregate.mockResolvedValue({ _sum: { amount: null } });
+  });
+
+  it('asks the commission ledger while the dashboard reads are still outstanding (no second stage)', async () => {
+    let release: (v: unknown) => void = () => undefined;
+    prismaMock.priest.findUnique.mockImplementation(((args: any) =>
+      args?.where?.userId
+        ? Promise.resolve({ id: PRIEST_ID, userId: USER_ID, status: 'active' })
+        : new Promise((r) => { release = r; })) as never);
+    prismaMock.commission.groupBy.mockResolvedValue([{ status: 'PAID', _sum: { amount: 100 } }] as never);
+    const pending = get('/dashboard');
+    await tick();
+    // The dashboard's own Priest read has not returned, yet the unified sums were requested.
+    expect(prismaMock.commission.groupBy).toHaveBeenCalledTimes(1);
+    expect(prismaMock.commission.count).not.toHaveBeenCalled();
+    release({ id: PRIEST_ID, displayName: 'P', ratingAvg: 0, ratingCount: 0, avatarUrl: null, isOnDuty: false, lastSeenAt: null });
+    expect((await pending).statusCode).toBe(200);
+  });
+
+  it('adds the unified PAID and PENDING sums to the sidecar figures, exactly as before', async () => {
+    prismaMock.priest.findUnique.mockImplementation(((args: any) =>
+      Promise.resolve(args?.where?.userId
+        ? { id: PRIEST_ID, userId: USER_ID, status: 'active' }
+        : { id: PRIEST_ID, displayName: 'P', ratingAvg: 0, ratingCount: 0, avatarUrl: null, isOnDuty: false, lastSeenAt: null })) as never);
+    prismaMock.priestPayout.aggregate.mockResolvedValue({ _sum: { amount: 10 } } as never);
+    prismaMock.commission.groupBy.mockResolvedValue([
+      { status: 'PAID', _sum: { amount: 100 } },
+      { status: 'PENDING', _sum: { amount: 40 } },
+    ] as never);
+    (prismaMock.commission as any).aggregate.mockResolvedValue({ _sum: { amount: 25 } });
+    const body = (await get('/dashboard')).json();
+    expect(Number(body.earnings.total)).toBe(110);
+    expect(Number(body.earnings.thisMonth)).toBe(35);
+    expect(Number(body.earnings.pending)).toBe(50);
+  });
+
+  it('a pandit with no unified rows gets the untouched sidecar answer', async () => {
+    prismaMock.priest.findUnique.mockImplementation(((args: any) =>
+      Promise.resolve(args?.where?.userId
+        ? { id: PRIEST_ID, userId: USER_ID, status: 'active' }
+        : { id: PRIEST_ID, displayName: 'P', ratingAvg: 0, ratingCount: 0, avatarUrl: null, isOnDuty: false, lastSeenAt: null })) as never);
+    prismaMock.priestPayout.aggregate.mockResolvedValue({ _sum: { amount: 10 } } as never);
+    prismaMock.commission.groupBy.mockResolvedValue([] as never);
+    const body = (await get('/dashboard')).json();
+    expect(Number(body.earnings.total)).toBe(10);
+    expect(Number(body.earnings.thisMonth)).toBe(10);
+  });
+});
+
+describe('open-requests: the profile read starts beside the Priest read', () => {
+  it('reads PanditProfile before the Priest row has returned', async () => {
+    let release: (v: unknown) => void = () => undefined;
+    prismaMock.priest.findUnique.mockImplementation(((args: any) =>
+      args?.where?.userId
+        ? Promise.resolve({ id: PRIEST_ID, userId: USER_ID, status: 'active' })
+        : new Promise((r) => { release = r; })) as never);
+    (prismaMock as any).panditProfile.findUnique.mockResolvedValue({ approved: true });
+    const pending = get('/open-requests');
+    await tick();
+    expect((prismaMock as any).panditProfile.findUnique).toHaveBeenCalledTimes(1);
+    release({ isVerified: false, status: 'active', userId: USER_ID });
+    const res = await pending;
+    expect(res.statusCode).toBe(200);
+    expect(res.json().eligible).toBe(true);
+  });
+
+  it('an unapproved pandit is still told he is not eligible', async () => {
+    prismaMock.priest.findUnique.mockImplementation(((args: any) =>
+      Promise.resolve(args?.where?.userId
+        ? { id: PRIEST_ID, userId: USER_ID, status: 'active' }
+        : { isVerified: false, status: 'active', userId: USER_ID })) as never);
+    (prismaMock as any).panditProfile.findUnique.mockResolvedValue({ approved: false });
+    const body = (await get('/open-requests')).json();
+    expect(body).toEqual({ eligible: false, requests: [] });
+  });
+});
+
+describe('payouts: a pandit already seen with unified earnings starts the merged reads at once', () => {
+  it('requests the commission page while the presence answer is outstanding', async () => {
+    prismaMock.priestPayout.findMany.mockResolvedValue([] as never);
+    prismaMock.priestPayout.count.mockResolvedValue(0 as never);
+    prismaMock.priestPayout.aggregate.mockResolvedValue({ _sum: { amount: null } } as never);
+    prismaMock.priestPayout.findFirst.mockResolvedValue(null as never);
+    prismaMock.commission.findMany.mockResolvedValue([] as never);
+    prismaMock.commission.count.mockResolvedValue(0 as never);
+    prismaMock.commission.findFirst.mockResolvedValue(null as never);
+    (prismaMock.commission as any).aggregate.mockResolvedValue({ _sum: { amount: null } });
+    prismaMock.commission.groupBy.mockResolvedValue([{ status: 'PENDING', _sum: { amount: 5 } }] as never);
+    // First request teaches the hint.
+    expect((await get('/payouts')).statusCode).toBe(200);
+    prismaMock.commission.findMany.mockClear();
+    let release: (v: unknown) => void = () => undefined;
+    prismaMock.commission.groupBy.mockImplementation((() => new Promise((r) => { release = r; })) as never);
+    const pending = get('/payouts');
+    await tick();
+    expect(prismaMock.commission.findMany).toHaveBeenCalled();
+    release([{ status: 'PENDING', _sum: { amount: 5 } }]);
     expect((await pending).statusCode).toBe(200);
   });
 });

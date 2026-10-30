@@ -53,3 +53,57 @@ describe('review moderation side table', () => {
     expect(await unhideReview(ID)).toEqual({ changed: false });
   });
 });
+
+describe('hidden-id list is served stale while one background read refreshes it', () => {
+  it('does not make a caller wait for the database once a list exists', async () => {
+    vi.useFakeTimers();
+    try {
+      prismaMock.$queryRawUnsafe.mockResolvedValue([{ id: ID }]);
+      expect(await hiddenReviewIds()).toEqual([ID]);
+      vi.advanceTimersByTime(30_000); // past the 10 s freshness, inside the 5 min stale window
+      let release: (v: unknown) => void = () => undefined;
+      prismaMock.$queryRawUnsafe.mockImplementation(() => new Promise((r) => { release = r as typeof release; }));
+      // Returns at once with the old list although the refresh has not finished.
+      expect(await hiddenReviewIds()).toEqual([ID]);
+      expect(await hiddenReviewIds()).toEqual([ID]);
+      expect(prismaMock.$queryRawUnsafe).toHaveBeenCalledTimes(2); // 1 initial + exactly one refresh
+      release([]);
+      await vi.advanceTimersByTimeAsync(1);
+      expect(await hiddenReviewIds()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('past the stale window the caller waits for a fresh read', async () => {
+    vi.useFakeTimers();
+    try {
+      prismaMock.$queryRawUnsafe.mockResolvedValue([{ id: ID }]);
+      await hiddenReviewIds();
+      vi.advanceTimersByTime(6 * 60_000);
+      prismaMock.$queryRawUnsafe.mockResolvedValue([]);
+      expect(await hiddenReviewIds()).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('a hide made during a refresh is not overwritten by the older answer', async () => {
+    vi.useFakeTimers();
+    try {
+      prismaMock.$queryRawUnsafe.mockResolvedValue([]);
+      await hiddenReviewIds();
+      vi.advanceTimersByTime(30_000);
+      let release: (v: unknown) => void = () => undefined;
+      prismaMock.$queryRawUnsafe.mockImplementation(() => new Promise((r) => { release = r as typeof release; }));
+      await hiddenReviewIds(); // starts the refresh (will answer with the pre-hide list)
+      await hideReview(ID, null, null);
+      release([]); // older answer arrives after the hide
+      await vi.advanceTimersByTimeAsync(1);
+      prismaMock.$queryRawUnsafe.mockResolvedValue([{ id: ID }]);
+      expect(await hiddenReviewIds()).toEqual([ID]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});

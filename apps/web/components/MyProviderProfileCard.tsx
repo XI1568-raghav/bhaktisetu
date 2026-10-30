@@ -17,6 +17,7 @@ import {
  loadErrorIsReauth,
 } from '../lib/api-config';
 import { userFacingMessage } from '../lib/friendly-error';
+import { takeWarmed } from '../lib/warm-get';
 
 interface Props {
  // Backend MarketplaceRole enum string. The dashboard hosting this card
@@ -112,7 +113,10 @@ export default function MyProviderProfileCard({ role, onboardingSlug, publicList
  setLoadReauth(false);
  // RES-01: bare fetch has no timeout, so a stalled read left this card on
  // "Loading your profile…" forever at the top of every portal.
- const res = await fetchWithTimeout(`${API_BASE_URL}/onboarding/provider?role=${role}`, {
+ // A portal page may have started this request already (lib/warm-get.ts).
+ const url = `${API_BASE_URL}/onboarding/provider?role=${role}`;
+ const warmed = takeWarmed(url, token);
+ const res = warmed ? await warmed : await fetchWithTimeout(url, {
  headers: { Authorization: `Bearer ${token}` },
  }, DATA_FETCH_TIMEOUT_MS);
  if (!res.ok) {

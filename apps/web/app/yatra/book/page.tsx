@@ -589,14 +589,14 @@ function BookYatraInner() {
  {step === 5 && (
  <div className="space-y-4">
  <div>
- <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Review & pay</h2>
- <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Verify details before payment.</p>
+ <h2 className="text-base font-semibold mb-1" style={{ color: 'var(--color-text)' }}>Review and send your request</h2>
+ <p className="text-xs" style={{ color: 'var(--color-text-muted)' }}>Check the details. Nothing is charged when you send this.</p>
  </div>
  <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Trip summary</p>
  <div className="space-y-2 text-xs">
  <Row label="Yatra" value={yatra.title} />
- <Row label="Start date" value={data.startDate || '—'} />
+ <Row label="Start date" value={data.startDate ? new Date(`${data.startDate}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '—'} />
  <Row label="Travelers" value={`${data.travelersCount} adults`} />
  <Row label="Pickup" value={data.pickupCity} />
  <Row label="Package" value={selectedPackage?.name ?? '—'} />
@@ -622,7 +622,7 @@ function BookYatraInner() {
  <div className="rounded-xl p-4" style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)' }}>
  <p className="text-xs uppercase tracking-widest font-semibold mb-3" style={{ color: 'var(--color-primary)' }}>Your contact</p>
  <p className="text-xs mb-3" style={{ color: 'var(--color-text-muted)' }}>
- Our yatra desk confirms hotel + transport availability and emails final invoice within 24h. No card needed now.
+ Our yatra desk confirms hotel + transport availability and emails the final invoice. We do not promise a reply time. No card needed now.
  </p>
  <div className="grid sm:grid-cols-2 gap-3">
  <div>

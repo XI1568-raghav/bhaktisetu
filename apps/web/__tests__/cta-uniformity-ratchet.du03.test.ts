@@ -22,7 +22,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
 const WEB = path.resolve(__dirname, '..');
@@ -101,7 +102,19 @@ describe('[DU-03] the CTA backlog has a ceiling and it only falls', () => {
   it('the detector still finds things (a regex regression cannot zero this out)', () => {
     // If bespokeCtas silently stopped matching, the ratchet below would pass
     // forever. Prove it bites on the exact shape it is written for.
-    expect(OFFENDERS.length).toBeGreaterThan(0);
+    //
+    // 2026-10-30: the backlog is now truly zero (the one false positive, the "Today"
+    // badge on /calendar/<month>, moved into a client component that adds it in the
+    // browser), so the canary can no longer be the repo itself. It runs the detector
+    // on a synthetic file shaped exactly like a hand-rolled CTA instead.
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'cta-canary-'));
+    try {
+      const f = path.join(dir, 'Canary.tsx');
+      writeFileSync(f, 'export const X = () => (<a href="/x" className="rounded-lg bg-saffron-600 px-4 py-2 text-white">Go</a>);');
+      expect(bespokeCtas(f)).toHaveLength(1);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('no new hand-rolled primary CTA is added', () => {
@@ -124,8 +137,12 @@ describe('[DU-03] the CTA backlog has a ceiling and it only falls', () => {
      * lookbehind sees a control that does not own the class. It is not a CTA
      * and must not be given a 44px button body; it also keeps the
      * "detector still finds things" canary above zero.
+     *
+     * 2026-10-30: that badge is now added by app/calendar/CalendarTodayMarkers.tsx
+     * (a browser-side class/DOM update, no JSX className), the backlog is 0, and
+     * the canary runs on a synthetic fixture instead.
      */
-    const BASELINE = 1;
+    const BASELINE = 0;
     expect(
       OFFENDERS.length,
       `${OFFENDERS.length} labelled saffron CTAs carry their own padding (ceiling ${BASELINE}). ` +

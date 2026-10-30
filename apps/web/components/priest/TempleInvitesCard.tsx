@@ -5,6 +5,7 @@ import { Building2, Check, X } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
 import { serverErrorMessage } from '../../lib/friendly-error';
+import { takeWarmed } from '../../lib/warm-get';
 import { buttonClass } from '../ui/button-recipe';
 
 interface TempleInvite {
@@ -31,11 +32,12 @@ export default function TempleInvitesCard() {
   const load = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetchWithTimeout(
-        `${API_BASE_URL}/priest/temple-invites`,
-        { headers: { Authorization: `Bearer ${token}` } },
-        DATA_FETCH_TIMEOUT_MS,
-      );
+      // The portal page starts this request with the dashboard (lib/warm-get.ts); use it when present.
+      const url = `${API_BASE_URL}/priest/temple-invites`;
+      const warmed = takeWarmed(url, token);
+      const res = warmed
+        ? await warmed
+        : await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${token}` } }, DATA_FETCH_TIMEOUT_MS);
       // 403 = no active pandit account yet (or it was suspended): there is nothing to
       // show yet, and that is not a failure worth a banner.
       if (res.status === 403) {

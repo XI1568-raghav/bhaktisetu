@@ -36,6 +36,7 @@ import {
 import KycStatusBadge from '../../components/provider/KycStatusBadge';
 import LoadErrorBanner from '../../components/LoadErrorBanner';
 import TempleInvitesCard from '../../components/priest/TempleInvitesCard';
+import { warmGet } from '../../lib/warm-get';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -270,6 +271,12 @@ export default function PriestDashboard() {
  } catch {
  // graceful fallback
  }
+ }
+ // The temple-invites and profile cards only mount once the dashboard has
+ // returned; start their requests now so they are not a second round trip.
+ if (session?.accessToken && !session.accessToken.startsWith('demo-')) {
+ warmGet(`${API_BASE_URL}/priest/temple-invites`, session.accessToken);
+ warmGet(`${API_BASE_URL}/onboarding/provider?role=PANDIT`, session.accessToken);
  }
  await Promise.all([fetchDashboard(), fetchKyc(), fetchBalance()]);
  }, [session, user?.fullName, user?.email]);

@@ -4,6 +4,7 @@ import { CheckCircle2, Video, Mail } from 'lucide-react';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { HAS_80G } from '../../../lib/eighty-g';
+import { CheckoutSuccessLines, CheckoutSuccessRef } from './CheckoutSuccessQuery';
 
 
 export const metadata = {
@@ -12,32 +13,15 @@ export const metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function CheckoutSuccessPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
-  const sp = await searchParams;
-  const bookingNumber = typeof sp.bk === 'string' ? sp.bk : '';
-  const paymentIntent = typeof sp.payment_intent === 'string' ? sp.payment_intent : '';
-  const status = typeof sp.redirect_status === 'string' ? sp.redirect_status : '';
-
+// Fully static (no searchParams on the server): see CheckoutSuccessQuery.tsx.
+export default function CheckoutSuccessPage() {
   return (
     <div className="min-h-[100dvh] bg-[var(--color-bg)] py-12">
       <div className="max-w-xl mx-auto px-4">
         <div className="rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
           <CheckCircle2 className="mx-auto h-14 w-14 text-emerald-500" />
           <h1 className={`${H1.portal} mt-4`}>Payment received</h1>
-          {bookingNumber && (
-            <p className="mt-2 text-sm text-surface-600">
-              Booking <strong className="font-mono">{bookingNumber}</strong> is confirmed.
-            </p>
-          )}
-          {status && status !== 'succeeded' && (
-            <p className="mt-2 text-sm text-amber-700">
-              Payment status: <strong>{status}</strong> — we&apos;ll confirm shortly.
-            </p>
-          )}
+          <CheckoutSuccessLines />
 
           <div className="mt-8 space-y-3 text-left">
             <div className="flex items-start gap-3 rounded-lg bg-surface-50 p-4">
@@ -77,9 +61,7 @@ export default async function CheckoutSuccessPage({
             </Link>
           </div>
 
-          {paymentIntent && (
-            <p className="mt-6 text-xs text-surface-400 font-mono">ref: {paymentIntent}</p>
-          )}
+          <CheckoutSuccessRef />
         </div>
       </div>
     </div>

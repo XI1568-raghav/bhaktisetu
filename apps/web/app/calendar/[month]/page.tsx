@@ -9,6 +9,7 @@ import { notFound } from 'next/navigation';
 // every count and every list on this page goes through it.
 import { festivalsInMonth, resolveBookablePujas } from '../../../lib/festivals';
 import { getCatalogueSlugs } from '../../../lib/puja-catalogue';
+import { CalendarTodayMarkers } from '../CalendarTodayMarkers';
 
 export const revalidate = 86400;
 export const dynamicParams = false;
@@ -101,12 +102,9 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
     ],
   };
 
-  const today = new Date();
-  const isCurrentYear = today.getFullYear() === YEAR;
-  const todayIso = today.toISOString().slice(0, 10);
-
   return (
     <main className="mx-auto max-w-4xl px-4 py-10">
+      <CalendarTodayMarkers year={YEAR} />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([ld, breadcrumb]) }} />
 
       <nav className="mb-6 text-xs text-gray-500">
@@ -132,17 +130,13 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
       ) : (
         <div className="space-y-4">
           {items.map((f) => {
-            const isPast = isCurrentYear && f.date2026 < todayIso;
-            const isToday = f.date2026 === todayIso;
             const [, , dd] = f.date2026.split('-');
             return (
               <article
                 key={f.slug}
-                className={`rounded-2xl border p-5 transition ${
-                  isToday ? 'border-saffron-400 bg-saffron-50' :
-                  isPast ? 'border-gray-200 bg-gray-50/50 opacity-75' :
-                  'border-gray-200 bg-white'
-                }`}
+                data-fdate={f.date2026}
+                data-fpast="opacity-75"
+                className="rounded-2xl border border-gray-200 bg-white p-5 transition"
               >
                 <div className="flex gap-4">
                   <div className="flex w-20 flex-shrink-0 flex-col items-center justify-center rounded-xl bg-saffron-100 py-3 text-center">
@@ -151,9 +145,8 @@ export default async function CalendarMonthPage({ params }: { params: Promise<{ 
                   </div>
                   <div className="flex-1">
                     <div className="flex items-baseline justify-between gap-3">
-                      <h2 className="text-xl font-bold text-gray-900">
+                      <h2 data-ftitle className="text-xl font-bold text-gray-900">
                         <Link href={`/festival/${f.slug}`} className="hover:text-saffron-700">{f.name}</Link>
-                        {isToday && <span className="ml-2 rounded bg-saffron-600 px-1.5 py-0.5 text-xs font-bold uppercase text-white">Today</span>}
                       </h2>
                       <span className="font-serif text-base text-gray-700">{f.sanskrit}</span>
                     </div>
