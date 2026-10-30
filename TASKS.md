@@ -35,11 +35,11 @@
 
 ## QA hardening 2026-10-13/14 (live; detail in `docs/handoff.md` 2026-10-13/14 block)
 
-PR #338 (`708b101`) is merged to `main`; round four is on branch `claude/jolly-babbage-5h6vud` (PR open, see GitHub; not merged). **Nothing is deployed.** Prod still runs the pre-#338 build; read `docs/golive-status.md` (newest first) before acting. Local stack: `docs/runbooks/qa-local-stack.md`.
+**PROD STATE 2026-10-30:** web (Cloudflare Workers, Next 16) and API (Render) both run `main` at `1a06529`. The old hotfix line (`hotfix/api-signup`, last build `e89475e`) is retired; rollback = redeploy `db8e029` (API) or the previous web build. **Top blocker: Razorpay rejects the live key (`GET /api/v1/admin/diagnostics/razorpay` as an admin returns `Authentication failed` 401), so every paid flow 502s. Owner: set a matching `RAZORPAY_KEY_ID` + `RAZORPAY_KEY_SECRET` pair in Render, then rerun the diagnostic (`?probe=order` makes one Rs 1 order).** Test accounts: `test.<role>@example.com` (devotee, priest, temple, gaushala, store, astrologer, wellness, gurukul, admin), password shared with the owner in chat, not recorded in the repo; delete or change `test.admin` after testing. Before ANY web deploy the merged main must pass api+web+mobile tests; PR deploys use the `[cf-deploy]` title tag, or `gh workflow run deploy-web-cloudflare.yml --ref main -f mode=deploy`. Local stack: `docs/runbooks/qa-local-stack.md`.
 
 **Owner actions (none are code):**
 - GitHub Actions billing/budget (github.com/settings/billing): CI, deploys and prod-db-task cannot start without it.
-- Razorpay live keys in Render (currently the `rzp_test_demo` fallback).
+- Razorpay: see PROD STATE above (live key id is set but the secret does not match).
 - Cloudflare: check Scrape Shield, Auto Minify and Rocket Loader are OFF for darshya.online (suspected cause of hydration error #418).
 - Sleeping web service: add a keep-alive ping or move off the free plan (Render 750 shared hours).
 - Deploy order: web first, then API. Before the API deploy run `scripts/ops/prod-like-smoke.sh`, then `docs/runbooks/prod-deploy-checklist.md`.
