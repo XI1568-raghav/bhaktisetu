@@ -3647,3 +3647,10 @@ Migrations do not auto-apply on deploy (see TASKS.md). Apply by hand, then redep
 - `20261013010000_donee_tax_and_email_outbox`: `temples.pan/regn_80g`, `gaushala_profiles.pan/regn_80g`, `donations.donor_name/email/phone`, table `email_outbox`. All additive/nullable; the API tolerates every one being absent.
 - Receipts print the 80G block only when donee 80G number AND PAN exist AND `HAS_80G` (`apps/api/src/lib/eighty-g.ts`, false) is true. Entering numbers (`PUT /temple-portal/tax-info`, `PUT /gaushala-portal/tax-info`, `PUT /admin/temples/:id/tax-info`) never flips that by itself.
 - Failed receipt/booking emails are retried by the `emailOutbox` step of `runDailyOps` (8 tries, backoff 1m..12h, then `dead`). Inspect: `SELECT status,count(*) FROM email_outbox GROUP BY 1`.
+
+## 2026-10-30 — prod moved to main; QA rounds (devotee, priest, temple, astrologer, wellness, gurukul)
+
+- Prod API + web now run `main` `1a06529` (PRs #346-#362). Earlier prod ran a hotfix line missing ~11,600 lines of API code (refund/payment fixes, wellness roster/cancel sweep). `main` boots without the 3 unapplied migrations (tested against a DB lacking them); migrations are still pending (stale `SUPABASE_DIRECT_URL` secret).
+- Razorpay live key rejected (401 Authentication failed): admin diagnostic `GET /api/v1/admin/diagnostics/razorpay`.
+- Test accounts (prod): test.devotee/priest/temple/gaushala/store/astrologer/wellness/gurukul/admin@example.com, password shared with the owner in chat (not recorded here: the repo is public), phones 9100000001-9. A gurukul manager is any user who owns a Gurukul row (no signup role). Test temple "Test Shri Ganesh Mandir Pune" is unverified (devotees cannot book it; rule 6).
+- Lessons: static portal pages must not call router.replace/push from effects (reload loop on Next 16); CI must pass SKIP_API_PRERENDER through turbo.json; Cloudflare deploy builds need staticPageGenerationTimeout 180; login/button does nothing until hydration (tests: waitUntil networkidle); login limit 10/min/IP shared by all testers.
