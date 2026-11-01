@@ -265,7 +265,17 @@ export interface PendingApprovalPage {
 interface ReportsResponse {
   generatedAt: string;
   userGrowth: Array<{ month: string; users: number }>;
-  bookingStats: Array<{ label: string; value: number; changePct: number | null }>;
+  bookingStats: Array<{
+    label: string;
+    /** All-time count for this status group (not month-to-date). */
+    value: number;
+    /** Created since the 1st of this month (month to date). */
+    thisMonth: number;
+    /** Created during the whole previous calendar month. */
+    lastMonth: number;
+    /** null whenever last month is 0: there is nothing to compare against. */
+    changePct: number | null;
+  }>;
   popularPujas: Array<{
     pujaTypeId: string;
     name: string;
@@ -1096,13 +1106,14 @@ export class AdminService {
           const totalToDate = await prisma.pujaBooking.count({
             where: { status: { in: statuses } },
           });
+          // A month-to-date count against a whole previous month is only a trend
+          // when there is a previous month to compare with; 0 -> n and 0 -> 0 are not
+          // percentages (the page used to print "-100% vs last month" under a 0).
           const changePct =
             lastMonth === 0
-              ? thisMonth > 0
-                ? null
-                : 0
+              ? null
               : Number((((thisMonth - lastMonth) / lastMonth) * 100).toFixed(1));
-          return { label, value: totalToDate, changePct };
+          return { label, value: totalToDate, thisMonth, lastMonth, changePct };
         }),
       );
 

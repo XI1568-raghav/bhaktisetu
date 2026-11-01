@@ -188,6 +188,9 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  }
  };
 
+ // "This paid plan is not open yet" is information, not a fault: calm tone, Free stays active.
+ const notOpenYet = !!actionError && /not open (for purchase )?yet/i.test(actionError);
+
  if (loading) {
  return (
  <div className="flex items-center gap-2 text-sm text-surface-500 p-8">
@@ -222,8 +225,12 @@ export function SubscriptionPanel({ role, title, description }: Props) {
  {actionError && (
  <div
  data-testid="subscription-action-error"
- role="alert"
- className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700"
+ role={notOpenYet ? 'status' : 'alert'}
+ className={`flex items-start gap-2 p-3 rounded-lg border text-sm ${
+ notOpenYet
+ ? 'bg-amber-50 border-amber-200 text-amber-800'
+ : 'bg-red-50 border-red-200 text-red-700'
+ }`}
  >
  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
  {actionError}

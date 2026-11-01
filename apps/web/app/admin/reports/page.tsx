@@ -27,6 +27,7 @@ import { fetchAllUsersForExport } from './export-users';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { userFacingMessage } from '../../../lib/friendly-error';
+import { bookingTileCaption, bookingTileTitle } from '../../../lib/admin-reports-format';
 
 type ExportType = 'users' | 'revenue' | 'all';
 
@@ -50,14 +51,6 @@ function revenueShort(amountInr: number): string {
     return `Rs. ${(amountInr / 1_000).toFixed(1)}K`;
   }
   return `Rs. ${amountInr}`;
-}
-
-function formatChange(changePct: number | null): { label: string; positive: boolean } {
-  if (changePct === null) {
-    return { label: '—', positive: true };
-  }
-  const sign = changePct >= 0 ? '+' : '';
-  return { label: `${sign}${changePct}% vs last month`, positive: changePct >= 0 };
 }
 
 export default function AdminReportsPage() {
@@ -322,19 +315,23 @@ export default function AdminReportsPage() {
  {reports && reports.bookingStats.length > 0 ? (
  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
  {reports.bookingStats.map((stat) => {
- const change = formatChange(stat.changePct);
  return (
  <div key={stat.label} className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)]">
- <p className="text-xs text-surface-500">{stat.label}</p>
+ <p className="text-xs text-surface-500">{bookingTileTitle(stat.label)}</p>
  <p className="text-xl font-bold text-surface-800 mt-1">{inr(stat.value)}</p>
- <span className={`text-xs font-medium ${change.positive ? 'text-green-600' : 'text-red-600'}`}>
- {change.label}
+ <span className="text-xs font-medium text-surface-500">
+ {bookingTileCaption(stat)}
  </span>
  </div>
  );
  })}
  </div>
  ) : null}
+ {reports && reports.bookingStats.length > 0 && (
+ <p className="text-xs text-surface-500 -mt-3">
+ Big numbers are all-time counts. Total leaves out cancelled and refunded bookings, which are counted under Cancelled, so the tiles are not meant to add up to Total.
+ </p>
+ )}
 
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
  {/* Popular pujas */}

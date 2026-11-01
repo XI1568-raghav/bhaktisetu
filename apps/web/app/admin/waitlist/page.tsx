@@ -89,23 +89,32 @@ export default function AdminWaitlistPage() {
             <Loader2 className="w-5 h-5 animate-spin text-saffron-600 mx-auto" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="flex items-end gap-1 min-w-[600px] h-40">
-              {(stats?.daily ?? []).map((d) => (
-                <div
-                  key={d.date}
-                  className="flex-1 flex flex-col items-center justify-end"
-                  title={`${d.date}: ${d.signups} signups`}
-                >
+          (stats?.daily ?? []).every((d) => d.signups === 0) ? (
+            <p className="text-sm text-surface-500 py-10 text-center" data-testid="waitlist-chart-empty">
+              No signups in the last 30 days.
+              {(stats?.total ?? 0) > 0 ? ` (${stats?.total} in total, all earlier.)` : ''}
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              {/* Each column is h-full: a percentage height on the bar needs a parent with a
+                  definite height, and an items-end column has none (the bars measured 0 px). */}
+              <div className="flex items-end gap-1 min-w-[600px] h-40">
+                {(stats?.daily ?? []).map((d) => (
                   <div
-                    className="w-full bg-saffron-600 rounded-t"
-                    style={{ height: `${(d.signups / maxSignup) * 100}%` }}
-                  />
-                  {d.signups === 0 && <div className="w-full h-px bg-surface-200" />}
-                </div>
-              ))}
+                    key={d.date}
+                    className="flex-1 h-full flex flex-col items-center justify-end"
+                    title={`${d.date}: ${d.signups} signups`}
+                  >
+                    <div
+                      className="w-full bg-saffron-600 rounded-t"
+                      style={{ height: `${(d.signups / maxSignup) * 100}%` }}
+                    />
+                    {d.signups === 0 && <div className="w-full h-px bg-surface-200" />}
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )
         )}
       </div>
 

@@ -202,7 +202,13 @@ export async function getRevenue(token: string | undefined): Promise<RevenueResp
 export type ReportsResponse = {
   generatedAt: string;
   userGrowth: Array<{ month: string; users: number }>;
-  bookingStats: Array<{ label: string; value: number; changePct: number | null }>;
+  bookingStats: Array<{
+    label: string;
+    value: number;
+    thisMonth?: number;
+    lastMonth?: number;
+    changePct: number | null;
+  }>;
   popularPujas: Array<{
     pujaTypeId: string;
     name: string;

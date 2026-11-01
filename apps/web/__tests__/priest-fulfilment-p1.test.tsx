@@ -19,6 +19,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { __clearBookingsCache } from '../lib/priest-booking-views';
 
 const nav = vi.hoisted(() => ({
   params: new URLSearchParams(),
@@ -220,6 +221,7 @@ function tabButton(label: string) {
 }
 
 beforeEach(() => {
+  __clearBookingsCache();
   nav.params = new URLSearchParams();
   nav.replace.mockClear();
   nav.push.mockClear();
