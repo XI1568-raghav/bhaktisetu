@@ -23,7 +23,7 @@ import {
 import ScrollReveal from '../../../components/ScrollReveal';
 import { sacredSites, formatINR } from '../../../lib/yatra-data';
 import { DateInput } from '../../../components/ui/DateInput';
-import { distanceHints } from '../../../lib/yatra-distance';
+import { distanceHints, nearbySites } from '../../../lib/yatra-distance';
 
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { H1 } from '../../../components/ui/heading-recipe';
@@ -98,6 +98,13 @@ export default function CustomPlanPage() {
  const hints = distanceHints(added, others);
  if (hints.length === 0) return '';
  return `${added.name}: ` + hints.map((h) => (h.km < 10 ? `same town as ${h.fromName}` : `about ${h.km} km from ${h.fromName}` + (h.road ? `, about ${h.road.km} km and ${h.road.hours} h by road` : ''))).join(', ') + (hints.some((h) => h.road) ? ' (distance is straight-line; road figures are approximate, from OpenStreetMap routing without traffic, closures or season).' : ' (straight-line; by road it is longer).');
+ }, [lastAdded, data.destinations, siteById]);
+
+ // "Nearby places you may also like": unselected sites close to the one just added.
+ const nearby = useMemo(() => {
+ const added = lastAdded ? siteById.get(lastAdded) : null;
+ if (!added || !data.destinations.includes(added.id)) return [];
+ return nearbySites(added, sacredSites, data.destinations);
  }, [lastAdded, data.destinations, siteById]);
 
  function toggleNeed(n: string) {
@@ -238,6 +245,20 @@ export default function CustomPlanPage() {
  <MapPin className="w-3.5 h-3.5" style={{ color: 'var(--color-primary)' }} />
  {distanceNote}
  </p>
+ )}
+ {nearby.length > 0 && (
+ <div className="text-xs mt-3" style={{ color: 'var(--color-text)' }} data-testid="yatra-nearby">
+ <span className="font-semibold">Nearby places you may also like: </span>
+ {nearby.map((n, i) => (
+ <span key={n.id}>
+ {i > 0 && ', '}
+ <button type="button" className="underline" style={{ color: 'var(--color-primary)' }} onClick={() => toggleDest(n.id)}>
+ {n.name}
+ </button>
+ {` (about ${n.km} km${n.road ? `, about ${n.road.km} km by road` : ' in a straight line'})`}
+ </span>
+ ))}
+ </div>
  )}
  <p className="text-xs mt-4" style={{ color: 'var(--color-text-muted)' }}>
  Selected: <span className="font-semibold" style={{ color: 'var(--color-primary)' }}>{data.destinations.length}</span> sites

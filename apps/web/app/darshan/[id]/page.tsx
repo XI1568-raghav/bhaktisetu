@@ -8,8 +8,8 @@ export const dynamicParams = true;
 // is rendered per request, error 1102). Anything clock- or broadcast-dependent (current
 // aarti slot, on-air probe) is resolved in the browser by DarshanAartiSchedule and
 // DarshanChannelPlayerLive. Stream lists are read once at build time.
-export function generateStaticParams() {
-  return [
+export async function generateStaticParams() {
+  const listed = [
     'somnath-gujarat', 'somnath', 'tirumala-tirupati', 'tirupati',
     'golden-temple-amritsar', 'golden-temple', 'shirdi-sai-baba', 'shirdi',
     'kashi-vishwanath-varanasi', 'kashi-vishwanath',
@@ -23,9 +23,20 @@ export function generateStaticParams() {
     'rameshwaram', 'baidyanath-dham', 'dwarkadhish',
     // Verified official channels added 2026-10-29.
     'banke-bihari-vrindavan', 'banke-bihari', 'ram-mandir-ayodhya', 'ram-mandir', 'omkareshwar', 'govind-dev-ji-jaipur', 'govind-dev-ji',
-  ].map((id) => ({ id }));
+  ];
+  // QA 2026-10-31 (PDF3 item 7): every temple page links its "Live Darshan" button to
+  // /darshan/<slug>, but only the slugs above were prerendered. The other catalogue
+  // temples (kedarnath, mallikarjuna, lingaraj-bhubaneswar, ...) were rendered by the
+  // Worker per request: Cloudflare error 1102 / 503. Prerender the whole catalogue
+  // (build-time fetch, [] when the API is unreachable) so each gets the static
+  // "Coming soon" or stream page from assets.
+  const catalogue = await fetchSlugParams('/temples?limit=200', (j) => (j as { temples?: unknown }).temples);
+  const slugs = catalogue.flatMap((c) => [c.slug, canonicalTempleSlug(c.slug)]);
+  return Array.from(new Set([...listed, ...Object.keys(TEMPLE_DETAILS), ...slugs])).map((id) => ({ id }));
 }
 import type { Metadata } from 'next';
+import { fetchSlugParams } from '../../../lib/static-params';
+import { TEMPLE_DETAILS } from '../../../lib/temple-details';
 import {
  MapPin,
  Clock,

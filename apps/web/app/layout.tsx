@@ -955,6 +955,7 @@ export default function RootLayout({
  <li><Link href="/shloka-card" className="hover:text-saffron-400 transition-colors">Shloka Cards</Link></li>
  <li><Link href="/gift" className="hover:text-saffron-400 transition-colors">Gift a Puja</Link></li>
  <li><Link href="/faqs" className="hover:text-saffron-400 transition-colors">FAQs</Link></li>
+ <li><Link href="/refer" className="hover:text-saffron-400 transition-colors">Share Darshya</Link></li>
  <li><Link href="/why-darshya" className="hover:text-saffron-400 transition-colors">Why Darshya</Link></li>
  <li><Link href="/discover" className="hover:text-saffron-400 transition-colors">All Guides</Link></li>
  </ul>
