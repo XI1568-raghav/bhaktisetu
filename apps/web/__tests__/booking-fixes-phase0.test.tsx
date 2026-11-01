@@ -51,7 +51,7 @@ describe('Phase 0 — pandit portal fixes', () => {
     // assert the client's optimistic status map, which PF-07 replaced with a
     // refetch — the row can leave the active view and the tab counts have to
     // move with it, so guessing locally is wrong.
-    expect(src).toMatch(/await fetchBookings\(\)/);
+    expect(src).toMatch(/await fetchBookings\((\{ fresh: true \})?\)/);
   });
 
   it('T1: priest dashboard has an on-duty toggle calling /priest/availability', () => {
