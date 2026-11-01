@@ -7,6 +7,7 @@ import { API_BASE_URL } from '../../../lib/api-config';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import { userFacingMessage } from '../../../lib/friendly-error';
+import { summarizeOutreachRun } from '../../../lib/outreach-summary';
 
 interface OutreachStats {
   daily: Array<{ date: string; sent: number; replied: number; bounced: number }>;
@@ -43,7 +44,7 @@ export default function AdminOutreachPage() {
   const [leads, setLeads] = useState<LeadsStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [running, setRunning] = useState(false);
-  const [runResult, setRunResult] = useState<string | null>(null);
+  const [runResult, setRunResult] = useState<unknown>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function AdminOutreachPage() {
       const r = await authFetch<{ ok: boolean; result: unknown }>(token, '/admin/outreach/run', {
         method: 'POST',
       });
-      setRunResult(JSON.stringify(r.result));
+      setRunResult(r.result ?? {});
       const a = await authFetch<OutreachStats>(token, '/admin/outreach/stats');
       setOutreach(a);
     } catch (err) {
@@ -111,11 +112,35 @@ export default function AdminOutreachPage() {
         </button>
       </div>
 
-      {runResult && (
-        <div className="bg-green-50 border border-green-200 text-green-700 text-xs rounded-lg p-3 font-mono">
-          {runResult}
-        </div>
-      )}
+      {runResult !== null && (() => {
+        const sum = summarizeOutreachRun(runResult);
+        return (
+          <div
+            role="status"
+            data-testid="outreach-run-summary"
+            className="bg-green-50 border border-green-200 text-green-800 text-sm rounded-lg p-3 space-y-2"
+          >
+            <p className="font-medium">
+              {sum.headline}
+              {sum.durationSeconds !== null && (
+                <span className="font-normal text-green-700"> Took {sum.durationSeconds} s.</span>
+              )}
+            </p>
+            <ul className="text-xs space-y-0.5">
+              {sum.stages.map((st) => (
+                <li key={st.stage}>
+                  {st.stage}: {st.sent} sent, {st.failed} failed
+                  {st.attempted !== st.sent + st.failed ? ` (${st.attempted} tried)` : ''}
+                </li>
+              ))}
+            </ul>
+            <details className="text-xs">
+              <summary className="cursor-pointer text-green-700">Details</summary>
+              <pre className="mt-1 whitespace-pre-wrap font-mono">{JSON.stringify(runResult, null, 2)}</pre>
+            </details>
+          </div>
+        );
+      })()}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">{error}</div>
       )}

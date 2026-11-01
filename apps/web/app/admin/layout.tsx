@@ -37,6 +37,7 @@ const sidebarLinks = [
   { href: '/admin/users', label: 'Users', icon: Users },
   { href: '/admin/approvals', label: 'Approvals', icon: ClipboardCheck },
   { href: '/admin/bookings', label: 'Bookings', icon: CalendarClock },
+  { href: '/admin/consultations', label: 'Consultations', icon: Sparkles },
   { href: '/admin/temples', label: 'Temples', icon: Landmark },
   { href: '/admin/leads', label: 'Leads', icon: Target },
   { href: '/admin/outreach', label: 'Outreach', icon: Send },

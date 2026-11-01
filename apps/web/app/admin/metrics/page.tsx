@@ -135,7 +135,7 @@ export default function MetricsPage() {
           <Tile label="GMV today" value={today ? paiseToInr(today.gmvPaise) : '—'} sub={`${today?.successfulPayments ?? 0} successful payments`} />
           <Tile label="Bookings" value={String(today?.bookings ?? 0)} />
           <Tile label="Signups" value={String(today?.signups ?? 0)} />
-          <Tile label="Generated" value={dashboard ? new Date(dashboard.generatedAt).toLocaleTimeString() : '—'} sub="cache: live" />
+          <Tile label="Generated" value={dashboard ? new Date(dashboard.generatedAt).toLocaleTimeString() : '—'} sub="refreshed on load" />
         </div>
       </section>
 
@@ -151,8 +151,8 @@ export default function MetricsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
           <Tile label="Active users (30d)" value={investor ? String(investor.activeUsers) : '—'} sub="any payment or booking" />
           <Tile label="Signups this week" value={investor ? String(investor.signupsThisWeek) : '—'} />
-          <Tile label="D7 retention" value={pct(investor?.d7Retention ?? null)} sub="Sprint 4+ stub" />
-          <Tile label="D30 retention" value={pct(investor?.d30Retention ?? null)} sub="Sprint 4+ stub" />
+          <Tile label="D7 retention" value={pct(investor?.d7Retention ?? null)} sub="Not tracked yet" />
+          <Tile label="D30 retention" value={pct(investor?.d30Retention ?? null)} sub="Not tracked yet" />
         </div>
       </section>
 

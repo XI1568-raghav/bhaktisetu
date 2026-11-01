@@ -25,6 +25,12 @@ import { H1 } from '../../../components/ui/heading-recipe';
 import { UserFacingError, classifyUserFacing, userFacingMessage, serverErrorText } from '../../../lib/friendly-error';
 import ReauthPrompt from '../../../components/ReauthPrompt';
 import { buttonClass } from '../../../components/ui/button-recipe';
+import {
+ deriveTab,
+ readBookingsCache,
+ writeBookingsCache,
+ __clearBookingsCache,
+} from '../../../lib/priest-booking-views';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -156,19 +162,46 @@ function PriestBookingsInner() {
  // strip claiming 15 accepted when he had 25 — and there was no pager, so his
  // oldest unaccepted jobs were unreachable and silently breached SLA.
  // Filtering and counting now both happen server-side, over the whole book.
- const fetchBookings = useCallback(async () => {
+ // Tab switches are instant (client-side). The rows for a tab come, in order, from:
+ // 1. the cache for this exact tab+page, 2. the cached complete `all` list filtered
+ // locally; either one is painted at once and the real request still runs quietly in the
+ // background (stale-while-revalidate). Only a cold tab shows the skeleton.
+ // `fresh` (after Accept/Start/...) drops every cached list first: the row has moved.
+ const fetchBookings = useCallback(async (opts?: { fresh?: boolean }) => {
  if (!session?.accessToken) {
  // No session yet (signed out, or auth still hydrating). Stop the spinner
  // rather than leaving it running forever; the portal layout gates access.
  setLoading(false);
  return;
  }
- setLoading(true);
- setLoadError(null);
+ const token = session.accessToken;
+ if (opts?.fresh) __clearBookingsCache();
+ type Snapshot = { bookings: BookingItem[]; counts: BookingCounts; total: number; totalPages: number };
+ const paint = (d: Snapshot) => {
+  setBookings(d.bookings);
+  setCounts(d.counts);
+  setTotal(d.total);
+  setTotalPages(Math.max(1, d.totalPages));
+ };
+ const cached = readBookingsCache<Snapshot>(token, activeTab, page);
+ const allCached = readBookingsCache<Snapshot>(token, 'all', 1);
+ const derived = !cached && allCached ? deriveTab(allCached, activeTab) : null;
+ const instant = cached ?? (derived && allCached ? { ...derived, counts: allCached.counts } : null);
+ if (instant) {
+  paint(instant);
+  setLoadError(null);
+  setLoading(false);
+ } else {
+  setLoading(true);
+  setLoadError(null);
+ }
+ // A complete `all` list already answers every tab and nothing changed since it was read:
+ // skip the request for a derived tab (the `all` entry itself is revalidated on next visit).
+ if (derived && !opts?.fresh) return;
  try {
  const res = await fetch(
  `${API_BASE_URL}/priest/bookings?view=${activeTab}&page=${page}&limit=${PAGE_SIZE}`,
- { headers: { Authorization: `Bearer ${session.accessToken}` } },
+ { headers: { Authorization: `Bearer ${token}` } },
  );
  if (!res.ok) {
  const detail = await res.text().catch(() => '');
@@ -184,11 +217,18 @@ function PriestBookingsInner() {
  );
  }
  const data = await res.json();
- setBookings(data.bookings || []);
- setCounts({ ...ZERO_COUNTS, ...(data.counts ?? {}) });
- setTotal(typeof data.total === 'number' ? data.total : (data.bookings?.length ?? 0));
- setTotalPages(Math.max(1, data.totalPages ?? 1));
+ const snap: Snapshot = {
+  bookings: data.bookings || [],
+  counts: { ...ZERO_COUNTS, ...(data.counts ?? {}) },
+  total: typeof data.total === 'number' ? data.total : (data.bookings?.length ?? 0),
+  totalPages: Math.max(1, data.totalPages ?? 1),
+ };
+ writeBookingsCache(token, activeTab, page, snap);
+ paint(snap);
+ setLoadError(null);
  } catch (err) {
+ // A quiet background refresh that fails keeps the rows already on screen.
+ if (instant) return;
  const { message, reauth } = classifyUserFacing(
   err,
   'Could not load your bookings. Please try again.',
@@ -257,7 +297,7 @@ function PriestBookingsInner() {
  setActionError(null);
  // Re-read from the server rather than guessing locally: the row may leave
  // the current view, and the tab counts must move with it.
- await fetchBookings();
+ await fetchBookings({ fresh: true });
  }
  } catch (err) {
  setActionError(userFacingMessage(err, 'Network error — please try again.'));
@@ -305,7 +345,7 @@ function PriestBookingsInner() {
  setActionError(null);
  // Same reason as handleAction: the row changes status, so the tab counts
  // and the page contents both have to come from the server again.
- await fetchBookings();
+ await fetchBookings({ fresh: true });
  }
  } catch (err) {
  setActionError(userFacingMessage(err, 'Network error — please try again.'));
@@ -478,11 +518,22 @@ function PriestBookingsInner() {
  ))}
  </div>
 
- {/* Loading */}
+ {/* Loading: skeleton cards (a cold tab only; warm tabs paint from cache). */}
  {loading && (
- <div className="flex items-center justify-center py-20">
- <Loader2 className="w-8 h-8 animate-spin text-saffron-500" />
- <span className="ml-3 text-surface-500">Loading bookings...</span>
+ <div className="space-y-4" role="status" aria-label="Loading bookings">
+ {[0, 1, 2].map((i) => (
+ <div key={i} className="animate-pulse rounded-xl border border-surface-100 bg-white p-5">
+ <div className="flex gap-4">
+ <div className="h-12 w-12 rounded-xl bg-surface-100" />
+ <div className="flex-1 space-y-2">
+ <div className="h-4 w-1/3 rounded bg-surface-100" />
+ <div className="h-3 w-1/4 rounded bg-surface-100" />
+ <div className="h-3 w-2/3 rounded bg-surface-100" />
+ </div>
+ </div>
+ </div>
+ ))}
+ <span className="sr-only">Loading bookings...</span>
  </div>
  )}
 
@@ -502,7 +553,7 @@ function PriestBookingsInner() {
  ) : (
  <button
  type="button"
- onClick={() => void fetchBookings()}
+ onClick={() => void fetchBookings({ fresh: true })}
  className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
  >
  Retry

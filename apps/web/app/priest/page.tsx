@@ -125,10 +125,17 @@ function getStatusBadge(status: string) {
 
 // ─── Component ──────────────────────────────────────────────────
 
+// Stale-while-revalidate for the sidebar: returning to "Dashboard" from another tab used to
+// show the full-page spinner and wait ~1.5 s for the same /priest/dashboard answer it had
+// already fetched. The last good payload (per session token) is painted at once and the
+// request still runs, so figures are never older than one round trip.
+let lastDashboard: { token: string; payload: DashboardData } | null = null;
+
 export default function PriestDashboard() {
  const { session, user } = useAuth();
- const [data, setData] = useState<DashboardData | null>(null);
- const [loading, setLoading] = useState(true);
+ const seeded = lastDashboard && lastDashboard.token === session?.accessToken ? lastDashboard.payload : null;
+ const [data, setData] = useState<DashboardData | null>(seeded);
+ const [loading, setLoading] = useState(!seeded);
  const [fetchError, setFetchError] = useState<string | null>(null);
  // AUTH-06: /priest never classified its failure at all — the non-ok branch
  // below throws `res.status` away and prints one fixed sentence, so an
@@ -153,7 +160,7 @@ export default function PriestDashboard() {
  // was shown "Go on duty", and to go OFF after a reload he had to click ON
  // first (sending isOnDuty:true and re-arming himself for 1-minute-SLA
  // offers) and then click again.
- const [onDuty, setOnDuty] = useState(false);
+ const [onDuty, setOnDuty] = useState(seeded?.priest?.isOnDuty === true);
  const [dutySaving, setDutySaving] = useState(false);
  // RES-11 (2026-08-12): the toggle used to be `if (res.ok) setOnDuty(next)`
  // with an empty catch that just kept the prior state. On any non-2xx or network
@@ -206,6 +213,7 @@ export default function PriestDashboard() {
  }, DATA_FETCH_TIMEOUT_MS);
  if (res.ok) {
  const payload = (await res.json()) as DashboardData;
+ if (session?.accessToken) lastDashboard = { token: session.accessToken, payload };
  setData(payload);
  // PF-14: seed the toggle from the server row. A dashboard we could not
  // read leaves the toggle where it was rather than asserting "off".

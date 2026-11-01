@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
 
 /**
  * 2026-10-29: no RAZORPAY_PLAN_* variable is set on prod, so Subscribe on every
@@ -58,5 +58,26 @@ describe('SubscriptionPanel with a paid plan that cannot be bought yet', () => {
     const btn = await screen.findByRole('button', { name: 'Subscribe' });
     expect((btn as HTMLButtonElement).disabled).toBe(false);
     expect(screen.queryByText('Opens soon')).toBeNull();
+  });
+});
+
+describe('a subscribe attempt the server refuses as "not open yet"', () => {
+  it('shows the calm friendly sentence once (not an alarm), no env text, and Free stays', async () => {
+    const msg = 'This paid plan is not open for purchase yet. Your Free plan stays active and nothing has been charged. We will announce when paid plans open.';
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/subscriptions/plans')) return new Response(JSON.stringify({ plans: [FREE, row({ purchasable: true })] }), { status: 200 });
+      if (url.includes('/subscriptions/create')) return new Response(JSON.stringify({ error: msg }), { status: 400 });
+      return new Response(JSON.stringify({ subscription: null }), { status: 200 });
+    });
+    render(<SubscriptionPanel role="priest" description="d" />);
+    const paid = (await screen.findAllByRole('button', { name: 'Subscribe' }))[1];
+    fireEvent.click(paid);
+    const box = await screen.findByTestId('subscription-action-error');
+    expect(box.textContent).toContain('Your Free plan stays active');
+    expect(box.getAttribute('role')).toBe('status');
+    expect(box.className).toMatch(/amber/);
+    expect(document.body.textContent).not.toMatch(/RAZORPAY|PLAN_|environment variable/);
+    expect(document.body.textContent!.match(/not open for purchase yet/g)).toHaveLength(1);
   });
 });
