@@ -26,7 +26,20 @@ interface ReferralMeResponse {
  * instead of promising a reward. The programme below is kept intact for the day
  * the flag is flipped.
  */
+const SHARE_URL = 'https://darshya.online';
+const SHARE_TEXT = 'Darshya: live darshan, pujas with video proof and more, for devotees in India and abroad.';
+
 function ReferComingSoon() {
+  const [copied, setCopied] = useState(false);
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(SHARE_URL);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 3000);
+    } catch {
+      window.prompt('Copy this link', SHARE_URL);
+    }
+  };
   return (
     <main className="max-w-3xl mx-auto px-6 py-16">
       <h1 className={`${H1.catalogue} mb-4`}>Referrals are coming soon</h1>
@@ -35,8 +48,21 @@ function ReferComingSoon() {
         today. If you would like to share Darshya, you are welcome to send a friend the link to
         darshya.online.
       </p>
+      <div className="flex flex-wrap gap-3 mb-4">
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(`${SHARE_TEXT} ${SHARE_URL}`)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={buttonClass('primary', 'md')}
+        >
+          Share on WhatsApp
+        </a>
+        <button type="button" onClick={copyLink} className={buttonClass('secondary', 'md')}>
+          {copied ? 'Link copied' : 'Copy link'}
+        </button>
+      </div>
       <div className="flex flex-wrap gap-3">
-        <Link href="/pujas" className={buttonClass('primary', 'md')}>
+        <Link href="/pujas" className={buttonClass('secondary', 'md')}>
           Browse pujas
         </Link>
         <Link href="/" className={buttonClass('secondary', 'md')}>

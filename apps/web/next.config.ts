@@ -181,6 +181,21 @@ const SECURITY_HEADERS: Array<{ key: string; value: string }> = [
   },
 ];
 
+/**
+ * Webpack `output.filename` wrapper for the client compilation: a chunk whose
+ * name contains `(` or `)` (a route-group page such as `app/temples/(index)/page`)
+ * is written with those characters replaced by `_`; every other chunk keeps the
+ * stock template untouched. Brackets are replaced in the same names because the
+ * returned string is re-parsed as a template and `[slug]` would read as a placeholder.
+ */
+export function clientChunkFilename(template: string) {
+  return (pathData: { chunk?: { name?: string | null } }) => {
+    const name = pathData?.chunk?.name;
+    if (!name || !/[()]/.test(name)) return template;
+    return template.replace('[name]', name.replace(/[()[\]]/g, '_'));
+  };
+}
+
 const nextConfig: NextConfig = {
   // Next gives each static page 60 s per attempt. A build that prerenders ~2,000 pages from the live API
   // can hit its per-IP rate limit (100 req/min), and a Retry-After wait of ~59 s then lands just over that
@@ -293,7 +308,7 @@ const nextConfig: NextConfig = {
   // handing an attacker the framework and a version-range hint for free. No
   // behaviour depends on it.
   poweredByHeader: false,
-  webpack: (config) => {
+  webpack: (config, { isServer }: { isServer?: boolean } = {}) => {
     // Workspace packages (@poojly/api-client, @poojly/shared) use NodeNext-style
     // `./foo.js` imports in their TS source. Webpack's default resolver doesn't
     // know to map `.js` → `.ts`. extensionAlias fixes this for bundlers.
@@ -302,6 +317,15 @@ const nextConfig: NextConfig = {
       '.js': ['.ts', '.tsx', '.js'],
       '.mjs': ['.mts', '.mjs'],
     };
+    // QA 2026-10-31 (PDF3 items 6/7/8): a route-group page chunk is emitted as
+    // `static/chunks/app/temples/(index)/page-<hash>.js`. Cloudflare Workers
+    // Assets answers the request for a file whose name holds `(` or `)` with a
+    // 307 to the very same URL, so Chromium aborts the script load with
+    // ERR_TOO_MANY_REDIRECTS and /temples, /astrology and /pujas/book fall into
+    // the "Something went wrong" boundary. Parentheses never reach a file name.
+    if (!isServer && typeof config.output?.filename === 'string') {
+      config.output.filename = clientChunkFilename(config.output.filename);
+    }
     return config;
   },
   async redirects() {

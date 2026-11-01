@@ -83,3 +83,38 @@ export function distanceHints(
   }
   return out.sort((x, y) => x.km - y.km).slice(0, max);
 }
+
+export interface NearbySite {
+  id: string;
+  name: string;
+  km: number;
+  road?: RoadHint;
+}
+
+/**
+ * Sites within `maxKm` (straight-line) of `added` that are not yet chosen, nearest
+ * first. Uses only the coordinate tables and the published road table already in
+ * the repo; a site whose town has no coordinates is skipped, never guessed.
+ */
+export function nearbySites(
+  added: Pick<SacredSite, 'id' | 'location'>,
+  all: Array<Pick<SacredSite, 'id' | 'name' | 'location'>>,
+  chosenIds: string[],
+  maxKm = 250,
+  limit = 3,
+): NearbySite[] {
+  const from = siteCoords(added);
+  if (!from) return [];
+  const out: NearbySite[] = [];
+  for (const s of all) {
+    if (s.id === added.id || chosenIds.includes(s.id)) continue;
+    if (s.location.toLowerCase() === added.location.toLowerCase()) continue;
+    const to = siteCoords(s);
+    if (!to) continue;
+    const km = Math.round(haversineKm(from, to));
+    if (km > maxKm) continue;
+    const road = roadHint(added, s) ?? undefined;
+    out.push({ id: s.id, name: s.name, km, road });
+  }
+  return out.sort((a, b) => a.km - b.km).slice(0, limit);
+}

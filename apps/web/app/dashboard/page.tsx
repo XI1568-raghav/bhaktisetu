@@ -18,6 +18,9 @@ import {
  User,
  Settings,
  LogOut,
+ Phone,
+ Repeat,
+ Gift,
 } from 'lucide-react';
 import AuthGuard from '../../components/AuthGuard';
 import PujaRecommendationWidget from '../../components/PujaRecommendationWidget';
@@ -148,6 +151,22 @@ function DashboardContent() {
  fetchDashboardData();
  }, [fetchDashboardData]);
 
+ // A gurukul manager has no portal role of their own: they sign in as a devotee and land
+ // here (QA 2026-10-31: "feels like a devotee portal"). If the account owns a gurukul listing,
+ // say so and link to the real portal. Failures are silent: this is a shortcut, not data.
+ const [gurukulCount, setGurukulCount] = useState(0);
+ useEffect(() => {
+ if (!session?.accessToken) return;
+ let cancelled = false;
+ fetchWithTimeout(`${API_BASE_URL}/gurukuls/mine/list`, {
+ headers: { Authorization: `Bearer ${session.accessToken}` },
+ }, DATA_FETCH_TIMEOUT_MS)
+ .then((r) => (r.ok ? r.json() : null))
+ .then((d) => { if (!cancelled && Array.isArray(d?.gurukuls)) setGurukulCount(d.gurukuls.length); })
+ .catch(() => {});
+ return () => { cancelled = true; };
+ }, [session?.accessToken]);
+
  const greeting = (() => {
  const hour = new Date().getHours();
  if (hour < 12) return 'Good Morning';
@@ -180,9 +199,9 @@ function DashboardContent() {
 
  <div className="flex items-center gap-2">
  <a
- href="/profile"
+ href="/profile#settings"
  className="p-2.5 bg-surface-800/10 hover:bg-surface-800/20 rounded-lg transition-colors"
- title="Edit Profile"
+ title="Settings and profile" aria-label="Settings and profile"
  >
  <Settings className="w-5 h-5 text-surface-600" />
  </a>
@@ -208,6 +227,16 @@ function DashboardContent() {
  </div>
 
  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+ {gurukulCount > 0 && (
+ <a
+ href="/gurukul-portal"
+ data-testid="gurukul-portal-link"
+ className="block mb-6 rounded-xl border border-saffron-200 bg-saffron-50 px-5 py-4 text-sm font-semibold text-saffron-800 hover:bg-saffron-100"
+ >
+ You manage {gurukulCount === 1 ? 'a gurukul' : `${gurukulCount} gurukuls`} on Darshya. Open the Gurukul portal for your listings and admission applications
+ <ArrowRight className="inline w-4 h-4 ml-1" />
+ </a>
+ )}
  {/* Quick Stats Cards */}
  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 -mt-12">
  {/* Bookings count */}
@@ -420,6 +449,42 @@ function DashboardContent() {
  <Star className="w-6 h-6 text-temple-gold mx-auto mb-2" />
  <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
  Store
+ </span>
+ </a>
+ <a
+ href="/profile/consultations"
+ className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
+ >
+ <Phone className="w-6 h-6 text-indigo-500 mx-auto mb-2" />
+ <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
+ My Consultations
+ </span>
+ </a>
+ <a
+ href="/account/subscriptions"
+ className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
+ >
+ <Repeat className="w-6 h-6 text-temple-gold mx-auto mb-2" />
+ <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
+ Subscriptions
+ </span>
+ </a>
+ <a
+ href="/profile#settings"
+ className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
+ >
+ <Settings className="w-6 h-6 text-surface-500 mx-auto mb-2" />
+ <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
+ Settings
+ </span>
+ </a>
+ <a
+ href="/refer"
+ className="bg-[var(--color-surface)] rounded-xl p-4 border border-[var(--color-border)] hover:shadow-warm hover:border-saffron-200 transition-all text-center group"
+ >
+ <Gift className="w-6 h-6 text-sacred-red mx-auto mb-2" />
+ <span className="text-xs font-semibold text-surface-700 group-hover:text-saffron-600">
+ Share Darshya
  </span>
  </a>
  </div>

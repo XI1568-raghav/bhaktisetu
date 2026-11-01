@@ -115,7 +115,13 @@ describe('no hidden entry point remains', () => {
       'components/MobileNavV2.tsx',
       'app/profile/page.tsx',
     ]);
-    expect(offenders.filter((f) => f !== 'app/sitemap.ts' && !ACCOUNT_SURFACES.has(f))).toEqual([]);
+    // PDF3 item 10 (2026-10-31): /refer is now an honest share page (WhatsApp + copy link, no
+    // reward), so the footer and the devotee dashboard may link to it as "Share Darshya".
+    const SHARE_LINKS = new Set(['app/layout.tsx', 'app/dashboard/page.tsx']);
+    expect(
+      offenders.filter((f) => f !== 'app/sitemap.ts' && !ACCOUNT_SURFACES.has(f) && !SHARE_LINKS.has(f)),
+    ).toEqual([]);
+    for (const f of SHARE_LINKS) expect(read(f)).toMatch(/Share Darshya/);
     for (const f of ACCOUNT_SURFACES) expect(read(f)).toMatch(/coming soon/i);
   });
 
