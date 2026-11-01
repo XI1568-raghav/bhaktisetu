@@ -46,16 +46,19 @@ export function deriveTab<T extends { status: string }>(
   return { bookings, total: bookings.length, totalPages: 1 };
 }
 
-// Keyed by token so a different session never reads another pandit's rows.
-const cache = new Map<string, unknown>();
+// Keyed by token so a different session never reads another pandit's rows. Entries older
+// than CACHE_MAX_AGE_MS are ignored, so a tab left open for hours never flashes old rows.
+const CACHE_MAX_AGE_MS = 120_000;
+const cache = new Map<string, { at: number; value: unknown }>();
 const keyOf = (token: string, tab: PriestBookingTab, page: number) => `${token}\n${tab}\n${page}`;
 
 export function readBookingsCache<T>(token: string, tab: PriestBookingTab, page: number): T | undefined {
-  return cache.get(keyOf(token, tab, page)) as T | undefined;
+  const hit = cache.get(keyOf(token, tab, page));
+  return hit && Date.now() - hit.at <= CACHE_MAX_AGE_MS ? (hit.value as T) : undefined;
 }
 
 export function writeBookingsCache<T>(token: string, tab: PriestBookingTab, page: number, value: T): void {
-  cache.set(keyOf(token, tab, page), value);
+  cache.set(keyOf(token, tab, page), { at: Date.now(), value });
 }
 
 /** Test hook. */
