@@ -39,6 +39,7 @@ import {
 import { H1 } from '../../components/ui/heading-recipe';
 import { buttonClass } from '../../components/ui/button-recipe';
 import ReauthPrompt from '../../components/ReauthPrompt';
+import { takeFreshSignIn, GURUKUL_PORTAL_PATH } from '../../lib/gurukul-landing';
 
 interface Booking {
  id: string;
@@ -162,7 +163,13 @@ function DashboardContent() {
  headers: { Authorization: `Bearer ${session.accessToken}` },
  }, DATA_FETCH_TIMEOUT_MS)
  .then((r) => (r.ok ? r.json() : null))
- .then((d) => { if (!cancelled && Array.isArray(d?.gurukuls)) setGurukulCount(d.gurukuls.length); })
+ .then((d) => {
+ if (cancelled || !Array.isArray(d?.gurukuls)) return;
+ setGurukulCount(d.gurukuls.length);
+ // Right after a sign-in an owner goes to their own portal (window.location, not the router: a
+ // router.replace from an effect loops on the static shell). The marker is consumed either way.
+ if (takeFreshSignIn() && d.gurukuls.length > 0) window.location.replace(GURUKUL_PORTAL_PATH);
+ })
  .catch(() => {});
  return () => { cancelled = true; };
  }, [session?.accessToken]);
