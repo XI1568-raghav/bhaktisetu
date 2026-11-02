@@ -3654,3 +3654,10 @@ Migrations do not auto-apply on deploy (see TASKS.md). Apply by hand, then redep
 - Razorpay live key rejected (401 Authentication failed): admin diagnostic `GET /api/v1/admin/diagnostics/razorpay`.
 - Test accounts (prod): test.devotee/priest/temple/gaushala/store/astrologer/wellness/gurukul/admin@example.com, password shared with the owner in chat (not recorded here: the repo is public), phones 9100000001-9. A gurukul manager is any user who owns a Gurukul row (no signup role). Test temple "Test Shri Ganesh Mandir Pune" is unverified (devotees cannot book it; rule 6).
 - Lessons: static portal pages must not call router.replace/push from effects (reload loop on Next 16); CI must pass SKIP_API_PRERENDER through turbo.json; Cloudflare deploy builds need staticPageGenerationTimeout 180; login/button does nothing until hydration (tests: waitUntil networkidle); login limit 10/min/IP shared by all testers.
+
+## 2026-11-01 — PDF 3 round (devotee, provider portals, admin)
+
+- Merged #365 (portals/admin) and #366 (devotee/public); web and API deployed from `3a72689c`.
+- Root cause worth remembering: client chunk files whose names contain `(` or `)` (route-group pages such as `temples/(index)`) get a self 307 from Cloudflare Workers Assets, so Chromium aborts with ERR_TOO_MANY_REDIRECTS. `next.config.ts` now rewrites the client chunk filename; check `/_next/static/chunks` names after any bundler change.
+- CI traps hit on #365: an agent committed `node_modules` symlinks from its worktree (breaks `pnpm install`), a module-level cache leaked between test files (PF-15), and a source-scan test pinned `await fetchBookings()` exactly. Run the FULL web suite locally before pushing, not a name filter.
+- Open: gurukul managers log in as devotees (no gurukul role); live seller store pages at `/store/<uuid>` return 404; Razorpay key and plan setup stay owner-only.
