@@ -489,11 +489,11 @@ function AdminUsersPageContent() {
  </div>
 
  {/* Pagination */}
- <div className="flex items-center justify-between px-5 py-3 border-t border-[var(--color-border)]">
+ <div className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 border-t border-[var(--color-border)]">
  <span className="text-xs text-surface-500">
  Showing {filtered.length === 0 ? 0 : (page - 1) * PAGE_SIZE + 1}-{Math.min(page * PAGE_SIZE, filtered.length)} of {shownTotal} users
  </span>
- <div className="flex items-center gap-1">
+ <div className="flex flex-wrap items-center gap-1">
  <button
  onClick={() => setPage(Math.max(1, page - 1))}
  disabled={page === 1}

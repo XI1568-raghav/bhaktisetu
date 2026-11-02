@@ -212,7 +212,7 @@ export default function AdminTemplesPage() {
                         </div>
                       )}
                       {t.activeOfferings === 0 && (
-                        <div className="mt-1 text-xs text-amber-700">No offerings: booking dead-ends</div>
+                        <div className="mt-1 text-xs text-amber-700">No puja offerings yet: devotees cannot book a puja here</div>
                       )}
                     </button>
                   </li>

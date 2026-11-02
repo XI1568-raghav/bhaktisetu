@@ -245,6 +245,11 @@ async function bootstrap() {
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    // Without Access-Control-Max-Age Chrome re-sends the OPTIONS preflight every 5 s. The web
+    // portals load every page as a full document (static pages answer RSC with HTML), so each
+    // page paid a preflight before /auth/refresh AND before its data call: two avoidable round
+    // trips of a ~1.5 s page load. Chrome caps this at 2 h.
+    maxAge: 7200,
   });
   // R-Q2-E-013 — API rate limiting per-user + per-IP.
   //

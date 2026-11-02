@@ -215,12 +215,12 @@ export default function AdminReportsPage() {
  return (
  <div className="space-y-6">
  {/* Header */}
- <div className="flex items-center justify-between">
+ <div className="flex flex-wrap items-center justify-between gap-3">
  <div>
  <h1 className={H1.portal}>Reports</h1>
  <p className="text-sm text-surface-500 mt-0.5">Analytics, trends, and platform insights</p>
  </div>
- <div className="flex gap-2">
+ <div className="flex flex-wrap gap-2">
  <button
  onClick={() => handleExport('users')}
  disabled={exportLoading !== null}

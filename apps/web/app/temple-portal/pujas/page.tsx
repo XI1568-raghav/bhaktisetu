@@ -542,6 +542,8 @@ function TemplePujasPageContent() {
                     <button
                       onClick={() => openEditForm(puja)}
                       disabled={isBusy}
+                      aria-label={`Edit ${type?.name ?? 'puja'}`}
+                      title="Edit puja"
                       className="p-2 text-surface-400 hover:text-saffron-600 hover:bg-saffron-50 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Pencil className="w-4 h-4" />
@@ -549,6 +551,8 @@ function TemplePujasPageContent() {
                     <button
                       onClick={() => void handleDelete(puja.id)}
                       disabled={isBusy}
+                      aria-label={`Delete ${type?.name ?? 'puja'}`}
+                      title="Delete puja"
                       className="p-2 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
                       {isBusy ? (

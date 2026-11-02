@@ -415,7 +415,7 @@ function WellnessSessionsPageContent() {
       <h2 className="text-lg font-semibold text-surface-800">
        {editingId ? 'Edit Session' : 'Add New Session'}
       </h2>
-      <button onClick={resetForm} className="p-1.5 text-surface-400 hover:text-surface-600 rounded-lg hover:bg-surface-100">
+      <button onClick={resetForm} aria-label="Close form" className="p-1.5 text-surface-400 hover:text-surface-600 rounded-lg hover:bg-surface-100">
        <X className="w-5 h-5" />
       </button>
      </div>
@@ -741,6 +741,8 @@ function WellnessSessionsPageContent() {
           <button
            onClick={() => openEditForm(s)}
            disabled={disabled}
+           aria-label={`Edit ${s.title}`}
+           title="Edit session"
            className="p-2 text-surface-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors disabled:opacity-50"
           >
            <Pencil className="w-4 h-4" />
@@ -748,6 +750,8 @@ function WellnessSessionsPageContent() {
           <button
            onClick={() => void handleDelete(s.id)}
            disabled={disabled}
+           aria-label={`Delete ${s.title}`}
+           title="Delete session"
            className="p-2 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
           >
            <Trash2 className="w-4 h-4" />

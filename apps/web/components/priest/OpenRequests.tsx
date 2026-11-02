@@ -21,6 +21,7 @@ import { Calendar, CheckCircle2, Loader2, MapPin, RefreshCw, Users } from 'lucid
 import { useAuth } from '../../lib/auth-context';
 import { API_BASE_URL, DATA_FETCH_TIMEOUT_MS, fetchWithTimeout } from '../../lib/api-config';
 import { UserFacingError, serverErrorMessage, serverErrorText, userFacingMessage } from '../../lib/friendly-error';
+import { takeWarmed } from '../../lib/warm-get';
 import { buttonClass } from '../ui/button-recipe';
 
 interface OpenRequestRow {
@@ -66,11 +67,13 @@ export default function OpenRequests() {
     setLoading(true);
     setLoadError(null);
     try {
-      const res = await fetchWithTimeout(
-        `${API_BASE_URL}/priest/open-requests`,
-        { headers: { Authorization: `Bearer ${session.accessToken}` } },
-        DATA_FETCH_TIMEOUT_MS,
-      );
+      // The offers page starts this request with its own list (lib/warm-get.ts); use it when present.
+      const url = `${API_BASE_URL}/priest/open-requests`;
+      const token = session.accessToken;
+      const warmed = takeWarmed(url, token);
+      const res = warmed
+        ? await warmed
+        : await fetchWithTimeout(url, { headers: { Authorization: `Bearer ${token}` } }, DATA_FETCH_TIMEOUT_MS);
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
         throw new UserFacingError(serverErrorText(detail, 'Could not load open requests. Please try again.'));

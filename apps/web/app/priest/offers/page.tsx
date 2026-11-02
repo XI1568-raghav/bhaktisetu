@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../../lib/auth-context';
 import { API_BASE_URL } from '../../../lib/api-config';
+import { warmGet } from '../../../lib/warm-get';
 import { H1 } from '../../../components/ui/heading-recipe';
 import { buttonClass } from '../../../components/ui/button-recipe';
 import OpenRequests from '../../../components/priest/OpenRequests';
@@ -104,6 +105,11 @@ function PriestOffersInner() {
     }
     setLoading(true);
     setLoadError(null);
+    // The open-requests card only mounts once this list has returned; start its request now
+    // so it is not a second round trip (lib/warm-get.ts).
+    if (!session.accessToken.startsWith('demo-')) {
+      warmGet(`${API_BASE_URL}/priest/open-requests`, session.accessToken);
+    }
     try {
       const res = await fetch(`${API_BASE_URL}/priest/offers`, {
         headers: { Authorization: `Bearer ${session.accessToken}` },
