@@ -67,7 +67,7 @@ describe('admin temples page', () => {
     render(<AdminTemplesPage />);
     await screen.findByText('Manager Temple');
     expect(screen.getByText(/Location is 0,0/)).toBeTruthy();
-    expect(screen.getByText(/No offerings: booking dead-ends/)).toBeTruthy();
+    expect(screen.getByText(/No puja offerings yet: devotees cannot book a puja here/)).toBeTruthy();
     fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'manag' } });
     await waitFor(() => expect(fn.mock.calls.some((c) => String(c[0]).includes('q=manag'))).toBe(true));
   });

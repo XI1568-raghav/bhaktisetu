@@ -116,7 +116,7 @@ export default function BecomeGurukulClient() {
             </div>
             <div>
               <label className="text-sm font-semibold text-surface-700">URL slug *</label>
-              <input required pattern="[a-z0-9-]+" placeholder="my-gurukul-varanasi" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase() })} className="w-full mt-1 px-3 py-2 border border-surface-200 rounded-lg" />
+              <input required pattern="[a-z0-9\-]+" placeholder="my-gurukul-varanasi" value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value.toLowerCase() })} className="w-full mt-1 px-3 py-2 border border-surface-200 rounded-lg" />
             </div>
           </div>
           <div>

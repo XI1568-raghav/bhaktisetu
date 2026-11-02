@@ -34,6 +34,10 @@ vi.mock('../lib/auth-context', () => ({
 
 vi.mock('../lib/api-config', () => ({
   API_BASE_URL: 'https://api.test',
+  DATA_FETCH_TIMEOUT_MS: 15000,
+  // The offers page warms the open-requests call (lib/warm-get.ts) through this.
+  // Kept off the page's own fetch spy so the offers calls stay in order.
+  fetchWithTimeout: async () => new Response(JSON.stringify({ eligible: true, requests: [] }), { status: 200 }),
   // 401 ONLY, matching lib/api-config.ts:288. Omitting it makes the component
   // throw inside its own catch; the test still passes and the throw escapes as
   // an unhandled rejection, which vitest exits non-zero for. That failed the

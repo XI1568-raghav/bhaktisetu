@@ -546,6 +546,8 @@ function TempleDarshanPageContent() {
                     <button
                       onClick={() => void handleDelete(stream.id)}
                       disabled={isBusy}
+                      aria-label={`Delete stream ${stream.title ?? 'Untitled stream'}`}
+                      title="Delete stream"
                       className="p-2 text-surface-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                     >
                       <Trash2 className="w-4 h-4" />
