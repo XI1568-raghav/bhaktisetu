@@ -183,6 +183,7 @@ const REDIRECT_ONLY = PAGES.filter(isRedirectOnly).map(relOf).sort();
  */
 const EXPECTED_REDIRECT_ONLY = [
   'astrology/[id]/page.tsx',
+  'consultation/page.tsx',
   'festivals/page.tsx',
   'live/page.tsx',
   // Under /priest/, which robots.txt already disallows — listed because the
