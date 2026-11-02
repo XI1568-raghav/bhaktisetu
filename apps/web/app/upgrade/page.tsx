@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from '../../lib/t';
 import { Sparkles, Check, Loader2 } from 'lucide-react';
@@ -148,8 +148,30 @@ function UpgradeInner() {
   const [reauth, setReauth] = useState(false);
   const t = useTranslations('upgrade');
 
+  // QA 2026-11-02 (tester PDF 3): this page hardcodes its cards, so it offered a live
+  // "Subscribe" on plans the API cannot charge yet. GET /subscriptions/plans is public and
+  // says `purchasable: false` for them; only an explicit false turns the button into a
+  // disabled "Opens soon" (an old API or a failed fetch leaves the cards as they were).
+  const [notPurchasable, setNotPurchasable] = useState<Set<string>>(new Set());
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`${API_BASE_URL}/subscriptions/plans`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (cancelled || !Array.isArray(d?.plans)) return;
+        const ids = (d.plans as { id?: string; purchasable?: boolean }[])
+          .filter((p) => p.purchasable === false && typeof p.id === 'string')
+          .map((p) => p.id as string);
+        setNotPurchasable(new Set(ids));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function handleUpgrade(planId: string) {
-    if (planId === 'free') return;
+    if (planId === 'free' || notPurchasable.has(planId)) return;
 
     if (!isAuthenticated || !session?.accessToken) {
       router.push(`/auth?redirect=${encodeURIComponent('/upgrade')}`);
@@ -281,6 +303,7 @@ function UpgradeInner() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {PLAN_CARDS.map((plan) => {
             const busy = busyPlanId === plan.id;
+            const opensSoon = notPurchasable.has(plan.id);
             return (
               <div
                 key={plan.id}
@@ -337,14 +360,14 @@ function UpgradeInner() {
                 </ul>
                 <button
                   onClick={() => handleUpgrade(plan.id)}
-                  disabled={plan.id === 'free' || busy}
+                  disabled={plan.id === 'free' || opensSoon || busy}
                   className="w-full px-4 py-2.5 rounded-lg text-sm font-semibold text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   style={{
                     background:
-                      plan.id === 'free'
+                      plan.id === 'free' || opensSoon
                         ? 'var(--color-border, #e8dcc8)'
                         : 'var(--color-primary, #c2410c)',
-                    color: plan.id === 'free' ? '#7a6a55' : '#fff',
+                    color: plan.id === 'free' || opensSoon ? '#7a6a55' : '#fff',
                   }}
                 >
                   {busy ? (
@@ -352,6 +375,8 @@ function UpgradeInner() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       Processing…
                     </>
+                  ) : opensSoon ? (
+                    'Opens soon'
                   ) : (
                     plan.cta
                   )}
@@ -362,8 +387,7 @@ function UpgradeInner() {
         </div>
 
         <p className="text-center text-xs text-surface-400 mt-10">
-          Payments powered by Razorpay. In demo mode (no Razorpay key) the
-          subscription is created instantly so you can try the flow end-to-end.
+          Payments are processed securely by Razorpay.
         </p>
       </div>
     </div>

@@ -110,7 +110,8 @@ describe('PM-04 — /upgrade never provisions a priced plan through the free-gra
 
     expect(screen.queryByRole('button', { name: /go premium/i })).toBeNull();
     expect(document.body.textContent).not.toMatch(/5,000|nri premium/i);
-    expect(spy).not.toHaveBeenCalled();
+    // The only request on render is the public plan-availability lookup (GET, no POST).
+    expect(calledPaths(spy).filter((p) => !p.endsWith('/subscriptions/plans'))).toEqual([]);
   });
 
   it('still sends the ₹499 monthly plan to the paid rail', async () => {

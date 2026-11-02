@@ -22,6 +22,7 @@ import { getSupabaseBrowserClient } from '../../../lib/supabase';
 import { userFacingMessage } from '../../../lib/friendly-error';
 import { suspendedLoginMessage } from '../../../lib/suspended-notice';
 import { useSoftNavigate } from '../../../lib/use-soft-navigate';
+import { resolveLoginLanding } from '../../../lib/gurukul-landing';
 
 // P0-1 (2026-07-17): open-redirect guard. /auth/callback already validated
 // ?redirect= (root-relative or same-origin only) but /auth/login did not — a
@@ -69,7 +70,7 @@ function GoogleIcon({ className }: { className?: string }) {
 }
 
 export default function LoginPage() {
-  const { signInWithOtp, verifyOtp, signInWithCredentials, isAuthenticated, user } = useAuth();
+  const { signInWithOtp, verifyOtp, signInWithCredentials, isAuthenticated, user, session } = useAuth();
   const t = useTranslations('auth');
   const tCommon = useTranslations('common');
 
@@ -122,18 +123,29 @@ export default function LoginPage() {
   // fresh login that value was null → every returning non-devotee raced toward
   // /dashboard). This effect reads the fresh user from context; every login
   // path (email, OTP, already-signed-in) now lands here and nowhere else.
+  const landingStartedRef = useRef(false);
   useEffect(() => {
     if (isAuthenticated && user) {
+      if (landingStartedRef.current) return;
+      landingStartedRef.current = true;
       const params = new URLSearchParams(window.location.search);
-      const redirect = isNewAccountRef.current
-        ? '/profile'
-        : safeRedirect(params.get('redirect'), getRoleDashboardPath(user.role));
+      const explicit = params.get('redirect');
+      const isNew = isNewAccountRef.current;
+      const base = isNew ? '/profile' : safeRedirect(explicit, getRoleDashboardPath(user.role));
+      // A devotee who owns a gurukul listing lands on /gurukul-portal (the probe
+      // is skipped for every other case and falls back to `base` on any failure).
       // Soft navigation: a full page load would discard the in-memory session
       // sign-in just returned and force a second /auth/refresh round trip
       // (lib/use-soft-navigate.ts).
-      navigate(redirect);
+      void resolveLoginLanding({
+        role: user.role,
+        accessToken: session?.accessToken,
+        hasExplicitRedirect: !!explicit,
+        isNewAccount: isNew,
+        fallback: base,
+      }).then((target) => navigate(target));
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, user, session?.accessToken, navigate]);
 
   // Focus appropriate input on tab change
   useEffect(() => {
