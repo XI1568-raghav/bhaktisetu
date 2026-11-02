@@ -1,66 +1,48 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { ownsGurukul, resolveLoginLanding } from '../lib/gurukul-landing';
+import { markFreshSignIn, takeFreshSignIn, GURUKUL_PORTAL_PATH } from '../lib/gurukul-landing';
 
 // QA 2026-10-31 (tester PDF 3): a gurukul manager signs in as a devotee and landed on
-// /dashboard, which "feels like a devotee portal". Sign-in now routes an owner to
-// /gurukul-portal; nobody else changes.
+// /dashboard, which "feels like a devotee portal". Login stays one navigation (a lookup there
+// cost every devotee 0.75-1.4 s on prod); it only leaves a marker and the dashboard, which
+// already asks the API for the account's gurukuls, forwards an owner to the portal.
 
-const opts = {
-  role: 'devotee',
-  accessToken: 'tok',
-  hasExplicitRedirect: false,
-  isNewAccount: false,
-  fallback: '/dashboard',
-};
+describe('fresh sign-in marker', () => {
+  beforeEach(() => sessionStorage.clear());
 
-function mockFetch(impl: () => Promise<Response> | Response) {
-  const spy = vi.fn(async () => impl());
-  vi.stubGlobal('fetch', spy);
-  return spy;
-}
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
-
-describe('gurukul login landing', () => {
-  beforeEach(() => vi.unstubAllGlobals());
-  afterEach(() => vi.unstubAllGlobals());
-
-  it('sends a devotee who owns a gurukul to /gurukul-portal', async () => {
-    const spy = mockFetch(() => json({ gurukuls: [{ id: 'g1' }] }));
-    expect(await resolveLoginLanding(opts)).toBe('/gurukul-portal');
-    expect(String((spy.mock.calls[0] as unknown[])[0])).toContain('/gurukuls/mine/list');
+  it('is taken once', () => {
+    markFreshSignIn(1_000);
+    expect(takeFreshSignIn(1_500)).toBe(true);
+    expect(takeFreshSignIn(1_600)).toBe(false);
   });
 
-  it('keeps a devotee with no gurukul on /dashboard', async () => {
-    mockFetch(() => json({ gurukuls: [] }));
-    expect(await resolveLoginLanding(opts)).toBe('/dashboard');
+  it('expires after a minute so a later dashboard visit never redirects', () => {
+    markFreshSignIn(1_000);
+    expect(takeFreshSignIn(1_000 + 61_000)).toBe(false);
   });
 
-  it('falls back to the dashboard on a 401, a 500, a network error or a bad body', async () => {
-    mockFetch(() => json({}, 401));
-    expect(await ownsGurukul('tok')).toBe(false);
-    mockFetch(() => json({}, 500));
-    expect(await ownsGurukul('tok')).toBe(false);
-    mockFetch(() => Promise.reject(new Error('offline')));
-    expect(await resolveLoginLanding(opts)).toBe('/dashboard');
-    mockFetch(() => json({ gurukuls: 'nope' }));
-    expect(await ownsGurukul('tok')).toBe(false);
+  it('is false when nothing was marked', () => {
+    expect(takeFreshSignIn()).toBe(false);
   });
 
-  it('does not probe (or change anything) for other roles, explicit redirects or new accounts', async () => {
-    const spy = mockFetch(() => json({ gurukuls: [{ id: 'g1' }] }));
-    expect(await resolveLoginLanding({ ...opts, role: 'priest', fallback: '/priest' })).toBe('/priest');
-    expect(await resolveLoginLanding({ ...opts, hasExplicitRedirect: true, fallback: '/consultation' })).toBe('/consultation');
-    expect(await resolveLoginLanding({ ...opts, isNewAccount: true, fallback: '/profile' })).toBe('/profile');
-    expect(await resolveLoginLanding({ ...opts, accessToken: undefined })).toBe('/dashboard');
-    expect(spy).not.toHaveBeenCalled();
+  it('points at the gurukul portal', () => {
+    expect(GURUKUL_PORTAL_PATH).toBe('/gurukul-portal');
+  });
+});
+
+describe('wiring', () => {
+  const read = (p: string) => readFileSync(join(process.cwd(), p), 'utf8');
+
+  it('login marks only a plain devotee sign-in and adds no API call', () => {
+    const src = read('app/auth/login/page.tsx');
+    expect(src).toMatch(/user\.role === 'devotee' && !explicit && !isNew\) markFreshSignIn\(\)/);
+    expect(src).not.toContain('gurukuls/mine/list');
   });
 
-  it('the login page routes through resolveLoginLanding exactly once', () => {
-    const src = readFileSync(join(__dirname, '../app/auth/login/page.tsx'), 'utf8');
-    expect(src).toContain('resolveLoginLanding');
-    expect(src).toContain('landingStartedRef');
+  it('dashboard forwards an owner with the browser location, not the router', () => {
+    const src = read('app/dashboard/page.tsx');
+    expect(src).toMatch(/takeFreshSignIn\(\) && d\.gurukuls\.length > 0\) window\.location\.replace\(GURUKUL_PORTAL_PATH\)/);
+    expect(src).not.toMatch(/router\.(replace|push)\(['"`]\/gurukul-portal/);
   });
 });
