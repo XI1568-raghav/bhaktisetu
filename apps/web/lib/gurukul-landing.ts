@@ -9,7 +9,7 @@ import { API_BASE_URL, fetchWithTimeout } from './api-config';
  * Client-side only, no new role. Every failure (timeout, 401, 5xx, bad body)
  * answers false so the caller falls back to the normal devotee dashboard.
  */
-export const GURUKUL_LANDING_TIMEOUT_MS = 2500;
+export const GURUKUL_LANDING_TIMEOUT_MS = 1200;
 
 export async function ownsGurukul(accessToken: string | undefined | null): Promise<boolean> {
   if (!accessToken) return false;
