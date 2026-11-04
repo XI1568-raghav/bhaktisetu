@@ -1,0 +1,72 @@
+name: Render set env
+
+# Sets ONE allowlisted environment variable on the API service through the Render API.
+# Values are never printed. The Razorpay variables are read from GitHub Actions secrets of the
+# same name and are never taken from the dispatch inputs (inputs are visible in the run page).
+# QA_PAYER_EMAILS is not secret and comes from the `value` input.
+# Afterwards deploy with render-diag.yml (mode=deploy) so the service restarts with the new value.
+
+on:
+  workflow_dispatch:
+    inputs:
+      var:
+        description: Which variable to set
+        type: choice
+        required: true
+        options:
+          - QA_PAYER_EMAILS
+          - RAZORPAY_KEY_ID
+          - RAZORPAY_KEY_SECRET
+          - RAZORPAY_WEBHOOK_SECRET
+      value:
+        description: Only for QA_PAYER_EMAILS (comma-separated emails). Ignored for the Razorpay variables.
+        required: false
+        default: ''
+      sid:
+        description: Render service id (default is the API service)
+        required: false
+        default: srv-d7mc2n8sfn5c73dfce0g
+
+permissions:
+  contents: read
+
+jobs:
+  set-env:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set the variable and list the variable names (never values)
+        env:
+          RK: ${{ secrets.RENDER_API_KEY }}
+          VAR: ${{ inputs.var }}
+          INPUT_VALUE: ${{ inputs.value }}
+          SID: ${{ inputs.sid }}
+          RZP_KEY_ID: ${{ secrets.RAZORPAY_KEY_ID }}
+          RZP_KEY_SECRET: ${{ secrets.RAZORPAY_KEY_SECRET }}
+          RZP_WEBHOOK_SECRET: ${{ secrets.RAZORPAY_WEBHOOK_SECRET }}
+        run: |
+          set -euo pipefail
+          VALUE=""
+          case "$VAR" in
+            QA_PAYER_EMAILS)
+              VALUE="$INPUT_VALUE"
+              if ! printf '%s' "$VALUE" | grep -Eq '^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+(,[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+)*$'; then
+                echo "QA_PAYER_EMAILS must be comma-separated email addresses with no spaces"; exit 1
+              fi ;;
+            RAZORPAY_KEY_ID)
+              VALUE="$RZP_KEY_ID"
+              case "$VALUE" in rzp_live_*) ;; *) echo "RAZORPAY_KEY_ID secret is missing or does not start with rzp_live_"; exit 1 ;; esac ;;
+            RAZORPAY_KEY_SECRET) VALUE="$RZP_KEY_SECRET" ;;
+            RAZORPAY_WEBHOOK_SECRET) VALUE="$RZP_WEBHOOK_SECRET" ;;
+            *) echo "variable not allowed"; exit 1 ;;
+          esac
+          if [ -z "$VALUE" ]; then echo "No value for $VAR. For the Razorpay variables add a GitHub Actions secret with the same name."; exit 1; fi
+          echo "::add-mask::$VALUE"
+          body=$(jq -n --arg v "$VALUE" '{value:$v}')
+          code=$(curl -s -o /tmp/put.json -w "%{http_code}" -X PUT \
+            -H "Authorization: Bearer $RK" -H "Content-Type: application/json" \
+            --data "$body" "https://api.render.com/v1/services/$SID/env-vars/$VAR")
+          echo "Render answered HTTP $code for $VAR"
+          if [ "$code" != "200" ]; then jq -r '.message // empty' /tmp/put.json; exit 1; fi
+          echo "=== variable names now set on the service (values are not shown) ==="
+          curl -s -H "Authorization: Bearer $RK" "https://api.render.com/v1/services/$SID/env-vars?limit=100" \
+            | jq -r '.[] | (.envVar // .) | .key' | sort
