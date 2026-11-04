@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { notHiddenReviewWhere } from '../lib/review-moderation.js';
 import { authenticateUser } from '../middlewares/auth.js';
+import { isQaPayer } from '../lib/qa-payer.js';
 import {
   storeService,
   presentLiveProduct,
@@ -59,6 +60,19 @@ async function loadLiveProductById(id: string): Promise<Product | undefined> {
     console.error('[store] seller product lookup failed', err);
     return undefined;
   }
+}
+
+/**
+ * QA_PAYER_EMAILS: the basket of an allowlisted tester carries no delivery fee,
+ * matching what POST /store/orders will charge that account (same rule, see
+ * lib/store-pricing.ts). Everyone else's cart is returned untouched.
+ */
+function cartForUser<C extends { subtotal: number; deliveryFee: number; tax: number; total: number }>(
+  cart: C,
+  user: { email?: string | null } | undefined,
+): C {
+  if (!isQaPayer(user)) return cart;
+  return { ...cart, deliveryFee: 0, total: cart.subtotal + cart.tax };
 }
 
 export async function storeRoutes(server: FastifyInstance) {
@@ -192,7 +206,7 @@ export async function storeRoutes(server: FastifyInstance) {
 
   server.post('/cart', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
-    const cart = storeService.getCart(userId);
+    const cart = cartForUser(storeService.getCart(userId), request.currentUser);
     return { cart };
   });
 
@@ -218,7 +232,10 @@ export async function storeRoutes(server: FastifyInstance) {
       const resolved = STORE_PRODUCT_ID_RE.test(productId)
         ? await loadLiveProductById(productId)
         : undefined;
-      const cart = storeService.createCartItem(userId, productId, quantity ?? 1, resolved);
+      const cart = cartForUser(
+        storeService.createCartItem(userId, productId, quantity ?? 1, resolved),
+        request.currentUser,
+      );
       return { message: 'Item added to cart.', cart };
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
@@ -233,7 +250,7 @@ export async function storeRoutes(server: FastifyInstance) {
       const { id } = request.params as { id: string };
       const { quantity } = request.body as { quantity: number };
 
-      const cart = storeService.updateCartItem(userId, id, quantity);
+      const cart = cartForUser(storeService.updateCartItem(userId, id, quantity), request.currentUser);
       return { message: 'Cart item updated.', cart };
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
@@ -247,7 +264,7 @@ export async function storeRoutes(server: FastifyInstance) {
       const userId = request.currentUser!.id;
       const { id } = request.params as { id: string };
 
-      const cart = storeService.removeCartItem(userId, id);
+      const cart = cartForUser(storeService.removeCartItem(userId, id), request.currentUser);
       return { message: 'Item removed from cart.', cart };
     } catch (err: any) {
       reply.code(400).send({ error: err.message });
@@ -258,7 +275,7 @@ export async function storeRoutes(server: FastifyInstance) {
 
   server.get('/cart', { preHandler: [authenticateUser] }, async (request, reply) => {
     const userId = request.currentUser!.id;
-    const cart = storeService.getCart(userId);
+    const cart = cartForUser(storeService.getCart(userId), request.currentUser);
     return { cart };
   });
 
@@ -326,7 +343,7 @@ export async function storeRoutes(server: FastifyInstance) {
       paymentMethod: string;
     };
 
-    const cart = storeService.getCart(userId);
+    const cart = cartForUser(storeService.getCart(userId), request.currentUser);
 
     if (cart.itemCount === 0) {
       return reply.code(400).send({ error: 'Cart is empty.' });

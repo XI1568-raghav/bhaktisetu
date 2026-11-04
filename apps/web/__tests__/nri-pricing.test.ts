@@ -107,7 +107,7 @@ describe('pandit-direct checkout (/from-offering) shows what the API charges', (
   const page = readRepo('apps/web/app/checkout/offering/page.tsx');
   it('the page sends the explicit flag and prices from the same helpers as the wizard', () => {
     expect(page).toMatch(/nriPricing:\s*isNriPricing/);
-    expect(page).toMatch(/nriTotalInr\(priceInr, false\)/);
+    expect(page).toMatch(/nriTotalInr\(priceInr, false, qaPricing\)/);
     expect(page).toMatch(/useDisplayCurrency\(\)/);
   });
   it('refuses to open Razorpay when the order amount is not the amount shown', () => {

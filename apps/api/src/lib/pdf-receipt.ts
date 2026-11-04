@@ -72,7 +72,7 @@ const SAFFRON = rgb(0.918, 0.345, 0.047); // matches brand #EA580C
 const TEXT = rgb(0.24, 0.18, 0.12);
 const MUTED = rgb(0.45, 0.4, 0.35);
 
-function amountInWords(amount: number): string {
+export function amountInWords(amount: number): string {
   // Indian-system to-words: handle up to lakhs/crores
   const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten',
     'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
@@ -84,6 +84,8 @@ function amountInWords(amount: number): string {
   }
   const intAmount = Math.round(amount);
   if (intAmount === 0) return 'Zero Rupees Only';
+  // Rs 1 is the QA-payer amount (QA_PAYER_EMAILS): "One Rupees Only" read as a typo on the receipt.
+  if (intAmount === 1) return 'One Rupee Only';
   let n = intAmount;
   const parts: string[] = [];
   const crore = Math.floor(n / 10000000); n %= 10000000;

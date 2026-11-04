@@ -116,7 +116,7 @@ describe('booking wizard wiring', () => {
     expect(src).toMatch(/nriPricing:\s*isNriPricing/);
   });
   it('totals in USD mode come from nriTotalInr, the same INR the API charges', () => {
-    expect(src).toMatch(/nriTotalInr\(basePrice, wantsPrasad\)/);
+    expect(src).toMatch(/nriTotalInr\(basePrice, wantsPrasad, qaPricing\)/);
   });
   it('refuses to open Razorpay when the order amount is not the amount shown', () => {
     expect(src).toMatch(/Number\(data\.amount\) !== Math\.round\(totalPrice \* 100\)/);

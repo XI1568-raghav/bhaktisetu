@@ -15,6 +15,7 @@ import {
   User,
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
+import { QA_DONATION_MIN_INR, useQaPricing } from '../lib/qa-pricing';
 import { API_BASE_URL } from '../lib/api-config';
 import { COMPANY } from '../lib/company';
 import { buttonClass } from '../components/ui/button-recipe';
@@ -110,8 +111,12 @@ export default function DonationForm({
   planAmount,
 }: DonationFormProps) {
   const { user, session, isAuthenticated } = useAuth();
+  // Tester on the server's QA_PAYER_EMAILS allowlist: Rs 1 minimum (lib/qa-pricing.ts).
+  const qaPricing = useQaPricing();
+  const minInr = qaPricing ? QA_DONATION_MIN_INR : MIN_INR;
 
-  const presets = defaultAmounts && defaultAmounts.length > 0 ? defaultAmounts : DEFAULT_AMOUNTS;
+  const basePresets = defaultAmounts && defaultAmounts.length > 0 ? defaultAmounts : DEFAULT_AMOUNTS;
+  const presets = qaPricing && !basePresets.includes(QA_DONATION_MIN_INR) ? [QA_DONATION_MIN_INR, ...basePresets] : basePresets;
 
   // Form state — a planAmount (from a gau-seva plan link) pre-selects that amount.
   const [amount, setAmount] = useState<string>(String(planAmount ?? presets[2] ?? 1100));
@@ -175,6 +180,7 @@ export default function DonationForm({
       phone: donorPhone,
       pan: donorPan,
       hasTaxReceipt: HAS_80G,
+      minInr,
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -459,7 +465,7 @@ export default function DonationForm({
           <input
             type="number"
             inputMode="numeric"
-            min={MIN_INR}
+            min={minInr}
             max={MAX_INR}
             step={1}
             value={amount}
@@ -467,7 +473,7 @@ export default function DonationForm({
               setAmount(e.target.value);
               clearError('amount', 'donorPan');
             }}
-            placeholder={`Custom amount (min ₹${MIN_INR})`}
+            placeholder={`Custom amount (min ₹${minInr})`}
             className={`w-full rounded-lg border py-2.5 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-saffron-200 ${
               errors.amount ? 'border-red-300 bg-red-50' : 'border-surface-200'
             }`}

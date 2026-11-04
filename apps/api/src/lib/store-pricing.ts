@@ -27,7 +27,13 @@ export interface StoreOrderTotals {
   totalInr: number;
 }
 
-export function computeDeliveryFeeInr(subtotalInr: number): number {
+/**
+ * @param waiveDelivery true for an account on QA_PAYER_EMAILS (lib/qa-payer.ts):
+ *   the delivery fee is 0 so a Rs 1 product costs Rs 1. Callers pass it from the
+ *   authenticated user's email, never from the request.
+ */
+export function computeDeliveryFeeInr(subtotalInr: number, waiveDelivery = false): number {
+  if (waiveDelivery) return 0;
   return subtotalInr >= FREE_DELIVERY_THRESHOLD_INR ? 0 : DELIVERY_FEE_INR;
 }
 
@@ -37,8 +43,9 @@ export function computeDeliveryFeeInr(subtotalInr: number): number {
  */
 export function computeStoreOrderTotals(
   items: { qty: number; unitPriceInr: number }[],
+  opts: { waiveDelivery?: boolean } = {},
 ): StoreOrderTotals {
   const subtotalInr = items.reduce((sum, it) => sum + it.unitPriceInr * it.qty, 0);
-  const deliveryFeeInr = computeDeliveryFeeInr(subtotalInr);
+  const deliveryFeeInr = computeDeliveryFeeInr(subtotalInr, opts.waiveDelivery === true);
   return { subtotalInr, deliveryFeeInr, totalInr: subtotalInr + deliveryFeeInr };
 }

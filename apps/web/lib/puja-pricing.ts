@@ -32,9 +32,22 @@ export const PRASAD_DELIVERY_FEE_INR = 150;
  * state we must show ₹0 rather than a bare ₹51, which would read as a fee
  * charged for nothing.
  */
-export function pujaTotalInr(basePriceInr: number, wantsPrasad: boolean): number {
+export function pujaTotalInr(basePriceInr: number, wantsPrasad: boolean, qaPricing = false): number {
   if (!basePriceInr || basePriceInr <= 0) return 0;
-  return basePriceInr + PLATFORM_FEE_INR + (wantsPrasad ? PRASAD_DELIVERY_FEE_INR : 0);
+  return basePriceInr + platformFeeInr(qaPricing) + (wantsPrasad ? prasadFeeInr(qaPricing) : 0);
+}
+
+/**
+ * Fees for a signed-in tester on the server's QA_PAYER_EMAILS allowlist
+ * (`GET /auth/me` -> `qaPricing`, see lib/qa-pricing.ts): both are 0, matching
+ * apps/api/src/services/booking.service.ts bookingFeesInr. Everyone else pays
+ * the constants above.
+ */
+export function platformFeeInr(qaPricing = false): number {
+  return qaPricing ? 0 : PLATFORM_FEE_INR;
+}
+export function prasadFeeInr(qaPricing = false): number {
+  return qaPricing ? 0 : PRASAD_DELIVERY_FEE_INR;
 }
 
 /** Indian digit grouping (1,301 / 2,25,000) — used everywhere in the funnel. */
@@ -47,8 +60,8 @@ export function formatInr(amount: number): string {
  * card, the detail hero, the temple compare row. Keeps the wording identical
  * everywhere so the buyer sees the same sentence at every step.
  */
-export function feeDisclosureLine(basePriceInr: number): string {
-  return `+ ₹${formatInr(PLATFORM_FEE_INR)} platform fee · ₹${formatInr(
-    pujaTotalInr(basePriceInr, false),
+export function feeDisclosureLine(basePriceInr: number, qaPricing = false): string {
+  return `+ ₹${formatInr(platformFeeInr(qaPricing))} platform fee · ₹${formatInr(
+    pujaTotalInr(basePriceInr, false, qaPricing),
   )} total`;
 }

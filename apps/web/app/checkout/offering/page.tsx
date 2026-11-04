@@ -25,11 +25,12 @@ import { DateInput } from '../../../components/ui/DateInput';
 import { buildLoginRedirect } from '../../../lib/booking-draft';
 
 import {
-  PLATFORM_FEE_INR,
+  platformFeeInr,
   feeDisclosureLine,
   formatInr,
   pujaTotalInr,
 } from '../../../lib/puja-pricing';
+import { useQaPricing } from '../../../lib/qa-pricing';
 // NRI pricing (owner decision 2026-10-05): the USD view is the NRI price (puja
 // x 2.5, still an INR order). Same helpers and same explicit `nriPricing` flag
 // as the temple booking wizard, so what is shown equals what is charged.
@@ -247,7 +248,13 @@ function OfferingCheckoutInner() {
   // prasad fee when requested, which this page does not offer), so quoting
   // basePrice alone on the pay button understated the Razorpay sheet by Rs 51.
   const chargedPujaInr = isNriPricing ? nriPujaPriceInr(priceInr) : priceInr;
-  const totalPayableInr = isNriPricing ? nriTotalInr(priceInr, false) : pujaTotalInr(priceInr, false);
+  // Tester on the server's QA_PAYER_EMAILS allowlist: the server waives the fee
+  // (lib/qa-pricing.ts), so quote the same total. false for everyone else.
+  const qaPricing = useQaPricing();
+  const PLATFORM_FEE_INR = platformFeeInr(qaPricing);
+  const totalPayableInr = isNriPricing
+    ? nriTotalInr(priceInr, false, qaPricing)
+    : pujaTotalInr(priceInr, false, qaPricing);
   const totalLabel = isNriPricing
     ? usdPriceLine(totalPayableInr)
     : `\u20B9${formatInr(totalPayableInr)}`;
@@ -551,7 +558,7 @@ function OfferingCheckoutInner() {
               <p className="mt-1 text-xs text-surface-500">
                 {isNriPricing
                   ? `+ \u20B9${formatInr(PLATFORM_FEE_INR)} platform fee \u00B7 total ${totalLabel}`
-                  : feeDisclosureLine(priceInr)}
+                  : feeDisclosureLine(priceInr, qaPricing)}
               </p>
               <CurrencyToggle className="mt-2" />
             </div>

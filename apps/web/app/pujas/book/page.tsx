@@ -51,11 +51,12 @@ import { canPublishTrustScore, formatTrustScoreOutOf } from '../../../lib/trust-
 // enum, on the CHECKOUT page — 'special_occasion' beside the price.
 import { pujaCategoryLabel } from '../../../lib/puja-labels';
 import {
- PLATFORM_FEE_INR,
- PRASAD_DELIVERY_FEE_INR,
+ platformFeeInr,
+ prasadFeeInr,
  formatInr,
  pujaTotalInr,
 } from '../../../lib/puja-pricing';
+import { useQaPricing } from '../../../lib/qa-pricing';
 // NRI pricing (owner decision 2026-10-05): a devotee who chooses the USD view is
 // quoted — and charged — the NRI price (puja x 2.5, still an INR order). The
 // wizard tells the server with `nriPricing`, so shown === charged.
@@ -656,14 +657,19 @@ function PujaBookingInner() {
 
  const { currency: displayCurrency } = useDisplayCurrency();
  const isNriPricing = displayCurrency === 'USD';
+ // Tester on the server's QA_PAYER_EMAILS allowlist: the server waives both fees,
+ // so the page must quote the same total (lib/qa-pricing.ts). false for everyone else.
+ const qaPricing = useQaPricing();
+ const PLATFORM_FEE_INR = platformFeeInr(qaPricing);
+ const PRASAD_DELIVERY_FEE_INR = prasadFeeInr(qaPricing);
 
  // What the devotee is charged for the puja itself, in INR: the domestic price,
  // or the NRI price (x2.5) when the USD view is on. Flat fees are added on top.
  const chargedPujaPrice = isNriPricing ? nriPujaPriceInr(basePrice) : basePrice;
 
  const totalPrice = useMemo(
- () => (isNriPricing ? nriTotalInr(basePrice, wantsPrasad) : pujaTotalInr(basePrice, wantsPrasad)),
- [basePrice, wantsPrasad, isNriPricing],
+ () => (isNriPricing ? nriTotalInr(basePrice, wantsPrasad, qaPricing) : pujaTotalInr(basePrice, wantsPrasad, qaPricing)),
+ [basePrice, wantsPrasad, isNriPricing, qaPricing],
  );
  // The total as the devotee reads it: INR, or "$X (charged as ₹Y; ...)".
  const totalLabel = isNriPricing ? usdPriceLine(totalPrice) : `₹${totalPrice.toLocaleString('en-IN')}`;
@@ -682,12 +688,12 @@ function PujaBookingInner() {
 
  const disclosurePujaPrice = isNriPricing ? nriPujaPriceInr(disclosureBasePrice) : disclosureBasePrice;
  const totalWithoutPrasad = useMemo(
- () => (isNriPricing ? nriTotalInr(disclosureBasePrice, false) : pujaTotalInr(disclosureBasePrice, false)),
- [disclosureBasePrice, isNriPricing],
+ () => (isNriPricing ? nriTotalInr(disclosureBasePrice, false, qaPricing) : pujaTotalInr(disclosureBasePrice, false, qaPricing)),
+ [disclosureBasePrice, isNriPricing, qaPricing],
  );
  const totalWithPrasad = useMemo(
- () => (isNriPricing ? nriTotalInr(disclosureBasePrice, true) : pujaTotalInr(disclosureBasePrice, true)),
- [disclosureBasePrice, isNriPricing],
+ () => (isNriPricing ? nriTotalInr(disclosureBasePrice, true, qaPricing) : pujaTotalInr(disclosureBasePrice, true, qaPricing)),
+ [disclosureBasePrice, isNriPricing, qaPricing],
  );
 
  // ─── Fetch slot availability ────────────────────────────────

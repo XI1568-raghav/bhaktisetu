@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { AuthProvider } from "../lib/auth-context";
 import { CartProvider } from "../components/CartContext";
+import { QaPricingBanner } from "../components/QaPricingBanner";
 import { QueryProvider } from "../components/QueryProvider";
 import NavAuthButton from "../components/NavAuthButton";
 import NavCartButton from "../components/NavCartButton";
@@ -628,6 +629,7 @@ export default function RootLayout({
  <QueryProvider>
  <AuthProvider>
  <CartProvider>
+ <QaPricingBanner />
 
  {/* ── Navigation ─────────────────────────────────────────────── */}
  {/* RESP-10: the header, <main> and the bottom tab bar are handed to

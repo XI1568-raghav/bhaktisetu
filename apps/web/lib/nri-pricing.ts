@@ -14,7 +14,7 @@
  * server computes the same INR amount (apps/api createBooking), so the amount
  * shown equals the amount charged.
  */
-import { PLATFORM_FEE_INR, PRASAD_DELIVERY_FEE_INR, formatInr } from './puja-pricing';
+import { platformFeeInr, prasadFeeInr, formatInr } from './puja-pricing';
 
 /** 2.5x domestic. Owner: "2-3x will work". */
 export const NRI_PREMIUM_MULTIPLIER = 2.5;
@@ -38,10 +38,10 @@ export function nriPujaPriceInr(domesticPujaInr: number): number {
 }
 
 /** What an NRI devotee is charged, in INR: NRI puja price + the flat fees. */
-export function nriTotalInr(domesticPujaInr: number, wantsPrasad: boolean): number {
+export function nriTotalInr(domesticPujaInr: number, wantsPrasad: boolean, qaPricing = false): number {
   const puja = nriPujaPriceInr(domesticPujaInr);
   if (puja <= 0) return 0;
-  return puja + PLATFORM_FEE_INR + (wantsPrasad ? PRASAD_DELIVERY_FEE_INR : 0);
+  return puja + platformFeeInr(qaPricing) + (wantsPrasad ? prasadFeeInr(qaPricing) : 0);
 }
 
 /** Whole-dollar display figure for an INR amount. */

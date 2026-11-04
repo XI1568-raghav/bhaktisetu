@@ -10,6 +10,7 @@ import { sendEmail } from '../lib/email.js';
 import { esc } from '../lib/html-escape.js';
 import { writeStoreOrderCommission } from '../services/store-commission.service.js';
 import { computeStoreOrderTotals } from '../lib/store-pricing.js';
+import { isQaPayer } from '../lib/qa-payer.js';
 import {
   customerCancelStoreOrder,
   refundStoreOrder,
@@ -299,6 +300,8 @@ export async function storeOrderRoutes(server: FastifyInstance) {
     // number the checkout screen promised.
     const totals = computeStoreOrderTotals(
       serverItems.map((it) => ({ qty: it.qty, unitPriceInr: it.priceAtPurchase })),
+      // QA_PAYER_EMAILS: no delivery fee for an allowlisted tester account.
+      { waiveDelivery: isQaPayer(request.currentUser) },
     );
     serverTotal = totals.totalInr;
 

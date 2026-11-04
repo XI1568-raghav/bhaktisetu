@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { ArrowLeft, Clock, IndianRupee, Loader2, Sparkles, Phone } from 'lucide-react';
 import AuthGuard from '../../../../components/AuthGuard';
 import { useAuth } from '../../../../lib/auth-context';
+import { QA_CONSULTATION_MIN_MINUTES, useQaPricing } from '../../../../lib/qa-pricing';
 import { API_BASE_URL } from '../../../../lib/api-config';
 import { astrologyFetch, isAstrologyNetworkFailure } from '../../../../lib/astrologer-fetch';
 import { DateTimeInput } from '../../../../components/ui/DateInput';
@@ -38,6 +39,9 @@ type Astrologer = {
 const MAX_DAYS_AHEAD = 60;
 
 const MINUTE_PRESETS = [5, 10, 15, 20, 30, 45, 60] as const;
+
+/** A tester on the server's QA_PAYER_EMAILS allowlist may book 1 minute (a Rs 1/min astrologer = Rs 1). */
+const QA_MINUTE_PRESETS = [QA_CONSULTATION_MIN_MINUTES, ...MINUTE_PRESETS] as const;
 
 let razorpayScriptPromise: Promise<void> | null = null;
 function loadRazorpayScript(): Promise<void> {
@@ -77,6 +81,8 @@ function BookContent() {
   const params = useParams();
   const router = useRouter();
   const { user, session } = useAuth();
+  const qaPricing = useQaPricing();
+  const minutePresets: readonly number[] = qaPricing ? QA_MINUTE_PRESETS : MINUTE_PRESETS;
   const astrologerId = String(params?.id ?? '');
 
   const [astrologer, setAstrologer] = useState<Astrologer | null>(null);
@@ -332,8 +338,8 @@ function BookContent() {
             <label className="block text-sm font-semibold text-surface-700 mb-3">
               <Clock className="inline w-4 h-4 mr-1 text-saffron-500" /> Duration
             </label>
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-              {MINUTE_PRESETS.map((m) => (
+            <div className={`grid grid-cols-4 gap-2 ${qaPricing ? 'sm:grid-cols-8' : 'sm:grid-cols-7'}`}>
+              {minutePresets.map((m) => (
                 <button
                   key={m}
                   type="button"
