@@ -35,6 +35,13 @@ import {
 // OPS-05: the durable money trail. `recordMoneyEvent` never throws and never
 // joins the caller's transaction — record AFTER the `$transaction` resolves.
 import { MONEY_EVENTS, recordMoneyEvent } from '../lib/audit-money.js';
+import {
+  CONSULTATION_MIN_AMOUNT_INR,
+  CONSULTATION_MIN_MINUTES,
+  QA_CONSULTATION_MIN_AMOUNT_INR,
+  QA_CONSULTATION_MIN_MINUTES,
+  isQaPayer,
+} from '../lib/qa-payer.js';
 
 assertNotProductionDemo('routes/consultation');
 
@@ -148,9 +155,11 @@ const UUID_SHAPE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12
 
 const MAX_BOOKING_HORIZON_MS = 60 * 24 * 60 * 60 * 1000;
 
-const bookSchema = z.object({
+/** `minMinutes` is CONSULTATION_MIN_MINUTES for everyone, QA_CONSULTATION_MIN_MINUTES for a QA_PAYER_EMAILS tester (lib/qa-payer.ts). */
+function buildBookSchema(minMinutes: number) {
+  return z.object({
   astrologerId: z.string().min(1).max(64),
-  minutes: z.number().int().min(5).max(60),
+  minutes: z.number().int().min(minMinutes).max(60),
   scheduledAt: z.string().datetime().optional(),
 }).refine(
   (v) => !v.scheduledAt || new Date(v.scheduledAt).getTime() > Date.now(),
@@ -160,7 +169,10 @@ const bookSchema = z.object({
   // 24 h refund window would be meaningless for it.
   (v) => !v.scheduledAt || new Date(v.scheduledAt).getTime() <= Date.now() + MAX_BOOKING_HORIZON_MS,
   { message: 'scheduledAt must be within the next 60 days', path: ['scheduledAt'] },
-);
+  );
+}
+const bookSchema = buildBookSchema(CONSULTATION_MIN_MINUTES);
+const bookSchemaQa = buildBookSchema(QA_CONSULTATION_MIN_MINUTES);
 
 const verifySchema = z.object({
   consultationId: z.string().uuid(),
@@ -595,7 +607,8 @@ export async function consultationRoutes(server: FastifyInstance) {
   // status 'pending_payment'. Client opens Razorpay checkout w/ returned
   // order id, then calls /verify-payment with the gateway signature.
   server.post('/book', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const parsed = bookSchema.safeParse(request.body);
+    const qaPayer = isQaPayer(request.currentUser);
+    const parsed = (qaPayer ? bookSchemaQa : bookSchema).safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: 'Invalid input', details: parsed.error.flatten() });
     }
@@ -680,8 +693,10 @@ export async function consultationRoutes(server: FastifyInstance) {
       return reply.code(400).send({ error: 'Astrologer rate not configured.' });
     }
     const amountInr = Math.round(perMinuteRate * minutes);
-    if (amountInr < 50) {
-      return reply.code(400).send({ error: 'Minimum consultation amount is ₹50.' });
+    // Rs 50 floor; Rs 1 for an allowlisted QA payer (a Rs 1/min astrologer x 1 min).
+    const minAmountInr = qaPayer ? QA_CONSULTATION_MIN_AMOUNT_INR : CONSULTATION_MIN_AMOUNT_INR;
+    if (amountInr < minAmountInr) {
+      return reply.code(400).send({ error: `Minimum consultation amount is ₹${minAmountInr}.` });
     }
     const amountInPaise = amountInr * 100;
 

@@ -20,6 +20,7 @@ import { paymentService } from './payment.service.js';
 import { nriPujaPriceInr } from '../lib/nri-pricing.js';
 import { parseSlotMinutes, resolveSlotInstant } from '../lib/slot-time.js';
 import { prasadAddressProblem } from '@poojly/shared';
+import { isQaPayerEmail } from '../lib/qa-payer.js';
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
@@ -97,6 +98,23 @@ export interface UserBookingsFilters {
 // what actually charges them at checkout.
 export const PLATFORM_FEE_INR = 51;
 export const PRASAD_DELIVERY_FEE_INR = 150;
+
+/**
+ * The fees collected on top of the puja price for THIS account. Everyone pays
+ * PLATFORM_FEE_INR (+ PRASAD_DELIVERY_FEE_INR when prasad is requested); an
+ * email on QA_PAYER_EMAILS pays neither. Used by createBooking and by
+ * POST /bookings/from-offering so the two rails cannot disagree.
+ */
+export function bookingFeesInr(
+  email: string | null | undefined,
+  prasadRequested: boolean,
+): { platformFeeInr: number; prasadFeeInr: number } {
+  if (isQaPayerEmail(email)) return { platformFeeInr: 0, prasadFeeInr: 0 };
+  return {
+    platformFeeInr: PLATFORM_FEE_INR,
+    prasadFeeInr: prasadRequested ? PRASAD_DELIVERY_FEE_INR : 0,
+  };
+}
 
 // Booking revamp (2026-08-04): platform take-rate cut from 30% to 20% to win
 // pandit supply. Research basis: Sri Mandir takes 20-25% from temples; the old
@@ -522,7 +540,7 @@ export class BookingService {
     // is, and why a self-settable flag can never drive a charged amount.
     const user = await prisma.user.findUnique({
       where: { id: data.userId },
-      select: { id: true },
+      select: { id: true, email: true },
     });
 
     if (!user) {
@@ -598,10 +616,12 @@ export class BookingService {
     // + prasad-delivery fee (when requested). Commission + priest payout are
     // computed on the PUJA price only — the fees are platform revenue / prasad
     // pass-through, not part of the priest's earned split.
-    const platformFee = new Prisma.Decimal(PLATFORM_FEE_INR);
-    const prasadFee = data.prasadDeliveryRequested
-      ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
-      : new Prisma.Decimal(0);
+    // QA_PAYER_EMAILS (lib/qa-payer.ts): an allowlisted tester pays the puja
+    // price alone, so a full journey can be run for about Rs 1. The decision is
+    // made from the account's own email, never from the request.
+    const fees = bookingFeesInr(user.email, data.prasadDeliveryRequested);
+    const platformFee = new Prisma.Decimal(fees.platformFeeInr);
+    const prasadFee = new Prisma.Decimal(fees.prasadFeeInr);
     const priceAmount = new Prisma.Decimal(pujaPrice.toString()).add(platformFee).add(prasadFee);
 
     // Split on the PUJA price using the priest's actual share (default 80/20 —

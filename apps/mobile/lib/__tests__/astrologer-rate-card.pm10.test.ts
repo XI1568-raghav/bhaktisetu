@@ -94,10 +94,12 @@ describe('PM-10 — the API contract that makes one rate the only honest answer'
     // The zod schema for POST /consultation/book. If a `mode` is ever added,
     // this fails and the rate card has to grow with it — deliberately, rather
     // than by a multiplier someone guessed.
-    const schema = src.slice(
-      src.indexOf('const bookSchema'),
-      src.indexOf('const bookSchema') + 400,
-    );
+    // The schema is built by buildBookSchema (a QA tester account may book 1 minute),
+    // so read the builder; fall back to the old `const bookSchema = z.object` form.
+    const start = src.includes('function buildBookSchema')
+      ? src.indexOf('function buildBookSchema')
+      : src.indexOf('const bookSchema');
+    const schema = src.slice(start, start + 400);
     expect(schema).toContain('astrologerId');
     expect(schema).toContain('minutes');
     expect(schema).not.toMatch(/\bmode\b/);

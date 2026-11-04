@@ -9,6 +9,7 @@ import {
  type ReactNode,
 } from 'react';
 import { computeStoreOrderTotals } from '../lib/store-pricing';
+import { useQaPricing } from '../lib/qa-pricing';
 
 // ─── Types ──────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
  const [items, setItems] = useState<CartItem[]>([]);
  const [isOpen, setIsOpen] = useState(false);
  const [hydrated, setHydrated] = useState(false);
+ const qaPricing = useQaPricing();
 
  // Load from localStorage on mount
  useEffect(() => {
@@ -139,6 +141,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
  const { subtotalInr: subtotal, deliveryFeeInr: deliveryFee, totalInr: total } =
  computeStoreOrderTotals(
  items.map((item) => ({ qty: item.quantity, unitPriceInr: item.product.price })),
+ // QA_PAYER_EMAILS tester: the server charges no delivery fee (lib/qa-pricing.ts).
+ { waiveDelivery: qaPricing },
  );
 
  const value: CartContextValue = {

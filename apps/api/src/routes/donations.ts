@@ -27,6 +27,7 @@ import { withGatewayTimeout } from '../lib/razorpay-timeout.js';
 import { checkGatewayPayment } from '../lib/razorpay-payment-check.js';
 import { SQL_UTC_NOW } from '../lib/sql-time.js';
 import { describeGatewayFailure } from '../lib/payment-gateway-error.js';
+import { DONATION_MIN_INR, QA_DONATION_MIN_INR, isQaPayer } from '../lib/qa-payer.js';
 
 assertNotProductionDemo('routes/donations');
 
@@ -444,10 +445,12 @@ export async function findDonationByOrderId(razorpayOrderId: string): Promise<Do
   }
 }
 
-// Floor: ₹101. Below ₹100 is below the 80G receipt threshold and ₹1
+// Floor: ₹101 (₹1 for QA payers, see below). Below ₹100 is below the 80G receipt threshold and ₹1
 // donations are an obvious fraud/dust vector. Cap: ₹10,00,000 per single
 // transaction — a misclick safety rail; large donors should call us.
-const createOrderSchema = z.object({
+/** `minInr` is DONATION_MIN_INR for everyone, QA_DONATION_MIN_INR for a QA_PAYER_EMAILS tester (lib/qa-payer.ts). */
+function buildCreateOrderSchema(minInr: number) {
+  return z.object({
   // P0 #PBO-2 (2026-07-09): polymorphic donee. The old schema required
   // gaushalaId, so temple donations were either rejected or forced through
   // the gaushala path (temple_id never set, receipts named the wrong entity).
@@ -464,7 +467,7 @@ const createOrderSchema = z.object({
     (v) => (typeof v === 'string' && /^\s*[\d,]+\s*$/.test(v) ? Number(v.replace(/[,\s]/g, '')) : v),
     z.number({ invalid_type_error: 'amountInr must be a number' })
       .int('amountInr must be a whole number of rupees')
-      .min(101, 'Minimum donation is ₹101')
+      .min(minInr, `Minimum donation is ₹${minInr}`)
       .max(1000000, 'Maximum single donation via this endpoint is ₹10,00,000'),
   ),
   planId: z.string().optional(),
@@ -488,7 +491,10 @@ const createOrderSchema = z.object({
     return !!d.gaushalaId && !d.templeId;
   },
   { message: 'Provide gaushalaId for a gaushala cause or templeId for a temple cause (not both).', path: ['causeKind'] },
-);
+  );
+}
+const createOrderSchema = buildCreateOrderSchema(DONATION_MIN_INR);
+const createOrderSchemaQa = buildCreateOrderSchema(QA_DONATION_MIN_INR);
 
 const verifyDonationSchema = z.object({
   donationId: z.string().min(1, 'donationId is required'),
@@ -578,7 +584,7 @@ export async function donationRoutes(server: FastifyInstance) {
 
   // ── Create order ─────────────────────────────────────────────────────
   server.post('/create-order', { preHandler: [authenticateUser] }, async (request, reply) => {
-    const parsed = createOrderSchema.safeParse(request.body ?? {});
+    const parsed = (isQaPayer(request.currentUser) ? createOrderSchemaQa : createOrderSchema).safeParse(request.body ?? {});
     if (!parsed.success) {
       return reply.code(400).send({
         error: 'Invalid request body',

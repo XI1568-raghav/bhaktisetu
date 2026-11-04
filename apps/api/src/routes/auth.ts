@@ -1,4 +1,5 @@
 import { FastifyInstance } from 'fastify';
+import { isQaPayerEmail } from '../lib/qa-payer.js';
 import { z } from 'zod';
 import { createSupabaseClient, supabaseAdmin } from '../lib/supabase.js';
 import { prisma } from '../lib/prisma.js';
@@ -1151,6 +1152,11 @@ export async function authRoutes(server: FastifyInstance) {
         updatedAt: user.updatedAt,
         addresses: user.addresses,
         activeSubscription: user.subscription[0] || null,
+        // QA_PAYER_EMAILS: true only for an allowlisted tester account. The web
+        // reads it to show the waived-fee prices and the QA banner; the server
+        // re-derives it from the account email on every priced request, so this
+        // flag is a display hint, never an authority. The list itself is never sent.
+        qaPricing: isQaPayerEmail(user.email),
       },
     });
   });

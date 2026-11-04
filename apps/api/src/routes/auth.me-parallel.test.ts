@@ -97,7 +97,7 @@ describe('GET /auth/me — profile and role read together, same answer', () => {
     expect(u.role).toBe('devotee');
     expect(u.activeSubscription).toBeNull();
     expect(Object.keys(u).sort()).toEqual(
-      ['activeSubscription', 'addresses', 'avatarUrl', 'createdAt', 'email', 'fullName', 'gotra', 'id', 'isNri', 'locationCity', 'locationState', 'nakshatra', 'nriCountry', 'phone', 'preferredLanguage', 'rashi', 'role', 'subscriptionTier', 'updatedAt'],
+      ['activeSubscription', 'addresses', 'avatarUrl', 'createdAt', 'email', 'fullName', 'gotra', 'id', 'isNri', 'locationCity', 'locationState', 'nakshatra', 'nriCountry', 'phone', 'preferredLanguage', 'qaPricing', 'rashi', 'role', 'subscriptionTier', 'updatedAt'],
     );
   });
 

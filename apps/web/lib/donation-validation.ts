@@ -43,14 +43,21 @@ export interface DonationFormValues {
   pan: string;
   /** donationLegal.HAS_80G_VERIFIED: PAN is only mandatory when an 80G receipt can be issued. */
   hasTaxReceipt: boolean;
+  /**
+   * Minimum in rupees. Defaults to MIN_INR (101). A tester on the server's
+   * QA_PAYER_EMAILS allowlist passes QA_MIN_INR (lib/qa-pricing.ts); the API
+   * applies the same rule from the account email.
+   */
+  minInr?: number;
 }
 
 export function validateDonation(v: DonationFormValues): Record<string, string> {
   const errs: Record<string, string> = {};
   const amount = parseAmount(v.amount);
 
-  if (!amount || amount < MIN_INR) {
-    errs.amount = `Minimum donation is ₹${MIN_INR}`;
+  const minInr = v.minInr ?? MIN_INR;
+  if (!amount || amount < minInr) {
+    errs.amount = `Minimum donation is ₹${minInr}`;
   } else if (amount > MAX_INR) {
     errs.amount = `Maximum single donation via this form is ₹${MAX_INR.toLocaleString('en-IN')}`;
   }

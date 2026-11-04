@@ -6,8 +6,7 @@ import { BookingStatus, Prisma } from '@prisma/client';
 import {
   bookingService,
   BOOKING_STATUS_RESPONSE_INCLUDE,
-  PLATFORM_FEE_INR,
-  PRASAD_DELIVERY_FEE_INR,
+  bookingFeesInr,
   DEFAULT_PRIEST_SHARE,
   MY_BOOKINGS_VIEWS,
   type MyBookingsView,
@@ -2382,10 +2381,12 @@ export async function bookingRoutes(server: FastifyInstance) {
         // (same contract as /create-order): puja x 2.5, still an INR order,
         // flat fees NOT multiplied, 80/20 on the puja price actually charged.
         const pujaPrice = chargedPujaPriceInr(offering.basePrice.toString(), body.nriPricing);
-        const platformFee = new Prisma.Decimal(PLATFORM_FEE_INR);
-        const prasadFee = body.prasadDelivery
-          ? new Prisma.Decimal(PRASAD_DELIVERY_FEE_INR)
-          : new Prisma.Decimal(0);
+        // QA_PAYER_EMAILS: an allowlisted tester account pays no fees (see
+        // booking.service bookingFeesInr); the amount is decided from the
+        // authenticated email only.
+        const fees = bookingFeesInr(request.currentUser?.email, body.prasadDelivery);
+        const platformFee = new Prisma.Decimal(fees.platformFeeInr);
+        const prasadFee = new Prisma.Decimal(fees.prasadFeeInr);
         const priceAmount = pujaPrice.add(platformFee).add(prasadFee);
         const currency = 'INR';
         // Honour the pandit's own commissionRate (their share); default 80/20
