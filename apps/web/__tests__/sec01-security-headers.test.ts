@@ -202,3 +202,18 @@ describe('SEC-01 — the CSP must not break the app it protects', () => {
     expect(productionContentSecurityPolicy()).toContain('upgrade-insecure-requests');
   });
 });
+
+// Static assets (prerendered pages) are served from public/_headers by Cloudflare, NOT through
+// next.config.ts. A stale copy there blocked the Razorpay payment frame on /pujas/book
+// ("This content is blocked") because only the Worker-rendered pages got the right policy.
+describe('SEC-01 — public/_headers carries the same enforced CSP as next.config', () => {
+  it('has an identical Content-Security-Policy', async () => {
+    const { readFileSync } = await import('node:fs');
+    const { join } = await import('node:path');
+    const { productionContentSecurityPolicy } = await import('../next.config');
+    const file = readFileSync(join(__dirname, '..', 'public', '_headers'), 'utf8');
+    const line = file.split('\n').find((l) => l.trim().startsWith('Content-Security-Policy: '));
+    expect(line).toBeTruthy();
+    expect(line!.trim().replace('Content-Security-Policy: ', '')).toBe(productionContentSecurityPolicy());
+  });
+});
