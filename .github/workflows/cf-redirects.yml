@@ -1,0 +1,58 @@
+name: CF redirects
+
+# One-off, manual. Makes http -> https and www -> apex 301 at the Cloudflare edge for
+# darshya.online. Default mode `show` is read-only. `apply` turns on Always Use HTTPS and
+# ADDS one redirect rule next to the existing ones (it never replaces the ruleset).
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: show (read-only) or apply
+        type: choice
+        options: [show, apply]
+        default: show
+
+permissions:
+  contents: read
+
+jobs:
+  redirects:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - name: show or apply
+        run: |
+          set -uo pipefail
+          AUTH="Authorization: Bearer ${CF_TOKEN}"
+          API=https://api.cloudflare.com/client/v4
+          zone=$(curl -s -H "$AUTH" "$API/zones?name=darshya.online" | jq -r '.result[0].id')
+          echo "zone found: $([ -n "$zone" ] && [ "$zone" != null ] && echo yes || echo NO)"
+          [ -n "$zone" ] && [ "$zone" != null ] || exit 1
+          echo "=== always_use_https ==="
+          curl -s -H "$AUTH" "$API/zones/$zone/settings/always_use_https" | jq '{success, value: .result.value, errors}'
+          echo "=== redirect ruleset (http_request_dynamic_redirect) ==="
+          rs=$(curl -s -H "$AUTH" "$API/zones/$zone/rulesets/phases/http_request_dynamic_redirect/entrypoint")
+          echo "$rs" | jq '{success, errors, rules: [.result.rules[]? | {id, description, expression, enabled}]}'
+          if [ "$MODE" != apply ]; then echo "show only, nothing changed"; exit 0; fi
+
+          echo "=== apply: always_use_https on ==="
+          curl -s -X PATCH -H "$AUTH" -H 'content-type: application/json' \
+            -d '{"value":"on"}' "$API/zones/$zone/settings/always_use_https" | jq '{success, value: .result.value, errors}'
+
+          if echo "$rs" | jq -e '.result.rules[]? | select(.description=="www to apex 301")' >/dev/null; then
+            echo "www rule already present, leaving it"; exit 0
+          fi
+          rule='{"description":"www to apex 301","expression":"(http.host eq \"www.darshya.online\")","action":"redirect","action_parameters":{"from_value":{"status_code":301,"target_url":{"expression":"concat(\"https://darshya.online\", http.request.uri.path)"},"preserve_query_string":true}},"enabled":true}'
+          rsid=$(echo "$rs" | jq -r '.result.id // empty')
+          if [ -n "$rsid" ]; then
+            echo "=== add rule to existing ruleset $rsid ==="
+            curl -s -X POST -H "$AUTH" -H 'content-type: application/json' -d "$rule" \
+              "$API/zones/$zone/rulesets/$rsid/rules" | jq '{success, errors}'
+          else
+            echo "=== create ruleset with the rule ==="
+            curl -s -X PUT -H "$AUTH" -H 'content-type: application/json' \
+              -d "{\"rules\":[$rule]}" "$API/zones/$zone/rulesets/phases/http_request_dynamic_redirect/entrypoint" | jq '{success, errors}'
+          fi
