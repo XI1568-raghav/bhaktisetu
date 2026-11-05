@@ -8,7 +8,7 @@ import type { Metadata } from 'next';
 import { H1 } from '../../../../components/ui/heading-recipe';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { resolveApiTemple } from '../../../../lib/temple-resolve';
+import { resolveApiTempleStrict } from '../../../../lib/temple-resolve';
 // CM-10: same `uppercase tracking-wider` chip as the deity page — the raw enum
 // rendered as 'SPECIAL_OCCASION'.
 import { pujaCategoryLabel } from '../../../../lib/puja-labels';
@@ -41,7 +41,7 @@ function fmtINR(s: string): string {
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const { slug } = await params;
   try {
-    const t = await resolveApiTemple(slug);
+    const t = await resolveApiTempleStrict(slug);
     if (!t) return { title: 'Temple pujas' };
     const name = t.name;
     const city = t.city || '';
@@ -70,7 +70,7 @@ export default async function TemplePujasPage({ params }: Params) {
   // curated short slugs (kashi-vishwanath, somnath, etc.) but the API only
   // carries the `<name>-<city>` form, so getTempleBySlug(short) 404'd. Resolve
   // the short slug to its API slug before fetching.
-  const temple = await resolveApiTemple(rawSlug);
+  const temple = await resolveApiTempleStrict(rawSlug);
   if (!temple) notFound();
 
   const offerings = (temple.pujaOfferings || []).filter((o) => o.isActive);
