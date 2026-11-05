@@ -19,28 +19,57 @@
  * authenticated client — a different concern entirely.)
  */
 
-import { getTempleBySlug, getTemples, type TempleDetail } from './api';
+import { ApiResponseError, getTempleBySlug, getTemples, type TempleDetail } from './api';
 import { canonicalTempleSlug } from './temple-slug';
 
-export async function resolveApiTemple(slug: string): Promise<TempleDetail | null> {
-  // `getTempleBySlug` throws on a non-OK response, so a throw OR null means
-  // "API has no such temple".
-  try {
-    const temple = await getTempleBySlug(slug);
-    if (temple) return temple;
-  } catch {
-    // fall through to the reverse lookup
+export async function resolveApiTempleStrict(slug: string): Promise<TempleDetail | null> {
+  // Only an HTTP 404 means "the API has no such temple". A timeout, a 5xx or a
+  // network blip is NOT a missing temple: answering null there made the page
+  // call notFound() and the 404 was cached (and baked in at build), so
+  // /temples/<slug>/pujas showed "Page not found" for temples that exist.
+  // Retry with a wait, then let the error surface (a 500 is not cached as a 404).
+  const isMissing = (e: unknown) => e instanceof ApiResponseError && e.status === 404;
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  // The build prerenders ~2150 pages against the live API and the API's rate
+  // limiter answers 429 for a few of them, so wait and retry before giving up.
+  const WAITS = [0, 1500, 4000, 9000];
+  for (let attempt = 0; attempt < WAITS.length; attempt++) {
+    const wait = WAITS[attempt] ?? 0;
+    if (wait) await sleep(wait);
+    try {
+      const temple = await getTempleBySlug(slug);
+      if (temple) return temple;
+      break;
+    } catch (e) {
+      if (isMissing(e)) break;
+      if (attempt === WAITS.length - 1) throw e;
+    }
   }
 
   // Walk the temple list and take the row whose slug canonicalises to this one
   // (kashi-vishwanath-varanasi -> kashi-vishwanath).
+  const list = await getTemples({ limit: 100 });
+  const match = list.data.find(
+    (t) => t.slug && t.slug !== slug && canonicalTempleSlug(t.slug) === slug,
+  );
+  if (!match) return null;
   try {
-    const list = await getTemples({ limit: 100 });
-    const match = list.data.find(
-      (t) => t.slug && t.slug !== slug && canonicalTempleSlug(t.slug) === slug,
-    );
-    if (!match) return null;
     return (await getTempleBySlug(match.slug)) ?? null;
+  } catch (e) {
+    if (isMissing(e)) return null;
+    throw e;
+  }
+}
+
+/**
+ * Forgiving form: any failure reads as "no API row". Right for the detail page,
+ * which can still render a curated temple while the API is down. The /pujas
+ * child route must use resolveApiTempleStrict instead, because there a null
+ * becomes a cached "Page not found".
+ */
+export async function resolveApiTemple(slug: string): Promise<TempleDetail | null> {
+  try {
+    return await resolveApiTempleStrict(slug);
   } catch {
     return null;
   }
