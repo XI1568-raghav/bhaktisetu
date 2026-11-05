@@ -1,0 +1,58 @@
+name: Render free tier
+
+# One-off, manual. Brings Render down to ONE free service (the API) so no card is needed.
+#   show           read-only: name, plan, suspended for the three known services
+#   delete-unused  deletes ONLY darshya-web (old web) and poojly-api (old API), after
+#                  checking each id still carries that exact name; irreversible
+#   downgrade-api  sets the API (bhaktisetu) plan to free; reversible in the dashboard
+# Never touches env vars. Run `show` first.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: show, delete-unused or downgrade-api
+        type: choice
+        options: [show, delete-unused, downgrade-api]
+        default: show
+
+permissions:
+  contents: read
+
+jobs:
+  render:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      RK: ${{ secrets.RENDER_API_KEY }}
+      MODE: ${{ inputs.mode }}
+    steps:
+      - name: run
+        run: |
+          set -uo pipefail
+          A="Authorization: Bearer ${RK}"
+          API=https://api.render.com/v1
+          WEB=srv-d970l2ks728c738fc33g; OLDAPI=srv-d7kkfnnavr4c73afsf0g; LIVE=srv-d7mc2n8sfn5c73dfce0g
+          show() {
+            for s in "$WEB" "$OLDAPI" "$LIVE"; do
+              curl -s -H "$A" "$API/services/$s" | jq -r '"\(.name // "GONE")  id='"$s"'  plan=\(.serviceDetails.plan // "n/a")  suspended=\(.suspended // "n/a")"'
+            done
+          }
+          echo "=== before ==="; show
+          case "$MODE" in
+            show) exit 0 ;;
+            delete-unused)
+              for pair in "$WEB:darshya-web" "$OLDAPI:poojly-api"; do
+                id="${pair%%:*}"; want="${pair##*:}"
+                name=$(curl -s -H "$A" "$API/services/$id" | jq -r '.name // empty')
+                if [ "$name" != "$want" ]; then echo "skip $id: name is '$name', expected '$want'"; continue; fi
+                code=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE -H "$A" "$API/services/$id")
+                echo "DELETE $want -> HTTP $code"
+              done ;;
+            downgrade-api)
+              name=$(curl -s -H "$A" "$API/services/$LIVE" | jq -r '.name // empty')
+              [ "$name" = bhaktisetu ] || { echo "refusing: $LIVE is '$name'"; exit 1; }
+              curl -s -X PATCH -H "$A" -H 'content-type: application/json' \
+                -d '{"serviceDetails":{"plan":"free"}}' "$API/services/$LIVE" | jq '{name, plan: .serviceDetails.plan, message}' ;;
+          esac
+          sleep 5
+          echo "=== after ==="; show
