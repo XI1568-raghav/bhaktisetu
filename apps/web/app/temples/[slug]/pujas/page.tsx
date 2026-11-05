@@ -17,10 +17,12 @@ import { RECEIPT_NOUN, withEightyG } from '../../../../lib/eighty-g';
 
 export const revalidate = 3600;
 
-import { fetchSlugParams } from '../../../../lib/static-params';
-
+// Not prerendered. The build used to fetch every temple here while it also
+// prerenders ~2150 other pages, the API's rate limiter answered 429 for some,
+// and the page either failed the build or baked in a "Page not found". Rendering
+// on first visit (then cached for `revalidate`) has no build-time API calls.
 export async function generateStaticParams() {
-  return fetchSlugParams('/temples?limit=200', (j) => (j as { temples?: unknown }).temples);
+  return [];
 }
 
 interface Params {
