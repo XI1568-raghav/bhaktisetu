@@ -27,16 +27,22 @@ export async function resolveApiTempleStrict(slug: string): Promise<TempleDetail
   // network blip is NOT a missing temple: answering null there made the page
   // call notFound() and the 404 was cached (and baked in at build), so
   // /temples/<slug>/pujas showed "Page not found" for temples that exist.
-  // Retry once, then let the error surface (a 500 is not cached as a 404).
+  // Retry with a wait, then let the error surface (a 500 is not cached as a 404).
   const isMissing = (e: unknown) => e instanceof ApiResponseError && e.status === 404;
-  for (let attempt = 0; attempt < 2; attempt++) {
+  const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+  // The build prerenders ~2150 pages against the live API and the API's rate
+  // limiter answers 429 for a few of them, so wait and retry before giving up.
+  const WAITS = [0, 1500, 4000, 9000];
+  for (let attempt = 0; attempt < WAITS.length; attempt++) {
+    const wait = WAITS[attempt] ?? 0;
+    if (wait) await sleep(wait);
     try {
       const temple = await getTempleBySlug(slug);
       if (temple) return temple;
       break;
     } catch (e) {
       if (isMissing(e)) break;
-      if (attempt === 1) throw e;
+      if (attempt === WAITS.length - 1) throw e;
     }
   }
 
