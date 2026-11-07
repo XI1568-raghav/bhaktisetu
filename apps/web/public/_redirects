@@ -18,3 +18,17 @@
 /shipping-policy      /shipping             301
 /cookie-policy        /legal/cookies        301
 /support/tickets/new  /support/ticket/new   301
+# Temple alias slugs -> the one canonical URL (same targets lib/temple-slug.ts computes). Answering these in the
+# Worker ran the temple lookup per request and returned Cloudflare 1102 under a burst of visitors; the assets layer
+# answers them with no Worker CPU. Kept in step by __tests__/temple-alias-edge-redirects.test.ts.
+/temples/tirumala-tirupati          /temples/tirupati-balaji 308
+/temples/meenakshi-madurai          /temples/meenakshi-temple 308
+/temples/ramanathaswamy-rameshwaram /temples/rameshwaram 308
+/temples/rameswaram                 /temples/rameshwaram 308
+/temples/akshardham-delhi           /temples/akshardham 308
+/temples/badrinath-uttarakhand      /temples/badrinath 308
+/temples/kashi-vishwanath-varanasi  /temples/kashi-vishwanath 308
+/temples/somnath-gujarat            /temples/somnath 308
+/temples/vaishno-devi-katra         /temples/vaishno-devi 308
+/temples/dwarkadhish-dwarka         /temples/dwarkadhish 308
+/temples/siddhivinayak-mumbai       /temples/siddhivinayak 308
