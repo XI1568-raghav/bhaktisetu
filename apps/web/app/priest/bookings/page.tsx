@@ -144,6 +144,24 @@ function PriestBookingsInner() {
  // catch was marked "Silent fail for MVP", so a pandit clicking Accept saw
  // literally nothing happen and had no idea why.
  const [actionError, setActionError] = useState<string | null>(null);
+ // A paid booking nobody has taken yet is an OPEN REQUEST on the Offers page, not a row
+ // here until the pandit accepts it, so a pandit looking only at this page thought it
+ // never arrived. Say so, with a link.
+ const [openRequests, setOpenRequests] = useState(0);
+ useEffect(() => {
+  const token = session?.accessToken;
+  if (!token) return;
+  let cancelled = false;
+  void fetch(`${API_BASE_URL}/priest/open-requests`, { headers: { Authorization: `Bearer ${token}` } })
+   .then((r) => (r.ok ? r.json() : null))
+   .then((d: { requests?: unknown[] } | null) => {
+    if (!cancelled && d && Array.isArray(d.requests)) setOpenRequests(d.requests.length);
+   })
+   .catch(() => {});
+  return () => {
+   cancelled = true;
+  };
+ }, [session?.accessToken]);
 
  // Keep the tab in the URL with the History API, not router.replace: this page is a
  // static shell, so a router navigation asks the server for an RSC payload it cannot
@@ -559,6 +577,24 @@ function PriestBookingsInner() {
  Retry
  </button>
  )}
+ </div>
+ )}
+
+ {openRequests > 0 && (
+ <div
+ role="status"
+ data-testid="open-requests-hint"
+ className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-saffron-200 bg-saffron-50 px-4 py-3 text-sm text-surface-800"
+ >
+ <span>
+ {openRequests === 1
+ ? '1 paid booking is waiting for a pandit.'
+ : `${openRequests} paid bookings are waiting for a pandit.`}{' '}
+ Accept it on the Offers page and it moves here.
+ </span>
+ <Link href="/priest/offers" className="font-semibold text-saffron-700 underline">
+ Open Offers
+ </Link>
  </div>
  )}
 
