@@ -1,6 +1,8 @@
 # investor-weekly-digest-v2 log
 
 
+- 2026-11-22T11:50:50.888Z — ok=true mrr=200 gmv=200 users=1
+
 - 2026-11-15T11:23:43.890Z — ok=true mrr=200 gmv=200 users=1
 
 - 2026-11-08T10:41:17.841Z — ok=true mrr=200 gmv=200 users=1
