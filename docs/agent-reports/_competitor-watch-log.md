@@ -1,6 +1,8 @@
 # competitor-watch log
 
 
+- 2026-11-23T14:00:18.434Z — new=0 errors=4
+
 - 2026-11-16T12:25:38.335Z — new=0 errors=4
 
 - 2026-11-09T12:31:05.404Z — new=0 errors=4
